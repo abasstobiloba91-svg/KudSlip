@@ -244,6 +244,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
+  // NEW: Review System State
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -275,11 +281,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
 
     try {
-      // 1. Setup the core Paystack checkout payload
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
-        amount: safeAmount * 100, // Paystack standardizes the lowest denomination (kobo/cents)
+        amount: safeAmount * 100, 
         currency: invoiceCurrency,
         callback: function(response) {
           supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
@@ -290,12 +295,8 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         onClose: function() { console.log("Payment window closed."); }
       };
 
-      // 2. CRITICAL GATEWAY FIX: Only attach the local bank subaccount if the transaction is in Naira. 
-      // If it's USD/GBP, we let it settle into the main Paystack merchant balance to prevent bank rejection.
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
-      } else if (invoiceCurrency !== "NGN" && vendor?.paystack_subaccount_code) {
-         console.log("Foreign currency detected. Subaccount routing disabled to prevent bank rejection.");
       }
 
       const handler = window.PaystackPop.setup(paystackPayload);
@@ -303,6 +304,20 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     } catch(err) {
       showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
     }
+  };
+
+  const submitReview = async () => {
+    if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
+    
+    await supabase.from('reviews').insert([{
+      invoice_id: invoice.id,
+      merchant_name: vendor?.business_name || "Unknown Merchant",
+      rating,
+      comment: reviewComment
+    }]);
+    
+    setReviewSubmitted(true);
+    showToast("Feedback Sent", "Thank you! Your review helps us keep the platform safe.", "success");
   };
 
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
@@ -327,6 +342,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const invoiceCurrency = invoice.currency || "NGN";
   const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
 
+  const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
+    <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>
+  );
+
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
@@ -336,13 +357,15 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><DownloadIcon /> Download PDF</button>
         </div>
+        
         {isFreeTier && (
           <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
             <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
             <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
           </div>
         )}
-        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
+
+        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
@@ -360,6 +383,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
             </div>
           </div>
+          
           <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
@@ -371,6 +395,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               <div style={{ fontWeight: "700" }}>{safeDate}</div>
             </div>
           </div>
+          
           <div style={{ marginBottom: "40px" }}>
             {safeItems.map((item, idx) => (
               <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
@@ -378,6 +403,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               </div>
             ))}
           </div>
+          
           <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
             <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
@@ -394,11 +420,44 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
               </div>
             )}
+            
             {currentUser?.id === vendor?.id && (
               <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
             )}
           </div>
         </div>
+
+        {/* NEW: CLIENT REVIEW UI (Only shows for the client after payment) */}
+        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
+          <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
+            <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
+            
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+              {.map(star => (
+                <StarIcon 
+                  key={star} 
+                  filled={star <= (hoverRating || rating)} 
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                />
+              ))}
+            </div>
+            
+            {rating > 0 && (
+              <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
+                <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical" }} />
+                <button className="btn-primary btn-hover" style={{ width: "100%" }} onClick={submitReview}>Submit Feedback</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
+           <a href="#/" className="btn-secondary btn-hover no-print" style={{ width: "100%", padding: "16px", background: "#FFFFFF" }}>Return to KudiSlip Home</a>
+        )}
+
       </div>
     </div>
   );
@@ -646,19 +705,24 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 function SuperAdminDashboard({ showToast }) {
   const [globalVendors, setGlobalVendors] = useState([]);
   const [globalInvoices, setGlobalInvoices] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function collectGlobalMetrics() {
-      if (!supabase) return;
-      const { data: vendors } = await supabase.from('vendors').select('*').order('created_at', { ascending: false });
-      const { data: invoices } = await supabase.from('invoices').select('*');
-      if (vendors) setGlobalVendors(vendors);
-      if (invoices) setGlobalInvoices(invoices);
-      setLoading(false);
-    }
-    collectGlobalMetrics();
+    fetchAdminData();
   }, []);
+
+  const fetchAdminData = async () => {
+    if (!supabase) return;
+    const { data: vendors } = await supabase.from('vendors').select('*').order('created_at', { ascending: false });
+    const { data: invoices } = await supabase.from('invoices').select('*');
+    const { data: revs } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
+    
+    if (vendors) setGlobalVendors(vendors);
+    if (invoices) setGlobalInvoices(invoices);
+    if (revs) setReviews(revs);
+    setLoading(false);
+  };
 
   const handleRoleChange = async (userId, newRole) => {
     const { error } = await supabase.from('vendors').update({ role: newRole }).eq('id', userId);
@@ -666,6 +730,15 @@ function SuperAdminDashboard({ showToast }) {
     else {
       showToast("Role Updated", "User access level has been updated.", "success");
       setGlobalVendors(globalVendors.map(v => v.id === userId ? { ...v, role: newRole } : v));
+    }
+  };
+
+  const handleKYCUpdate = async (userId, newStatus) => {
+    const { error } = await supabase.from('vendors').update({ kyc_status: newStatus }).eq('id', userId);
+    if (error) showToast("Error", error.message, "error");
+    else {
+      showToast("KYC Updated", `Merchant status changed to ${newStatus}.`, newStatus === 'approved' ? 'success' : 'error');
+      fetchAdminData();
     }
   };
 
@@ -680,49 +753,319 @@ function SuperAdminDashboard({ showToast }) {
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>SuperAdmin Mission Control</div>
-      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight and team role management.</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight and KYC management.</div>
+      
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Platform Volume (TPV)</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalPlatformVolume.toLocaleString()}</div>
-        </div>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Transaction Fees (1.5%)</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.success }}>₦{accumulatedFees.toLocaleString()}</div>
-        </div>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Estimated SaaS MRR</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.premium }}>₦{estimatedSaaSMRR.toLocaleString()}</div>
-        </div>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Accounts</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Users</div>
-        </div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Platform Volume (TPV)</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalPlatformVolume.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Transaction Fees (1.5%)</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.success }}>₦{accumulatedFees.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Estimated SaaS MRR</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.premium }}>₦{estimatedSaaSMRR.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Accounts</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Users</div></div>
       </div>
-      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Account Registry & Roles</h3>
-      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "800px" }}>
+      
+      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Account Registry & KYC</h3>
+      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto", marginBottom: "48px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "900px" }}>
           <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
-            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>System ID</th><th style={{ padding: "16px 24px" }}>Tier</th><th style={{ padding: "16px 24px" }}>Platform Role</th></tr>
+            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>Portfolio / Social</th><th style={{ padding: "16px 24px" }}>KYC Status</th><th style={{ padding: "16px 24px" }}>Platform Role</th><th style={{ padding: "16px 24px" }}>Actions</th></tr>
           </thead>
           <tbody>
             {globalVendors.map(vendor => (
               <tr key={vendor.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
-                <td style={{ padding: "16px 24px", fontWeight: "700" }}>{vendor.business_name}</td>
-                <td style={{ padding: "16px 24px", color: DESIGN.textMuted, fontSize: "13px" }}>{vendor.id}</td>
-                <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.subscription_tier === 'premium' ? "#F5F3FF" : "#F1F5F9", color: vendor.subscription_tier === 'premium' ? DESIGN.premium : DESIGN.textMuted }}>{vendor.subscription_tier.toUpperCase()}</span></td>
+                <td style={{ padding: "16px 24px" }}><div style={{ fontWeight: "700" }}>{vendor.business_name}</div><div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{vendor.id.substring(0, 8)}...</div></td>
+                <td style={{ padding: "16px 24px", fontSize: "13px" }}>
+                  {vendor.portfolio_link ? <a href={vendor.portfolio_link.startsWith('http') ? vendor.portfolio_link : `https://${vendor.portfolio_link}`} target="_blank" rel="noopener noreferrer" style={{ color: "#3B82F6", fontWeight: "600" }}>View Profile</a> : <span style={{ color: DESIGN.textMuted }}>Not provided</span>}
+                </td>
+                <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.kyc_status === 'approved' ? "#ECFDF5" : vendor.kyc_status === 'suspended' ? "#FEF2F2" : "#FEF3C7", color: vendor.kyc_status === 'approved' ? "#10B981" : vendor.kyc_status === 'suspended' ? "#EF4444" : "#D97706" }}>{(vendor.kyc_status || 'PENDING').toUpperCase()}</span></td>
                 <td style={{ padding: "16px 24px" }}>
-                  <select className="form-input" style={{ padding: "8px", fontSize: "13px", width: "120px" }} value={vendor.role || 'vendor'} onChange={(e) => handleRoleChange(vendor.id, e.target.value)}>
-                    <option value="vendor">Vendor</option>
-                    <option value="support">Support</option>
-                    <option value="admin">Super Admin</option>
-                  </select>
+                  <select className="form-input" style={{ padding: "8px", fontSize: "13px", width: "120px" }} value={vendor.role || 'vendor'} onChange={(e) => handleRoleChange(vendor.id, e.target.value)}><option value="vendor">Vendor</option><option value="support">Support</option><option value="admin">Super Admin</option></select>
+                </td>
+                <td style={{ padding: "16px 24px", display: "flex", gap: "8px" }}>
+                  <button onClick={() => handleKYCUpdate(vendor.id, 'approved')} style={{ background: "#ECFDF5", color: "#10B981", border: "1px solid #A7F3D0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Approve</button>
+                  <button onClick={() => handleKYCUpdate(vendor.id, 'suspended')} style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Suspend</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* NEW: REVIEWS SYSTEM */}
+      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Client Feedback & Platform Reviews</h3>
+      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "700px" }}>
+          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
+            <tr><th style={{ padding: "16px 24px" }}>Date</th><th style={{ padding: "16px 24px" }}>Merchant Billed</th><th style={{ padding: "16px 24px" }}>Rating</th><th style={{ padding: "16px 24px" }}>Client Comment</th></tr>
+          </thead>
+          <tbody>
+            {reviews.length === 0 && <tr><td colSpan="4" style={{ padding: "24px", textAlign: "center", color: DESIGN.textMuted }}>No reviews collected yet.</td></tr>}
+            {reviews.map(rev => (
+              <tr key={rev.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
+                <td style={{ padding: "16px 24px", fontSize: "13px", color: DESIGN.textMuted }}>{new Date(rev.created_at).toLocaleDateString()}</td>
+                <td style={{ padding: "16px 24px", fontWeight: "700" }}>{rev.merchant_name}</td>
+                <td style={{ padding: "16px 24px", color: "#F59E0B", fontWeight: "800", fontSize: "16px" }}>{"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}</td>
+                <td style={{ padding: "16px 24px", fontSize: "14px" }}>{rev.comment || <span style={{ color: DESIGN.textMuted, fontStyle: "italic" }}>No comment left</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 8. INVOICE GENERATOR
+// =========================================================
+function InvoiceGenerator({ user, showToast }) {
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState("");
+  const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
+  const [dueDate, setDueDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [invoices, setInvoices] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("date-desc");
+  const [showLogoWarning, setShowLogoWarning] = useState(false);
+
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
+
+  const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
+    fetchRecentInvoices();
+  }, []);
+
+  const fetchRecentInvoices = async () => {
+    const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
+    if(data) setInvoices(data);
+  };
+
+  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
+  const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
+  const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
+  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+  const handleCalculateRate = async (e) => {
+    e.preventDefault();
+    if (!calcData.amount) return;
+    setCalcData(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${calcData.currency}`);
+      const data = await res.json();
+      const rate = data.rates.NGN;
+      setCalcData(prev => ({ ...prev, rate, result: Number(prev.amount) * rate, loading: false }));
+    } catch (err) {
+      showToast("API Error", "Could not fetch live market rates. Please check your network.", "error");
+      setCalcData(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const applyCalculatedRate = () => {
+    setItems([{ description: `${calcData.currency} Invoice Conversion`, quantity: 1, price: Math.round(calcData.result) }]);
+    setCalcOpen(false);
+    showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
+  };
+
+  const handleGenerateInvoice = async (force = false) => {
+    if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
+    if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
+      setShowLogoWarning(true); // Triggers Modal Now
+      return;
+    }
+    
+    setShowLogoWarning(false);
+    setLoading(true);
+    
+    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: 'NGN' }]).select().single();
+    if (error) { showToast("Database Error", error.message, "error"); } 
+    else {
+      showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
+      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
+      fetchRecentInvoices();
+    }
+    setLoading(false);
+  };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
+
+  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPending = totalBilled - totalPaid;
+
+  const filteredInvoices = invoices.filter(inv => {
+    const clientName = (inv.clients?.name || "").toLowerCase();
+    const itemsStr = JSON.stringify(inv.items || "").toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return clientName.includes(q) || itemsStr.includes(q);
+  }).sort((a, b) => {
+    if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
+    if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
+    if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
+    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
+    return 0;
+  });
+
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      
+      {/* NEW: PREMIUM LOGO MODAL */}
+      {showLogoWarning && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="toast-container" style={{ background: "#FFFFFF", padding: "40px", borderRadius: "20px", maxWidth: "450px", width: "90%", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "20px" }}><PaintIcon /></div>
+            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "12px", color: DESIGN.textMain }}>Missing Brand Logo</h3>
+            <p style={{ color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
+              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "16px", border: "none", background: "#F1F5F9" }}>Ignore & Generate Invoice</button>
+              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: DESIGN.textMuted, fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div></div>
+      </div>
+
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
+        
+        {calcOpen ? (
+          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "20px", marginBottom: "32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h4 style={{ margin: 0, color: "#1E3A8A", fontSize: "15px", fontWeight: "800" }}>Foreign Client Auto-Calculator</h4>
+              <button onClick={() => setCalcOpen(false)} style={{ background: "none", border: "none", color: "#60A5FA", cursor: "pointer", fontWeight: "800" }}>Close</button>
+            </div>
+            <form onSubmit={handleCalculateRate} style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "800", color: "#3B82F6", display: "block", marginBottom: "6px", textTransform: "uppercase" }}>Currency</label>
+                <select className="form-input" style={{ width: "110px", padding: "10px" }} value={calcData.currency} onChange={e => setCalcData({...calcData, currency: e.target.value})}>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "800", color: "#3B82F6", display: "block", marginBottom: "6px", textTransform: "uppercase" }}>Target Amount</label>
+                <input className="form-input" type="number" style={{ width: "130px", padding: "10px" }} placeholder="e.g. 100" value={calcData.amount} onChange={e => setCalcData({...calcData, amount: e.target.value})} required />
+              </div>
+              <button className="btn-primary btn-hover" type="submit" disabled={calcData.loading} style={{ padding: "10px 20px", background: "#2563EB", fontSize: "14px" }}>
+                {calcData.loading ? "Fetching..." : "Get Live Rate"}
+              </button>
+            </form>
+            
+            {calcData.result > 0 && (
+              <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #BFDBFE", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: "#3B82F6", fontWeight: "600" }}>Live Rate: 1 {calcData.currency} = ₦{calcData.rate}</div>
+                  <div style={{ fontSize: "20px", fontWeight: "900", color: "#1E3A8A" }}>Total: ₦{calcData.result.toLocaleString()}</div>
+                </div>
+                <button className="btn-primary btn-hover" onClick={applyCalculatedRate} style={{ padding: "8px 16px", background: "#10B981", fontSize: "13px", border: "none", color: "white" }}>Apply to Invoice</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setCalcOpen(true)} style={{ background: "transparent", border: "1px dashed #CBD5E1", color: "#3B82F6", width: "100%", padding: "14px", borderRadius: "8px", fontWeight: "700", cursor: "pointer", marginBottom: "32px", fontSize: "14px", transition: "all 0.2s" }} className="btn-hover">
+            + Calculate Foreign Currency (USD/GBP)
+          </button>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
+            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </div>
+          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+        </div>
+        <div style={{ marginBottom: "24px" }}>
+          {items.map((item, idx) => (
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
+              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
+              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
+              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
+              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
+            </div>
+          ))}
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
+        </div>
+        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
+          <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+        </div>
+      </div>
+
+      {invoices.length > 0 && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
+            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
+              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                <option value="date-desc">Newest First</option>
+                <option value="date-asc">Oldest First</option>
+                <option value="name-asc">Client A-Z</option>
+                <option value="name-desc">Client Z-A</option>
+              </select>
+            </div>
+          </div>
+          
+          {filteredInvoices.map(inv => {
+            const safeInvAmount = Number(inv.amount || 0);
+            const invCurrency = inv.currency || "NGN";
+            const sym = CURRENCY_SYMBOLS[invCurrency] || "₦";
+            
+            let parsedItems = [];
+            try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
+            const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
+
+            return (
+              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: "16px", padding: "24px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ wordBreak: "break-word" }}>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: DESIGN.textMain, marginBottom: "4px" }}>{inv.clients?.name}</div>
+                    <div style={{ fontSize: "13px", color: DESIGN.textMuted, lineHeight: "1.4" }}>
+                      <div>{inv.clients?.email}</div>
+                      {inv.clients?.phone && <div>{inv.clients.phone}</div>}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "900", padding: "6px 12px", borderRadius: "20px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
+                    {inv.status}
+                  </span>
+                </div>
+
+                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: DESIGN.textMain, fontWeight: "500", border: "1px solid #F1F5F9" }}>
+                  <span style={{ color: DESIGN.textMuted, fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "900", color: DESIGN.textMain }}>
+                    {sym}{safeInvAmount.toLocaleString()}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <button className="btn-secondary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "140px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                    {inv.status === 'pending' && (
+                      <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>Send Reminder</a>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
+        </div>
+      )}
     </div>
   );
 }
