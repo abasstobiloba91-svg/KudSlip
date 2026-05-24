@@ -917,7 +917,7 @@ function LandingPage() {
     </div>
   );
 }
-}
+
 // =========================================================
 // 6. AUTHENTICATION (WITH PASSWORD TOGGLE & SPLASH INTERCEPT)
 // =========================================================
