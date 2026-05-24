@@ -713,130 +713,102 @@ function SuperAdminDashboard({ showToast }) {
 }
 
 // =========================================================
-// 5. LANDING PAGE 
+// 5. LANDING PAGE
 // =========================================================
 function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: "#F8FAFC", minHeight: "100vh", color: "#0F172A" }}>
       <GlobalStyles />
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", flex: 1 }}>
-        <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
-          <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
-          <div className="nav-buttons-desktop">
-            <a href="#/login" className="btn-secondary btn-hover">Log In</a>
-            <a href="#/signup" className="btn-primary btn-hover">Get Started Free</a>
-          </div>
-          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>☰</button>
-        </nav>
-        <div className={`mobile-nav-dropdown ${mobileMenuOpen ? 'open' : ''}`}>
-          <a href="#/login" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Log In</a>
-          <a href="#/signup" className="btn-primary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
-        </div>
-        
-        <main className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center", padding: "80px 0 60px" }}>
-          <div className="hero-text-container" style={{ paddingRight: "40px" }}>
-            <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
-            <h1 className="hero-title" style={{ fontSize: "56px", fontWeight: "900", letterSpacing: "-1.5px", margin: "0 0 24px", color: "#0F172A", lineHeight: "1.1" }}>Manage Customers.<br />Automate Payments.</h1>
-            <p style={{ fontSize: "18px", color: "#64748B", margin: "0 0 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
-            <a href="#/signup" className="btn-primary btn-hover" style={{ padding: "16px 36px", fontSize: "16px" }}>Create Your Account</a>
-          </div>
-          <div><img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80" alt="Nigerian Professional Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} /></div>
-        </main>
-        
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=150&q=80" alt="Invoicing Terminals" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
-            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
-            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p>
-          </div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?auto=format&fit=crop&w=150&q=80" alt="Digital Payments" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
-            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3>
-            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p>
-          </div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&w=150&q=80" alt="Market CRM" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
-            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3>
-            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p>
-          </div>
-        </div>
-
-        <div style={{ background: "#F1F5F9", padding: "80px 24px", margin: "0 -24px", textAlign: "center", borderRadius: "24px", marginBottom: "80px" }}>
-          <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Why Nigerian Businesses Choose KudiSlip</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "32px", maxWidth: "1000px", margin: "0 auto" }}>
-            <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.premium, marginBottom: "12px" }}><MapPinIcon /></div>
-               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Built for the Local Market</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>We understand the landscape. Receive instant Naira settlements directly to any of your local bank accounts via our secure Paystack integration.</p>
-            </div>
-            <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.success, marginBottom: "12px" }}><TagIcon /></div>
-               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Zero Hidden Fees</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Start for free. No setup fees, no monthly minimums. We only make money when you voluntarily upgrade to Premium for custom branding.</p>
-            </div>
-            <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.textMain, marginBottom: "12px" }}><ShieldIcon /></div>
-               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Bank-Grade Security</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Your data and your customers' money are protected by enterprise-level encryption. We never touch raw credit card numbers.</p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ paddingBottom: "100px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Meet The Team</h2>
-          <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap" }}>
-            <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="/founder.jpg" alt="Tobiloba Abass" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
-              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Tobiloba Abass</h3>
-              <p style={{ color: DESIGN.premium, fontSize: "14px", fontWeight: "700", margin: 0 }}>Founder & CEO</p>
-            </div>
-            <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="/marvelous.jpg" alt="Marvelous Fawole" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
-              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Marvelous Fawole</h3>
-              <p style={{ color: DESIGN.success, fontSize: "14px", fontWeight: "700", margin: 0 }}>Product Manager</p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ paddingBottom: "100px" }}>
-          <div style={{ textAlign: "center", marginBottom: "40px" }}>
-            <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
-            <p style={{ color: "#64748B", fontSize: "16px" }}>Start for free, upgrade when you need to remove our branding.</p>
-          </div>
-          <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", justifyContent: "center" }}>
-            <div style={{ background: DESIGN.card, border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px" }}>
-              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Free Tier</div>
-              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦0<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
-              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
-                <li>Unlimited Invoices & Clients</li>
-                <li>Instant Bank Settlements</li>
-                <li><strong style={{color: DESIGN.textMain}}>Includes KudiSlip Watermark</strong></li>
-              </ul>
-              <a href="#/signup" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
-            </div>
-            <div style={{ background: DESIGN.card, border: `2px solid ${DESIGN.premium}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
-              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: DESIGN.premium }}>Premium Pro</div>
-              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦15,000<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
-              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
-                <li>Everything in Free</li>
-                <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
-                <li>Fully Independent Branding</li>
-              </ul>
-              <a href="#/signup" className="btn-primary btn-premium btn-hover" style={{ width: "100%", display: "block" }}>Upgrade to Premium</a>
-            </div>
-          </div>
-        </div>
-      </div>
       
-      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
-          <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
-          <div style={{ display: "flex", gap: "24px" }}>
-            <a href="#/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
-            <a href="#/privacy" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
-            <a href="mailto:support@kudislip.com" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Contact Us</a>
+      {/* NAVBAR */}
+      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(1.8)", transformOrigin: "left center" }} />
+        <div style={{ display: "flex", gap: "16px" }}>
+          <a href="#/login" className="btn-secondary btn-hover">Log In</a>
+          <a href="#/signup" className="btn-primary btn-hover">Get Started Free</a>
+        </div>
+      </nav>
+
+      {/* HERO SECTION */}
+      <header style={{ padding: "80px 24px", textAlign: "center", maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ background: "#F1F5F9", display: "inline-block", padding: "8px 16px", borderRadius: "50px", fontSize: "13px", fontWeight: "800", color: "#3B82F6", marginBottom: "24px", border: "1px solid #E2E8F0" }}>
+          🚀 NEW: Multi-Currency & Profit Tracking Now Live
+        </div>
+        <h1 style={{ fontSize: "56px", fontWeight: "900", lineHeight: "1.1", marginBottom: "24px", letterSpacing: "-0.03em" }}>
+          Bill Globally. <br/>Track Profit <span style={{ color: "#3B82F6" }}>Instantly.</span>
+        </h1>
+        <p style={{ fontSize: "20px", color: "#64748B", marginBottom: "40px", lineHeight: "1.6", maxWidth: "700px", margin: "0 auto 40px" }}>
+          The ultimate financial CRM for modern entrepreneurs. Generate smart invoices, log expenses, apply taxes, and let automated robots chase your pending payments.
+        </p>
+        <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+          <a href="#/signup" className="btn-primary btn-hover" style={{ padding: "18px 36px", fontSize: "16px" }}>Start Invoicing for Free</a>
+        </div>
+      </header>
+
+      {/* NEW FEATURES GRID */}
+      <section style={{ padding: "60px 24px", background: "#FFFFFF", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "32px", fontWeight: "900", textAlign: "center", marginBottom: "48px" }}>Everything you need to scale your business.</h2>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "32px" }}>
+            
+            {/* Feature 1 */}
+            <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>🌍</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Global Multi-Currency</h3>
+              <p style={{ color: "#64748B", lineHeight: "1.5" }}>Bill clients across borders. Switch seamlessly between Naira (₦), US Dollars ($), and British Pounds (£) via Paystack.</p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>📈</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Net Profit Tracker</h3>
+              <p style={{ color: "#64748B", lineHeight: "1.5" }}>Stop guessing your income. Log your daily business expenses directly in the app to see your actual net profit in real-time.</p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>🤖</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Automated Reminders</h3>
+              <p style={{ color: "#64748B", lineHeight: "1.5" }}>Let our background engine chase your money. Automated midnight email drops and 1-click WhatsApp reminders for pending invoices.</p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>🏛️</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Built-In Tax Engine</h3>
+              <p style={{ color: "#64748B", lineHeight: "1.5" }}>Stay compliant effortlessly. Apply the standard 7.5% government VAT to any invoice total with a single click.</p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>🏦</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Manual Transfer Logs</h3>
+              <p style={{ color: "#64748B", lineHeight: "1.5" }}>Client paid in cash or via direct bank transfer? Bypass the payment gateway and mark invoices as paid manually to keep your CRM accurate.</p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="card-hover" style={{ padding: "32px", background: "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)", borderRadius: "16px", color: "white" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>✨</div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px" }}>Premium Branding</h3>
+              <p style={{ color: "rgba(255,255,255,0.9)", lineHeight: "1.5" }}>Upgrade to Pro to remove watermarks, upload your custom business logo, and tailor custom thank-you messages for your clients.</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* CTA FOOTER */}
+      <footer style={{ padding: "80px 24px", textAlign: "center", background: "#0F172A", color: "#FFFFFF" }}>
+        <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>Ready to get paid faster?</h2>
+        <p style={{ fontSize: "18px", color: "#94A3B8", marginBottom: "40px" }}>Join the merchants using KudiSlip to manage their global business operations.</p>
+        <a href="#/signup" className="btn-primary btn-hover" style={{ background: "#FFFFFF", color: "#000000", padding: "16px 32px", fontSize: "16px" }}>Create Free Account</a>
+        
+        <div style={{ marginTop: "60px", paddingTop: "32px", borderTop: "1px solid rgba(255,255,255,0.1)", color: "#64748B", fontSize: "14px", display: "flex", justifyContent: "space-between", maxWidth: "1200px", margin: "60px auto 0", flexWrap: "wrap", gap: "16px" }}>
+          <div>© {new Date().getFullYear()} KudiSlip Workspace Networks. All rights reserved.</div>
+          <div style={{ display: "flex", gap: "16px" }}>
+            <a href="#/terms" style={{ color: "#64748B", textDecoration: "none" }}>Terms</a>
+            <a href="#/privacy" style={{ color: "#64748B", textDecoration: "none" }}>Privacy</a>
           </div>
         </div>
       </footer>
