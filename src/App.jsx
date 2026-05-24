@@ -2,10 +2,25 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // --- ENVIRONMENTS & ARTIFACTS ---
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
-const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_your_key"; 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ""; 
+
+// Diagnostic Safety Initialization
+let supabase = null;
+let initializationError = null;
+
+if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
+  initializationError = "Missing VITE_SUPABASE_URL environment variable on Vercel.";
+} else if (!SUPABASE_ANON_KEY) {
+  initializationError = "Missing VITE_SUPABASE_ANON_KEY environment variable on Vercel.";
+} else {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    initializationError = "Supabase initialization failed: " + err.message;
+  }
+}
 
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
@@ -44,7 +59,6 @@ const GlobalStyles = () => (
     @media (max-width: 768px) {
       .hero-title { font-size: 38px !important; }
       .nav-buttons { display: none !important; }
-      .features-grid { grid-template-columns: 1fr !important; }
       .dashboard-layout { flex-direction: column; }
       .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #E2E8F0; padding: 16px 0 0 0; min-height: auto; }
       .sidebar-logo-container { padding: 0 24px 16px 24px !important; }
@@ -52,7 +66,6 @@ const GlobalStyles = () => (
       .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
       .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
       .main-content { padding: 24px 16px; }
-      .auth-card { padding: 24px !important; }
     }
   `}</style>
 );
@@ -78,6 +91,7 @@ function PublicInvoice({ invoiceId }) {
 
   useEffect(() => {
     async function fetchData() {
+      if (!supabase) return;
       const { data: invData } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
       if (invData) {
         setInvoice(invData);
@@ -92,12 +106,12 @@ function PublicInvoice({ invoiceId }) {
 
   const handlePayment = () => {
     if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
-    const handler = window.PaystackPop.setup({
+    handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
-      email: client.email || "customer@kudislip.com",
+      email: client?.email || "customer@kudislip.com",
       amount: invoice.amount * 100,
       currency: "NGN",
-      subaccount: vendor.paystack_subaccount_code,
+      subaccount: vendor?.paystack_subaccount_code,
       callback: async function(response) {
         await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
         setInvoice({ ...invoice, status: 'paid' });
@@ -169,13 +183,13 @@ function PublicInvoice({ invoiceId }) {
 // =========================================================
 function SubscriptionManager({ user, onUpgradeSuccess }) {
   usePaystack();
-  const isPremium = user.subscription_tier === 'premium';
+  const isPremium = user?.subscription_tier === 'premium';
 
   const handleUpgrade = () => {
     if (!window.PaystackPop) return alert("Payment engine loading...");
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
-      email: user.email || "vendor@kudislip.com",
+      email: user?.email || "vendor@kudislip.com",
       amount: 15000 * 100,
       currency: "NGN",
       callback: async function(response) {
@@ -229,6 +243,7 @@ function SuperAdminDashboard() {
 
   useEffect(() => {
     async function collectGlobalMetrics() {
+      if (!supabase) return;
       const { data: vendors } = await supabase.from('vendors').select('*').order('created_at', { ascending: false });
       const { data: invoices } = await supabase.from('invoices').select('*');
       if (vendors) setGlobalVendors(vendors);
@@ -291,7 +306,7 @@ function SuperAdminDashboard() {
 }
 
 // =========================================================
-// STANDARD PLATFORM WORKSPACES
+// 4. LANDING PAGE
 // =========================================================
 function LandingPage({ onNavigate }) {
   return (
@@ -300,7 +315,7 @@ function LandingPage({ onNavigate }) {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" }}>
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
-          <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "12px" }}>
             <button className="btn-secondary" onClick={() => onNavigate("auth", false)}>Log In</button>
             <button className="btn-primary" onClick={() => onNavigate("auth", true)}>Get Started Free</button>
           </div>
@@ -311,10 +326,9 @@ function LandingPage({ onNavigate }) {
           <p style={{ fontSize: "18px", color: "#64748B", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
           <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
             <button className="btn-primary" style={{ padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
-            <button className="btn-secondary" style={{ padding: "16px 36px", fontSize: "16px", display: window.innerWidth <= 768 ? "block" : "none" }} onClick={() => onNavigate("auth", false)}>Log In</button>
           </div>
         </main>
-        <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", paddingBottom: "100px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "100px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p></div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p></div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p></div>
@@ -324,6 +338,9 @@ function LandingPage({ onNavigate }) {
   );
 }
 
+// =========================================================
+// 5. AUTHENTICATION
+// =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [loading, setLoading] = useState(false);
@@ -373,6 +390,9 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
   );
 }
 
+// =========================================================
+// 6. CLIENTS CRM
+// =========================================================
 function ClientsManager({ user }) {
   const [clients, setClients] = useState([]);
   const [name, setName] = useState("");
@@ -381,6 +401,7 @@ function ClientsManager({ user }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!supabase) return;
     supabase.from('clients').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false }).then(({ data }) => setClients(data || []));
   }, []);
 
@@ -394,7 +415,7 @@ function ClientsManager({ user }) {
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>`Manage your customer database.`</div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
         <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
@@ -420,6 +441,9 @@ function ClientsManager({ user }) {
   );
 }
 
+// =========================================================
+// 7. INVOICE GENERATOR
+// =========================================================
 function InvoiceGenerator({ user }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
@@ -429,6 +453,7 @@ function InvoiceGenerator({ user }) {
   const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
+    if (!supabase) return;
     supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
     fetchRecentInvoices();
   }, []);
@@ -456,7 +481,7 @@ function InvoiceGenerator({ user }) {
     setLoading(false);
   };
 
-  if (!user.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "800px" }}>
@@ -499,7 +524,7 @@ function InvoiceGenerator({ user }) {
                 <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                 <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open(`/pay/${inv.id}`, '_blank')}>View Link</button>
               </div>
-            </div>
+            </tr>
           ))}
         </div>
       )}
@@ -507,6 +532,9 @@ function InvoiceGenerator({ user }) {
   );
 }
 
+// =========================================================
+// 8. PAYOUT CONFIGURATION
+// =========================================================
 function PayoutSettings({ user, onSubaccountLinked }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -520,7 +548,7 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       const res = await fetch("/api/create-subaccount", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ business_name: user.business_name, bank_code: bankCode, account_number: accountNumber }),
+        body: JSON.stringify({ business_name: user?.business_name, bank_code: bankCode, account_number: accountNumber }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
@@ -535,7 +563,7 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
-        {user.paystack_subaccount_code ? (
+        {user?.paystack_subaccount_code ? (
           <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px" }}>✓ Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
         ) : (
           <form onSubmit={handleSetupPayout}>
@@ -559,12 +587,23 @@ export default function App() {
   const [publicInvoiceId, setPublicInvoiceId] = useState(null);
 
   useEffect(() => {
+    if (initializationError) {
+      setView("diagnostic_error");
+      return;
+    }
+
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
       setPublicInvoiceId(currentPath.split('/pay/'));
       setView("public_invoice");
       return;
     }
+    
+    if (!supabase) {
+      setView("landing");
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
@@ -575,7 +614,18 @@ export default function App() {
     });
   }, []);
 
-  if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center"}}><GlobalStyles />Loading...</div>;
+  if (view === "diagnostic_error") {
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
+        <GlobalStyles />
+        <div style={{ color: DESIGN.error, fontSize: "22px", fontWeight: "900", marginBottom: "12px" }}>🚨 Configuration Warning</div>
+        <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
+        <div style={{ fontSize: "13px", color: DESIGN.textMuted }}>Double check your Vercel Project Settings ➔ Environment Variables, hit save, and trigger a fresh redeploy.</div>
+      </div>
+    );
+  }
+
+  if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace Infrastructure...</div>;
   if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} />;
   if (view === "landing") return <LandingPage onNavigate={(v) => setView("auth")} />;
   if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
