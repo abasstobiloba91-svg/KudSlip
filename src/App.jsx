@@ -58,7 +58,10 @@ const GlobalStyles = () => (
     .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
     .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
     .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; }
+    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
+    .sidebar-footer { padding: 16px 32px; margin-top: auto; }
+    .mobile-nav-logout { display: none; }
     .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
@@ -68,7 +71,6 @@ const GlobalStyles = () => (
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -77,12 +79,16 @@ const GlobalStyles = () => (
     }
     
     @media (max-width: 768px) {
+      .hero-grid { grid-template-columns: 1fr !important; text-align: center !important; }
+      .hero-text-container { padding-right: 0 !important; }
       .hero-title { font-size: 38px !important; }
       .nav-buttons { display: none !important; }
       .dashboard-layout { flex-direction: column; }
-      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #E2E8F0; padding: 16px 0 0 0; min-height: auto; }
-      .sidebar-logo-container { padding: 0 24px 16px 24px !important; }
+      .sidebar { width: 100%; padding: 16px 0 0 0; min-height: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
+      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; }
       .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 0 16px; white-space: nowrap; border-top: 1px solid #F1F5F9; }
+      .sidebar-footer { display: none !important; }
+      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; }
       .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
       .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
       .main-content { padding: 24px 16px; }
@@ -123,6 +129,42 @@ const Toast = ({ toast, onClose }) => {
     </div>
   );
 };
+
+// =========================================================
+// LEGAL PAGES (T&C and Privacy)
+// =========================================================
+function LegalPage({ title, onBack }) {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
+      <GlobalStyles />
+      <nav style={{ padding: "24px", borderBottom: `1px solid ${DESIGN.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "none", color: DESIGN.textMuted, cursor: "pointer", fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
+          &larr; Back Home
+        </button>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
+      </nav>
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
+        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>{title}</h1>
+        <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>Last updated: May 24, 2026</p>
+        
+        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Introduction</h2>
+        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Welcome to KudiSlip. By accessing our platform, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
+        
+        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Data & Privacy</h2>
+        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We value your privacy. We process customer names, emails, and transaction logs solely for the purpose of facilitating your business. Payments are securely routed and processed via Paystack, meaning KudiSlip never directly stores your customer's raw credit card details.</p>
+
+        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Acceptable Use</h2>
+        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Merchants must use KudiSlip for lawful transactions only. Any attempt to process fraudulent invoices, manipulate the routing architecture, or breach the API will result in immediate termination of the vendor account and reporting to financial authorities.</p>
+
+        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>4. Liability</h2>
+        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip operates as a structural intermediary. We are not responsible for disputes between vendors and clients regarding the quality of goods or services rendered via invoices paid through our platform.</p>
+      </main>
+      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
+        © 2026 KudiSlip Technologies. All rights reserved.
+      </footer>
+    </div>
+  );
+}
 
 // =========================================================
 // 1. PUBLIC INVOICE VIEW
@@ -203,7 +245,7 @@ function PublicInvoice({ invoiceId, showToast }) {
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
       
-      {/* FULL PAGE REPEATING WATERMARK OVERLAY (Oversized to prevent blank corners when rotated) */}
+      {/* FULL PAGE REPEATING WATERMARK OVERLAY */}
       {isFreeTier && (
         <div style={{ 
           position: "fixed", 
@@ -218,7 +260,7 @@ function PublicInvoice({ invoiceId, showToast }) {
         }} />
       )}
 
-      {/* Main Content Wrapper - Set to z-index 10 to ensure it is clickable but visually under the watermark */}
+      {/* Main Content Wrapper */}
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
         
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
@@ -492,11 +534,13 @@ function SuperAdminDashboard() {
 // =========================================================
 // 5. LANDING PAGE 
 // =========================================================
-function LandingPage({ onNavigate, showToast }) {
+function LandingPage({ onNavigate }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box", flex: 1 }}>
+        
+        {/* Navigation */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
@@ -504,21 +548,40 @@ function LandingPage({ onNavigate, showToast }) {
             <button className="btn-primary" onClick={() => onNavigate("auth", true)}>Get Started Free</button>
           </div>
         </nav>
-        <main style={{ textAlign: "center", padding: "80px 0 60px" }}>
-          <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
-          <h1 className="hero-title" style={{ fontSize: "56px", fontWeight: "900", letterSpacing: "-1.5px", margin: "0 0 24px", color: "#0F172A", lineHeight: "1.1" }}>Manage Customers.<br />Automate Payments.</h1>
-          <p style={{ fontSize: "18px", color: "#64748B", maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
-          <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+        
+        {/* Hero Section with Custom Image Layout */}
+        <main className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center", padding: "80px 0 60px" }}>
+          <div className="hero-text-container" style={{ paddingRight: "40px" }}>
+            <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
+            <h1 className="hero-title" style={{ fontSize: "56px", fontWeight: "900", letterSpacing: "-1.5px", margin: "0 0 24px", color: "#0F172A", lineHeight: "1.1" }}>Manage Customers.<br />Automate Payments.</h1>
+            <p style={{ fontSize: "18px", color: "#64748B", margin: "0 0 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
             <button className="btn-primary" style={{ padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
+          </div>
+          <div>
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Dashboard Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} />
           </div>
         </main>
         
+        {/* Features Section */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p></div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p></div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p></div>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
+            <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=150&q=80" alt="Invoicing" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p>
+          </div>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
+            <img src="https://images.unsplash.com/photo-1580519542036-ed47f3e42214?auto=format&fit=crop&w=150&q=80" alt="Payments" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p>
+          </div>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
+            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=150&q=80" alt="CRM" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p>
+          </div>
         </div>
 
+        {/* Pricing Section */}
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
@@ -549,13 +612,14 @@ function LandingPage({ onNavigate, showToast }) {
         </div>
       </div>
       
+      {/* Footer */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
           <div style={{ display: "flex", gap: "24px" }}>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Info", "Terms & Conditions will go here.", "info")}>Terms & Conditions</span>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Info", "Privacy Policy will go here.", "info")}>Privacy Policy</span>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Contact Us", "Reach out to our support team anytime at support@kudislip.com", "info")}>Contact Us</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => onNavigate("terms")}>Terms & Conditions</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => onNavigate("privacy")}>Privacy Policy</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => window.location.href = "mailto:support@kudislip.com"}>Contact Us</span>
           </div>
         </div>
       </footer>
@@ -902,16 +966,25 @@ export default function App() {
         <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
       </div>
     );
+    
+    if (view === "terms") return <LegalPage title="Terms & Conditions" onBack={() => setView("landing")} />;
+    if (view === "privacy") return <LegalPage title="Privacy Policy" onBack={() => setView("landing")} />;
+    
     if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
     if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} showToast={showToast} />;
-    if (view === "landing") return <LandingPage onNavigate={(v) => setView("auth")} showToast={showToast} />;
+    if (view === "landing") return <LandingPage onNavigate={(v) => setView(v)} showToast={showToast} />;
     if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} showToast={showToast} />;
 
     return (
       <div className="dashboard-layout">
         <GlobalStyles />
         <div className="sidebar">
-          <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "40px" }}><img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} /></div>
+          {/* Mobile top-header log out fix */}
+          <div className="sidebar-header">
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
+            <button className="mobile-nav-logout" onClick={() => supabase.auth.signOut().then(() => setView("landing"))}>Log Out</button>
+          </div>
+          
           <div className="sidebar-menu">
             <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Analytics</button>
             <button className={`menu-btn ${activeTab === "clients" ? "active" : ""}`} onClick={() => setActiveTab("clients")}>Client Directory</button>
@@ -925,7 +998,8 @@ export default function App() {
             )}
           </div>
           <div style={{ flex: 1 }} />
-          <div style={{ padding: "16px 32px", marginTop: "auto" }}>
+          {/* Hidden on mobile to prevent stack crashing */}
+          <div className="sidebar-footer">
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name || user?.email}</div>
             <button className="menu-btn" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => setView("landing"))}>Log Out</button>
           </div>
