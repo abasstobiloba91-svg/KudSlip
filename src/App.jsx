@@ -417,29 +417,70 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files;
     if (!file) return;
-    setUploading(true);
     
-    // Generate a unique file name to prevent overriding
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-    
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file);
-    if (uploadError) { 
-      showToast("Upload Error", uploadError.message, "error"); 
-      setUploading(false); 
-      return; 
+    // Check file size (5MB Limit)
+    if (file.size > 5242880) {
+      showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
+      return;
     }
+
+    setUploading(true);
+    setUploadPercent(0);
     
-    // Get the Public URL and save it to the form state
-    const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
-    setLogoUrl(data.publicUrl);
-    setUploading(false);
-    showToast("Logo Uploaded", "Image ready! Remember to click Save.", "success");
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    
+    // Grab the user's secure session token so the database allows the upload
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_ANON_KEY;
+
+    // Create a secure upload pathway to track progress
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('cacheControl', '3600');
+    formData.append('', file);
+
+    // Hook into the native browser progress tracker
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        setUploadPercent(percentComplete);
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        // Grab the public URL from our bucket storage
+        const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
+        setLogoUrl(data.publicUrl);
+        showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      } else {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          showToast("Upload Failed", res.message || "Storage error", "error");
+        } catch(err) {
+          showToast("Upload Error", `Server returned status code ${xhr.status}`, "error");
+        }
+      }
+      setUploading(false);
+    });
+
+    xhr.addEventListener("error", () => {
+      showToast("Network Error", "Upload stream broke. Check your connection.", "error");
+      setUploading(false);
+    });
+
+    // Fire the packet directly to your Supabase project bucket
+    const targetUrl = `${SUPABASE_URL}/storage/v1/object/logos/${fileName}`;
+    xhr.open("POST", targetUrl, true);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
+    xhr.send(formData);
   };
 
   const handleSave = async (e) => {
@@ -486,7 +527,13 @@ function BrandSettings({ user, onUpdate, showToast }) {
               )}
               <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
             </div>
-            {uploading && <div style={{ fontSize: "12px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>Uploading image... please wait.</div>}
+            
+            {/* The Live Percentage Tracker */}
+            {uploading && (
+              <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
+                Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Processing...)" : ""}
+              </div>
+            )}
           </div>
           
           <div style={{ marginBottom: "24px" }}>
@@ -500,6 +547,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
           <div style={{ marginBottom: "32px" }}>
             <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Custom Thank You Message</label>
             <textarea className="form-input" placeholder="e.g. Thank you for shopping with Acme Corp! We appreciate your business." value={customThankYou} onChange={e => setCustomThankYou(e.target.value)} style={{ minHeight: "80px", resize: "vertical" }} />
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>This shows up on the receipt after a client pays.</div>
           </div>
           
           <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ width: "100%" }}>{loading ? "Saving..." : "Save Brand Settings"}</button>
