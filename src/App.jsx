@@ -87,7 +87,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW (WITH AUTOMATED PDF DOWNLOAD)
+// 1. PUBLIC INVOICE VIEW (WITH BULLETPROOF DATA PARSING)
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -132,10 +132,11 @@ function PublicInvoice({ invoiceId }) {
 
   const handlePayment = () => {
     if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
+    const safeAmount = Number(invoice?.amount || 0);
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
-      amount: invoice.amount * 100,
+      amount: safeAmount * 100,
       currency: "NGN",
       subaccount: vendor?.paystack_subaccount_code,
       callback: async function(response) {
@@ -157,6 +158,14 @@ function PublicInvoice({ invoiceId }) {
       <button className="btn-primary" style={{marginTop: "16px"}} onClick={() => window.location.href = "/"}>Go to Dashboard</button>
     </div>
   );
+
+  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found inside system ledger.</div>;
+
+  // BULLETPROOF PARSING: Prevents array maps and number parsers from crashing React
+  let safeItems = [];
+  try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
+  const safeAmount = Number(invoice.amount || 0);
+  const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
 
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg }}>
@@ -183,30 +192,30 @@ function PublicInvoice({ invoiceId }) {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status}</div>
+              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
             </div>
           </div>
           <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-              <div style={{ fontWeight: "700" }}>{client?.name}</div>
-              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email}</div>
+              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
+              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-              <div style={{ fontWeight: "700" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
+              <div style={{ fontWeight: "700" }}>{safeDate}</div>
             </div>
           </div>
           <div style={{ marginBottom: "40px" }}>
-            {invoice.items.map((item, idx) => (
+            {safeItems.map((item, idx) => (
               <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
-                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{item.price.toLocaleString()}</span>
+                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{Number(item.price || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
           <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
-            <div style={{ fontSize: "28px", fontWeight: "900", color: DESIGN.textMain }}>₦{invoice.amount.toLocaleString()}</div>
+            <div style={{ fontSize: "28px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeAmount.toLocaleString()}</div>
           </div>
           <div className="no-print">
             {invoice.status === 'pending' ? (
@@ -296,9 +305,9 @@ function SuperAdminDashboard() {
     collectGlobalMetrics();
   }, []);
 
-  const totalPlatformVolume = globalInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalPlatformVolume = globalInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const paidInvoices = globalInvoices.filter(inv => inv.status === 'paid');
-  const accumulatedFees = paidInvoices.reduce((sum, inv) => sum + (Number(inv.amount) * 0.015), 0);
+  const accumulatedFees = paidInvoices.reduce((sum, inv) => sum + (Number(inv.amount || 0) * 0.015), 0);
   const premiumVendorsCount = globalVendors.filter(v => v.subscription_tier === 'premium').length;
   const estimatedSaaSMRR = premiumVendorsCount * 15000;
 
@@ -581,8 +590,8 @@ function InvoiceGenerator({ user }) {
   };
 
   // VENDOR ANALYTICS CALCULATIONS
-  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
 
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
@@ -639,23 +648,24 @@ function InvoiceGenerator({ user }) {
       {invoices.length > 0 && (
         <div>
           <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Recent Invoices</h3>
-          {invoices.map(inv => (
-            <div key={inv.id} style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
-              <div><div style={{ fontWeight: "700" }}>{inv.clients?.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>₦{inv.amount.toLocaleString()}</div></div>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
-                {/* RE-ENGINEERED STRIPPED INLINE PATH ROUTING */}
-                <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
-                
-                {/* WHATSAPP ONE-CLICK CHASER */}
-                {inv.status === 'pending' && (
-                  <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + inv.amount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
-                    Send Reminder
-                  </a>
-                )}
+          {invoices.map(inv => {
+            const safeInvAmount = Number(inv.amount || 0);
+            return (
+              <div key={inv.id} style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
+                <div><div style={{ fontWeight: "700" }}>{inv.clients?.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>₦{safeInvAmount.toLocaleString()}</div></div>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
+                  <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
+                  
+                  {inv.status === 'pending' && (
+                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
+                      Send Reminder
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -732,7 +742,6 @@ export default function App() {
     
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
-      // MASTER CLEANER: Scrub quotes, commas, symbols, and stray arrays seamlessly
       const rawId = currentPath.split('/pay/');
       const cleanId = rawId.replace(/["', ]/g, ''); 
       
