@@ -35,6 +35,12 @@ const DESIGN = {
   primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6"
 };
 
+// --- SVG ICONS ---
+const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
+const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
+const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
+
 const GlobalStyles = () => (
   <style>{`
     body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -87,7 +93,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW
+// 1. PUBLIC INVOICE VIEW (WITH BULLETPROOF DATA PARSING)
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -131,14 +137,17 @@ function PublicInvoice({ invoiceId }) {
   };
 
   const handlePayment = () => {
+    if (!PAYSTACK_PUBLIC_KEY) return alert("System Configuration Error: Please add VITE_PAYSTACK_PUBLIC_KEY to your Vercel Environment Variables.");
+    if (!vendor?.paystack_subaccount_code) return alert("Vendor Configuration Error: This merchant has not linked a bank account yet.");
     if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
+    
     const safeAmount = Number(invoice?.amount || 0);
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
       amount: safeAmount * 100,
       currency: "NGN",
-      subaccount: vendor?.paystack_subaccount_code,
+      subaccount: vendor.paystack_subaccount_code,
       callback: async function(response) {
         await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
         setInvoice({ ...invoice, status: 'paid' });
@@ -153,7 +162,10 @@ function PublicInvoice({ invoiceId }) {
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
-      <h2 style={{color: "#EF4444"}}>🚨 System Routing Error</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}>
+        <AlertIcon />
+        <h2 style={{ margin: 0 }}>System Routing Error</h2>
+      </div>
       <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px", wordWrap: "break-word"}}>{debugError}</p>
       <button className="btn-primary" style={{marginTop: "16px"}} onClick={() => window.location.href = "/"}>Go to Dashboard</button>
     </div>
@@ -172,7 +184,7 @@ function PublicInvoice({ invoiceId }) {
       
       <div className="no-print" style={{ width: "100%", maxWidth: "600px", display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
         <button onClick={triggerPDFCompilation} style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-          📥 Download PDF Invoice
+          <DownloadIcon /> Download PDF Invoice
         </button>
       </div>
 
@@ -220,7 +232,9 @@ function PublicInvoice({ invoiceId }) {
             {invoice.status === 'pending' ? (
               <button className="btn-primary" style={{ width: "100%", padding: "18px" }} onClick={handlePayment}>Proceed to Payment</button>
             ) : (
-              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px" }}>✓ Invoice Paid Securely</div>
+              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <CheckIcon /> Invoice Paid Securely
+              </div>
             )}
           </div>
         </div>
@@ -593,7 +607,7 @@ function InvoiceGenerator({ user }) {
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
 
-  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
@@ -656,6 +670,7 @@ function InvoiceGenerator({ user }) {
                   <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                   <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
                   
+                  {/* WHATSAPP ONE-CLICK CHASER */}
                   {inv.status === 'pending' && (
                     <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
                       Send Reminder
@@ -714,7 +729,7 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
         {user?.paystack_subaccount_code ? (
-          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px" }}>✓ Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
+          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
         ) : (
           <form onSubmit={handleSetupPayout}>
             <div style={{ marginBottom: "20px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label><select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required><option value="">-- Select Bank --</option>{NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}</select></div>
@@ -767,7 +782,10 @@ export default function App() {
   if (view === "diagnostic_error") return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
       <GlobalStyles />
-      <div style={{ color: DESIGN.error, fontSize: "22px", fontWeight: "900", marginBottom: "12px" }}>🚨 Configuration Warning</div>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: DESIGN.error, marginBottom: "12px" }}>
+        <AlertIcon />
+        <div style={{ fontSize: "22px", fontWeight: "900" }}>Configuration Warning</div>
+      </div>
       <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
     </div>
   );
@@ -788,7 +806,9 @@ export default function App() {
           <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
           <button className={`menu-btn ${activeTab === "billing" ? "active" : ""}`} onClick={() => setActiveTab("billing")}>Billing & Plan</button>
           {user?.is_admin && (
-            <button className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px" }} onClick={() => setActiveTab("admin")}>🚨 Admin Operations</button>
+            <button className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setActiveTab("admin")}>
+              <ShieldIcon /> Admin Operations
+            </button>
           )}
         </div>
         <div style={{ flex: 1 }} />
