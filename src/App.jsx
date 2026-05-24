@@ -1108,21 +1108,22 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR
+// 8. INVOICE GENERATOR (WITH HACK 1 FOREX CALCULATOR)
 // =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
   const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("NGN"); // FIX: Added currency state
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
 
-  const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
+  // NEW: Live Forex Calculator State
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
 
   useEffect(() => {
     if (!supabase) return;
@@ -1140,6 +1141,28 @@ function InvoiceGenerator({ user, showToast }) {
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
+  // NEW: Ping global market for live exchange rate
+  const handleCalculateRate = async (e) => {
+    e.preventDefault();
+    if (!calcData.amount) return;
+    setCalcData(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${calcData.currency}`);
+      const data = await res.json();
+      const rate = data.rates.NGN;
+      setCalcData(prev => ({ ...prev, rate, result: Number(prev.amount) * rate, loading: false }));
+    } catch (err) {
+      showToast("API Error", "Could not fetch live market rates. Please check your network.", "error");
+      setCalcData(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const applyCalculatedRate = () => {
+    setItems([{ description: `${calcData.currency} Invoice Conversion`, quantity: 1, price: Math.round(calcData.result) }]);
+    setCalcOpen(false);
+    showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
+  };
+
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
@@ -1150,12 +1173,12 @@ function InvoiceGenerator({ user, showToast }) {
     setShowLogoWarning(false);
     setLoading(true);
     
-    // FIX: Include currency in database insertion
-    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: currency }]).select().single();
+    // Hardcoded back to NGN so Paystack does not reject it
+    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: 'NGN' }]).select().single();
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate(""); setCurrency("NGN");
+      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
       fetchRecentInvoices();
     }
     setLoading(false);
@@ -1206,22 +1229,52 @@ function InvoiceGenerator({ user, showToast }) {
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+        {/* NEW: FOREX CALCULATOR UI */}
+        {calcOpen ? (
+          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "20px", marginBottom: "32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h4 style={{ margin: 0, color: "#1E3A8A", fontSize: "15px", fontWeight: "800" }}>Foreign Client Auto-Calculator</h4>
+              <button onClick={() => setCalcOpen(false)} style={{ background: "none", border: "none", color: "#60A5FA", cursor: "pointer", fontWeight: "800" }}>Close</button>
+            </div>
+            <form onSubmit={handleCalculateRate} style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "800", color: "#3B82F6", display: "block", marginBottom: "6px", textTransform: "uppercase" }}>Currency</label>
+                <select className="form-input" style={{ width: "110px", padding: "10px" }} value={calcData.currency} onChange={e => setCalcData({...calcData, currency: e.target.value})}>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "800", color: "#3B82F6", display: "block", marginBottom: "6px", textTransform: "uppercase" }}>Target Amount</label>
+                <input className="form-input" type="number" style={{ width: "130px", padding: "10px" }} placeholder="e.g. 100" value={calcData.amount} onChange={e => setCalcData({...calcData, amount: e.target.value})} required />
+              </div>
+              <button className="btn-primary btn-hover" type="submit" disabled={calcData.loading} style={{ padding: "10px 20px", background: "#2563EB", fontSize: "14px" }}>
+                {calcData.loading ? "Fetching..." : "Get Live Rate"}
+              </button>
+            </form>
+            
+            {calcData.result > 0 && (
+              <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #BFDBFE", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: "#3B82F6", fontWeight: "600" }}>Live Rate: 1 {calcData.currency} = ₦{calcData.rate}</div>
+                  <div style={{ fontSize: "20px", fontWeight: "900", color: "#1E3A8A" }}>Total: ₦{calcData.result.toLocaleString()}</div>
+                </div>
+                <button className="btn-primary btn-hover" onClick={applyCalculatedRate} style={{ padding: "8px 16px", background: "#10B981", fontSize: "13px", border: "none", color: "white" }}>Apply to Invoice</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setCalcOpen(true)} style={{ background: "transparent", border: "1px dashed #CBD5E1", color: "#3B82F6", width: "100%", padding: "14px", borderRadius: "8px", fontWeight: "700", cursor: "pointer", marginBottom: "32px", fontSize: "14px", transition: "all 0.2s" }} className="btn-hover">
+            + Calculate Foreign Currency (USD/GBP)
+          </button>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
             <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
-          
-          {/* FIX: Currency Selector Added */}
-          <div>
-            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Currency</label>
-            <select className="form-input" value={currency} onChange={e => setCurrency(e.target.value)}>
-              <option value="NGN">Nigerian Naira (₦)</option>
-              <option value="USD">US Dollar ($)</option>
-              <option value="GBP">British Pound (£)</option>
-            </select>
-          </div>
         </div>
         <div style={{ marginBottom: "24px" }}>
           {items.map((item, idx) => (
@@ -1235,7 +1288,7 @@ function InvoiceGenerator({ user, showToast }) {
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: {CURRENCY_SYMBOLS[currency] || "₦"}{calculateTotal().toLocaleString()}</div>
+          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
           <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
         </div>
       </div>
@@ -1257,8 +1310,6 @@ function InvoiceGenerator({ user, showToast }) {
           
           {filteredInvoices.map(inv => {
             const safeInvAmount = Number(inv.amount || 0);
-            const invCurrency = inv.currency || "NGN";
-            const sym = CURRENCY_SYMBOLS[invCurrency] || "₦";
             
             let parsedItems = [];
             try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
@@ -1277,10 +1328,10 @@ function InvoiceGenerator({ user, showToast }) {
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
                 <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
-                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{sym}{safeInvAmount.toLocaleString()}</div>
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
                   {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>Send Reminder</a>
+                    <a href={"https://wa.me/?text=" + encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>Send Reminder</a>
                   )}
                 </div>
               </div>
