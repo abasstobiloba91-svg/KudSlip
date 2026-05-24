@@ -66,7 +66,6 @@ const BellIcon = ({ count }) => (
 );
 
 const GlobalStyles = () => (
-const GlobalStyles = () => (
   <style>{`
     *, *::before, *::after { box-sizing: border-box; }
     
@@ -140,7 +139,6 @@ const GlobalStyles = () => (
       .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 45; display: none; }
       .sidebar-overlay.open { display: block !important; }
       
-      /* FIX: Added overflow-y: auto and height: 100% to prevent the footer from getting cut off by mobile URL bars */
       .sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 280px; z-index: 50; transform: translateX(-100%); padding: 24px 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1); overflow-y: auto; }
       .sidebar.open { transform: translateX(0); }
       
@@ -155,7 +153,6 @@ const GlobalStyles = () => (
       .support-text-mobile { display: none; }
     }
   `}</style>
-);
 );
 
 class ErrorBoundary extends React.Component {
