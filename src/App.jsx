@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // --- ENVIRONMENTS & ARTIFACTS ---
@@ -18,17 +18,34 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
   catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
+// EXPANDED NIGERIAN BANKS LIST
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
   { code: "050", name: "Ecobank Nigeria" },
-  { code: "058", name: "GTBank" },
+  { code: "070", name: "Fidelity Bank" },
+  { code: "011", name: "First Bank of Nigeria" },
+  { code: "214", name: "First City Monument Bank (FCMB)" },
+  { code: "058", name: "Guaranty Trust Bank (GTB)" },
+  { code: "030", name: "Heritage Bank" },
+  { code: "082", name: "Keystone Bank" },
+  { code: "090267", name: "Kuda Bank" },
+  { code: "090405", name: "Moniepoint Microfinance Bank" },
+  { code: "999992", name: "OPay" },
+  { code: "090328", name: "PalmPay" },
+  { code: "076", name: "Polaris Bank" },
+  { code: "221", name: "Stanbic IBTC Bank" },
+  { code: "232", name: "Sterling Bank" },
+  { code: "032", name: "Union Bank of Nigeria" },
   { code: "033", name: "United Bank for Africa (UBA)" },
+  { code: "215", name: "Unity Bank" },
+  { code: "035", name: "Wema Bank" },
   { code: "057", name: "Zenith Bank" },
-];
+].sort((a, b) => a.name.localeCompare(b.name));
 
 const DESIGN = {
   bg: "#F8FAFC", surface: "#FFFFFF", card: "#FFFFFF", border: "#E2E8F0",
-  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6"
+  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6",
+  chatBubble: "#E2E8F0", chatUser: "#000000"
 };
 
 // --- SVG ICONS ---
@@ -41,12 +58,18 @@ const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 const MapPinIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>);
 const TagIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>);
+const MessageIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>);
+const BellIcon = ({ count }) => (
+  <div style={{ position: "relative", display: "inline-block", cursor: "pointer" }}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+    {count > 0 && <span style={{ position: "absolute", top: "-5px", right: "-5px", background: DESIGN.error, color: "white", borderRadius: "50%", padding: "2px 6px", fontSize: "10px", fontWeight: "900" }}>{count}</span>}
+  </div>
+);
 
 const GlobalStyles = () => (
   <style>{`
     body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
     
-    /* Global Button Hover Physics */
     .btn-hover { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
     .btn-hover:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
     .btn-hover:active:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -75,13 +98,16 @@ const GlobalStyles = () => (
     .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
-    @keyframes toastSlideIn {
-      0% { transform: translate(-50%, -100%); opacity: 0; }
-      100% { transform: translate(-50%, 0); opacity: 1; }
-    }
+    .chat-container { display: flex; flex-direction: column; height: 500px; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFF; }
+    .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #F8FAFC; }
+    .chat-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+    .chat-bubble.admin { background: #E2E8F0; color: #0F172A; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .chat-bubble.user { background: #000000; color: #FFFFFF; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-input-area { padding: 16px; background: #FFF; border-top: 1px solid #E2E8F0; display: flex; gap: 12px; }
+
+    @keyframes toastSlideIn { 0% { transform: translate(-50%, -100%); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -221,31 +247,35 @@ function PublicInvoice({ invoiceId, showToast }) {
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!vendor?.paystack_subaccount_code) return showToast("Action Required", "This merchant has not linked a settlement bank account yet.", "error");
-    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
+    if (!window.PaystackPop) return showToast("Loading", "Payment engine is blocked by your browser. Please disable adblockers or refresh.", "error");
     
     const safeAmount = Number(invoice?.amount || 0);
     if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than ₦0.", "error");
 
-    const handler = window.PaystackPop.setup({
-      key: PAYSTACK_PUBLIC_KEY,
-      email: client?.email || "customer@kudislip.com",
-      amount: safeAmount * 100,
-      currency: "NGN",
-      subaccount: vendor.paystack_subaccount_code,
-      callback: function(response) {
-        supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
-          setInvoice({ ...invoice, status: 'paid' });
-          showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-        });
-      },
-      onClose: function() {
-        console.log("Payment window closed.");
-      }
-    });
-    handler.openIframe();
+    try {
+      const handler = window.PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: client?.email || "customer@kudislip.com",
+        amount: safeAmount * 100,
+        currency: "NGN",
+        subaccount: vendor.paystack_subaccount_code,
+        callback: function(response) {
+          supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
+            setInvoice({ ...invoice, status: 'paid' });
+            showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
+          });
+        },
+        onClose: function() {
+          console.log("Payment window closed.");
+        }
+      });
+      handler.openIframe();
+    } catch(err) {
+      showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
+    }
   };
 
-  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading...</div>;
+  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
@@ -282,7 +312,6 @@ function PublicInvoice({ invoiceId, showToast }) {
         }} />
       )}
 
-      {/* Main Content Wrapper */}
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
         
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
@@ -376,6 +405,8 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setLoading(false);
   };
 
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Brand Settings.</div>;
+
   if (user?.subscription_tier !== 'premium') {
     return (
       <div style={{ maxWidth: "600px" }}>
@@ -427,7 +458,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 
   const handleUpgrade = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.", "error");
-    if (!window.PaystackPop) return showToast("Loading Error", "Payment engine blocked. Please wait a second or disable adblockers.", "error");
+    if (!window.PaystackPop) return showToast("Browser Blocked", "Your browser is blocking the secure payment window. Please disable adblockers.", "error");
 
     setIsProcessing(true);
     
@@ -456,9 +487,11 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
       handler.openIframe();
     } catch (err) {
       setIsProcessing(false);
-      showToast("System Error", "Could not securely launch the payment window.", "error");
+      showToast("System Error", "Could not securely launch the payment window due to browser restrictions.", "error");
     }
   };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Billing.</div>;
 
   return (
     <div style={{ maxWidth: "700px" }}>
@@ -493,9 +526,9 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 }
 
 // =========================================================
-// 4. SUPER ADMIN OPERATIONS DASHBOARD 
+// 4. SUPER ADMIN OPERATIONS DASHBOARD (Role Management)
 // =========================================================
-function SuperAdminDashboard() {
+function SuperAdminDashboard({ showToast }) {
   const [globalVendors, setGlobalVendors] = useState([]);
   const [globalInvoices, setGlobalInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -512,6 +545,15 @@ function SuperAdminDashboard() {
     collectGlobalMetrics();
   }, []);
 
+  const handleRoleChange = async (userId, newRole) => {
+    const { error } = await supabase.from('vendors').update({ role: newRole }).eq('id', userId);
+    if (error) showToast("Error", error.message, "error");
+    else {
+      showToast("Role Updated", "User access level has been updated.", "success");
+      setGlobalVendors(globalVendors.map(v => v.id === userId ? { ...v, role: newRole } : v));
+    }
+  };
+
   const totalPlatformVolume = globalInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const paidInvoices = globalInvoices.filter(inv => inv.status === 'paid');
   const accumulatedFees = paidInvoices.reduce((sum, inv) => sum + (Number(inv.amount || 0) * 0.015), 0);
@@ -523,7 +565,7 @@ function SuperAdminDashboard() {
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>SuperAdmin Mission Control</div>
-      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight of all transaction nodes and merchants.</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight and team role management.</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
         <div className="metric-card">
           <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Platform Volume (TPV)</div>
@@ -538,15 +580,15 @@ function SuperAdminDashboard() {
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.premium }}>₦{estimatedSaaSMRR.toLocaleString()}</div>
         </div>
         <div className="metric-card">
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Merchants</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Businesses</div>
+          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Accounts</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Users</div>
         </div>
       </div>
-      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Merchant Registry</h3>
+      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Account Registry & Roles</h3>
       <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "600px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "800px" }}>
           <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
-            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>System Account ID</th><th style={{ padding: "16px 24px" }}>Subscription Tier</th><th style={{ padding: "16px 24px" }}>Paystack Node Reference</th></tr>
+            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>System ID</th><th style={{ padding: "16px 24px" }}>Tier</th><th style={{ padding: "16px 24px" }}>Platform Role</th></tr>
           </thead>
           <tbody>
             {globalVendors.map(vendor => (
@@ -554,7 +596,13 @@ function SuperAdminDashboard() {
                 <td style={{ padding: "16px 24px", fontWeight: "700" }}>{vendor.business_name}</td>
                 <td style={{ padding: "16px 24px", color: DESIGN.textMuted, fontSize: "13px" }}>{vendor.id}</td>
                 <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.subscription_tier === 'premium' ? "#F5F3FF" : "#F1F5F9", color: vendor.subscription_tier === 'premium' ? DESIGN.premium : DESIGN.textMuted }}>{vendor.subscription_tier.toUpperCase()}</span></td>
-                <td style={{ padding: "16px 24px", fontSize: "13px", color: DESIGN.textMuted }}>{vendor.paystack_subaccount_code || "— Not Configured"}</td>
+                <td style={{ padding: "16px 24px" }}>
+                  <select className="form-input" style={{ padding: "8px", fontSize: "13px", width: "120px" }} value={vendor.role || 'vendor'} onChange={(e) => handleRoleChange(vendor.id, e.target.value)}>
+                    <option value="vendor">Vendor</option>
+                    <option value="support">Support</option>
+                    <option value="admin">Super Admin</option>
+                  </select>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -572,8 +620,6 @@ function LandingPage() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box", flex: 1 }}>
-        
-        {/* Navigation */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
@@ -582,7 +628,6 @@ function LandingPage() {
           </div>
         </nav>
         
-        {/* Authentic African Professional Hero Section */}
         <main className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center", padding: "80px 0 60px" }}>
           <div className="hero-text-container" style={{ paddingRight: "40px" }}>
             <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
@@ -595,7 +640,6 @@ function LandingPage() {
           </div>
         </main>
         
-        {/* Features Section */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
             <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=150&q=80" alt="Invoicing Terminals" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
@@ -614,7 +658,6 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* Why Us Section */}
         <div style={{ background: "#F1F5F9", padding: "80px 24px", margin: "0 -24px", textAlign: "center", borderRadius: "24px", marginBottom: "80px" }}>
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Why Nigerian Businesses Choose KudiSlip</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "32px", maxWidth: "1000px", margin: "0 auto" }}>
@@ -636,7 +679,6 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* Meet the Team Section */}
         <div style={{ paddingBottom: "100px", textAlign: "center" }}>
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Meet The Team</h2>
           <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap" }}>
@@ -653,7 +695,6 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* Pricing Section */}
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
@@ -699,7 +740,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
+// 6. AUTHENTICATION
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -794,6 +835,8 @@ function ClientsManager({ user, showToast }) {
     setLoading(false);
   };
 
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Client CRM.</div>;
+
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
@@ -870,6 +913,8 @@ function InvoiceGenerator({ user, showToast }) {
     }
     setLoading(false);
   };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
 
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
@@ -983,6 +1028,8 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
     } finally { setLoading(false); }
   };
 
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Payouts.</div>;
+
   return (
     <div style={{ maxWidth: "550px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
@@ -992,10 +1039,160 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
           <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
         ) : (
           <form onSubmit={handleSetupPayout}>
-            <div style={{ marginBottom: "20px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label><select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required><option value="">-- Select Bank --</option>{NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}</select></div>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label>
+              <select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required>
+                <option value="">-- Select Bank --</option>
+                {NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}
+              </select>
+            </div>
             <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
             <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
           </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 10. HELPDESK & SUPPORT TICKETING SYSTEM
+// =========================================================
+function SupportDashboard({ user, showToast }) {
+  const [tickets, setTickets] = useState([]);
+  const [activeTicket, setActiveTicket] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
+
+  const fetchTickets = async () => {
+    let query = supabase.from('tickets').select('*, vendors(business_name, email)');
+    if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
+    const { data } = await query.order('created_at', { ascending: false });
+    if (data) setTickets(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (supabase) fetchTickets(); }, []);
+
+  useEffect(() => {
+    if (activeTicket) {
+      supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true }).then(({ data }) => setMessages(data || []));
+    }
+  }, [activeTicket]);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleCreateTicket = async (e) => {
+    e.preventDefault(); setLoading(true);
+    const { data, error } = await supabase.from('tickets').insert([{ vendor_id: user.id, subject }]).select().single();
+    if (error) showToast("Error", error.message, "error");
+    else {
+      showToast("Ticket Created", "A support agent will be with you shortly.", "success");
+      setSubject("");
+      fetchTickets();
+      
+      // Notify Admins
+      await supabase.from('notifications').insert([{ 
+        user_id: user.id, // For RLS bypass, we tie it to the ticket creator, but admins fetch all.
+        title: "New Support Ticket", 
+        message: `${user.business_name || 'A user'} opened a ticket: ${subject}` 
+      }]);
+    }
+    setLoading(false);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    const msg = newMessage; setNewMessage("");
+    
+    const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
+    if (error) { showToast("Error", error.message, "error"); return; }
+    
+    setMessages([...messages, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
+
+    // Notifications
+    if (user.role !== 'vendor') {
+      await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
+    }
+  };
+
+  const closeTicket = async () => {
+    await supabase.from('tickets').update({ status: 'closed' }).eq('id', activeTicket.id);
+    setActiveTicket({ ...activeTicket, status: 'closed' });
+    fetchTickets();
+    showToast("Closed", "Ticket has been closed.", "info");
+  };
+
+  if (activeTicket) {
+    return (
+      <div style={{ maxWidth: "800px" }}>
+        <button onClick={() => setActiveTicket(null)} style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", gap: "8px" }}>&larr; Back to Tickets</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{activeTicket.subject}</h2>
+          {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
+          {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
+        </div>
+        
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
+            {messages.map(m => {
+              const isMe = m.sender_id === user.id;
+              return (
+                <div key={m.id} className={`chat-bubble ${isMe ? 'user' : 'admin'}`}>
+                  <div style={{ fontSize: "11px", opacity: 0.7, marginBottom: "4px" }}>{isMe ? "You" : "Support Team"}</div>
+                  <div>{m.message}</div>
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+          {activeTicket.status === 'open' ? (
+             <form onSubmit={handleSendMessage} className="chat-input-area">
+              <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={newMessage} onChange={e=>setNewMessage(e.target.value)} required />
+              <button className="btn-primary btn-hover" type="submit">Send</button>
+            </form>
+          ) : (
+            <div style={{ padding: "16px", textAlign: "center", background: "#F1F5F9", color: DESIGN.textMuted, fontWeight: "600", fontSize: "14px" }}>This ticket is closed.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><MessageIcon /> {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>{user.role === 'vendor' ? 'Need help? Open a ticket and our team will assist you.' : 'Manage and respond to customer tickets.'}</div>
+
+      {user.role === 'vendor' && (
+        <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Create New Ticket</h3>
+          <form onSubmit={handleCreateTicket} style={{ display: "flex", gap: "12px" }}>
+            <input className="form-input" style={{ flex: 1 }} placeholder="Briefly describe your issue..." value={subject} onChange={e=>setSubject(e.target.value)} required />
+            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "..." : "Open Ticket"}</button>
+          </form>
+        </div>
+      )}
+
+      <div>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>{user.role === 'vendor' ? 'Your Tickets' : 'All Open Tickets'}</h3>
+        {loading ? <div style={{ color: DESIGN.textMuted }}>Loading tickets...</div> : tickets.length === 0 ? <div style={{ padding: "40px", textAlign: "center", background: "#FFF", borderRadius: "12px", border: `1px dashed ${DESIGN.border}`, color: DESIGN.textMuted }}>No tickets found.</div> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {tickets.map(t => (
+              <div key={t.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setActiveTicket(t)}>
+                <div>
+                  <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "4px" }}>{t.subject}</div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{user.role !== 'vendor' ? `From: ${t.vendors?.business_name || 'Vendor'}` : new Date(t.created_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: t.status === 'open' ? "#FEF3C7" : "#F1F5F9", color: t.status === 'open' ? "#D97706" : DESIGN.textMuted }}>{t.status.toUpperCase()}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -1008,6 +1205,7 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   // Custom Toast State Manager
   const [toast, setToast] = useState(null);
@@ -1025,26 +1223,39 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (initializationError || !supabase) {
-      setIsLoading(false);
-      return;
-    }
+    if (initializationError || !supabase) { setIsLoading(false); return; }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
           setUser({ ...session.user, ...data });
           setIsLoading(false);
-          // Auto-redirect to dashboard if they are on a public auth/landing page
+          checkNotifications({ ...session.user, ...data });
           if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
              window.location.hash = "#/dashboard/invoices";
           }
         });
-      } else {
-        setIsLoading(false);
-      }
+      } else { setIsLoading(false); }
     });
-  }, []); // Run ONCE on mount to grab user session
+  }, []);
+
+  const checkNotifications = async (userData) => {
+    if (!supabase || !userData) return;
+    let query = supabase.from('notifications').select('*', { count: 'exact' }).eq('is_read', false);
+    if (userData.role === 'vendor') query = query.eq('user_id', userData.id);
+    // If admin/support, they see all unread notifications globally.
+    const { count } = await query;
+    if (count !== null) setUnreadCount(count);
+  };
+
+  const clearNotifications = async () => {
+    if (!user || unreadCount === 0) return;
+    let query = supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+    if (user.role === 'vendor') query = query.eq('user_id', user.id);
+    await query;
+    setUnreadCount(0);
+    window.location.hash = "#/dashboard/support";
+  };
 
   const renderView = () => {
     if (initializationError) return (
@@ -1085,28 +1296,40 @@ export default function App() {
       <div className="dashboard-layout">
         <GlobalStyles />
         <div className="sidebar">
-          {/* Mobile top-header log out fix */}
           <div className="sidebar-header">
             <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
-            <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
+              <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
+            </div>
           </div>
           
           <div className="sidebar-menu">
-            <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & Analytics</a>
-            <a href="#/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
-            <a href="#/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
-            <a href="#/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
-            <a href="#/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
-            {user?.is_admin && (
+            {user.role !== 'support' && (
+              <>
+                <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & Analytics</a>
+                <a href="#/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
+                <a href="#/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
+                <a href="#/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
+                <a href="#/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
+              </>
+            )}
+            <a href="#/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+               {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}
+            </a>
+
+            {user?.role === 'admin' && (
               <a href="#/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <ShieldIcon /> Admin Operations
               </a>
             )}
           </div>
           <div style={{ flex: 1 }} />
-          {/* Hidden on mobile to prevent stack crashing */}
           <div className="sidebar-footer">
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name || user?.email}</div>
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              {user?.business_name || user?.email}
+              <div onClick={clearNotifications} style={{display: "none"}} className="desktop-bell"><BellIcon count={unreadCount} /></div>
+            </div>
             <button className="menu-btn btn-hover" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
         </div>
@@ -1116,7 +1339,8 @@ export default function App() {
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => window.location.hash = "#/dashboard/billing"} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
-          {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
+          {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
+          {activeTab === "admin" && user?.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
         </div>
       </div>
     );
