@@ -250,6 +250,9 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
+  // VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
+  const starsArray =;
+
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -432,8 +435,9 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-           <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
-              {.map(star => (
+            {/* NO MORE DOT ERROR: Look at this clear line using the new word variable! */}
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+              {starsArray.map(star => (
                 <StarIcon 
                   key={star} 
                   filled={star <= (hoverRating || rating)} 
