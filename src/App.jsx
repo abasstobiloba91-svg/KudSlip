@@ -244,7 +244,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
-  // NEW: Review System State
+  // Review System State
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -427,23 +427,22 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           </div>
         </div>
 
-        {/* NEW: CLIENT REVIEW UI (Only shows for the client after payment) */}
         {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
           <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-           <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
-  {.map(star => (
-    <StarIcon 
-      key={star} 
-      filled={star <= (hoverRating || rating)} 
-      onClick={() => setRating(star)}
-      onMouseEnter={() => setHoverRating(star)}
-      onMouseLeave={() => setHoverRating(0)}
-    />
-  ))}
-</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+              {.map(star => (
+                <StarIcon 
+                  key={star} 
+                  filled={star <= (hoverRating || rating)} 
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                />
+              ))}
+            </div>
             
             {rating > 0 && (
               <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
