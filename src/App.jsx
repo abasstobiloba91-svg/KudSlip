@@ -47,6 +47,7 @@ const DESIGN = {
 };
 
 // --- SVG ICONS ---
+const MenuIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>);
 const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
 const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
 const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
@@ -87,14 +88,14 @@ const GlobalStyles = () => (
     .card-hover { transition: all 0.3s ease; }
     .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
     
-    .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
-    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; }
+    .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; position: relative; }
+    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; z-index: 1000; transition: transform 0.3s ease; }
     .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
     .sidebar-footer { padding: 16px 32px; margin-top: auto; }
     
-    .mobile-nav-logout { display: none; }
-    .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
+    .mobile-top-bar { display: none; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; padding: 16px 24px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 990; }
+    .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; height: 100vh; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
     .chat-container { display: flex; flex-direction: column; height: 500px; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFF; }
@@ -107,6 +108,7 @@ const GlobalStyles = () => (
     @keyframes toastSlideIn { 0% { transform: translate(-50%, -100%); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+    /* SYSTEM PRINT INSTRUCTIONS - Forces iOS/Safari to print the <img> element */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -120,13 +122,12 @@ const GlobalStyles = () => (
       .hero-title { font-size: 38px !important; }
       .nav-buttons { display: none !important; }
       .dashboard-layout { flex-direction: column; }
-      .sidebar { width: 100%; padding: 16px 0 0 0; min-height: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; display: flex; justify-content: space-between; align-items: center; width: 100%; }
-      .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 0 16px; white-space: nowrap; border-top: 1px solid #F1F5F9; }
-      .sidebar-footer { display: none !important; }
-      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 8px; }
-      .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
-      .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
+      
+      /* Mobile Hamburger Menu Overrides */
+      .mobile-top-bar { display: flex !important; }
+      .sidebar { position: fixed; top: 0; bottom: 0; left: 0; height: 100vh; transform: translateX(-100%); padding-top: 24px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-header { display: none !important; } /* Hidden inside sidebar, handled by top-bar */
       .main-content { padding: 24px 16px; }
     }
   `}</style>
@@ -297,19 +298,13 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
       
-      {/* FULL PAGE REPEATING WATERMARK OVERLAY */}
+      {/* PHYSICAL IMAGE WATERMARK FOR iOS PRINTING */}
       {isFreeTier && (
-        <div style={{ 
-          position: "fixed", 
-          top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", 
-          backgroundImage: 'url("/logo.png")', 
-          backgroundRepeat: "repeat", 
-          backgroundSize: "200px", 
-          opacity: 0.03, 
-          pointerEvents: "none", 
-          zIndex: 9999, 
-          transform: "rotate(-15deg)" 
-        }} />
+        <img 
+          src="/logo.png" 
+          alt="" 
+          style={{ position: "fixed", top: "50%", left: "50%", width: "400px", transform: "translate(-50%, -50%) rotate(-15deg)", opacity: 0.05, zIndex: 0, pointerEvents: "none" }} 
+        />
       )}
 
       {/* Main Content Wrapper */}
@@ -332,11 +327,17 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
+              
+              {/* LOGO FALLBACK SYSTEM */}
               {vendor?.logo_url ? (
-                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} />
+                <>
+                  <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} onError={(e) => { e.target.style.display = 'none'; document.getElementById('biz-name-fallback').style.display = 'block'; }} />
+                  <div id="biz-name-fallback" style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain, display: "none" }}>{vendor.business_name}</div>
+                </>
               ) : (
                 <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
               )}
+
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
@@ -405,6 +406,30 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
 
+  // Auto Color Extractor
+  const handleExtractColor = () => {
+    if (!logoUrl) return showToast("No Image", "Please paste a logo URL first.", "info");
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // Try to bypass basic CORS
+    img.src = logoUrl;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        // Get center pixel color
+        const data = ctx.getImageData(img.width/2, img.height/2, 1, 1).data;
+        const hex = "#" + ((1 << 24) + (data << 16) + (data << 8) + data).toString(16).slice(1);
+        setBrandColor(hex);
+        showToast("Color Extracted", `Found color: ${hex}`, "success");
+      } catch (err) {
+        showToast("Extraction Failed", "This image host blocks color extraction. Please select a color manually.", "error");
+      }
+    };
+    img.onerror = () => showToast("Image Error", "Could not load image to extract color.", "error");
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -416,6 +441,8 @@ function BrandSettings({ user, onUpdate, showToast }) {
     }
     setLoading(false);
   };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Brand Settings.</div>;
 
   if (user?.subscription_tier !== 'premium') {
     return (
@@ -448,6 +475,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ width: "50px", height: "40px", border: "none", cursor: "pointer", background: "none" }} />
               <input className="form-input" placeholder="#000000" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ flex: 1 }} />
+              <button type="button" onClick={handleExtractColor} className="btn-secondary btn-hover" style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>Auto Extract</button>
             </div>
           </div>
 
@@ -506,6 +534,8 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
       showToast("System Error", "Could not securely launch the payment window due to browser restrictions.", "error");
     }
   };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Billing.</div>;
 
   return (
     <div style={{ maxWidth: "700px" }}>
@@ -754,7 +784,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
+// 6. AUTHENTICATION
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -824,54 +854,136 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
 }
 
 // =========================================================
-// 7. CLIENTS CRM
+// 10. HELPDESK & SUPPORT TICKETING SYSTEM
 // =========================================================
-function ClientsManager({ user, showToast }) {
-  const [clients, setClients] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+function SupportDashboard({ user, showToast }) {
+  const [tickets, setTickets] = useState([]);
+  const [activeTicket, setActiveTicket] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    if (!supabase) return;
-    supabase.from('clients').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false }).then(({ data }) => setClients(data || []));
-  }, []);
-
-  const handleAddClient = async (e) => {
-    e.preventDefault(); setLoading(true);
-    const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
-    if (!error && data) { 
-      setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); 
-      showToast("Client Added", "Customer has been added successfully to your directory.", "success"); 
-    }
-    else if (error) { showToast("Database Error", "Failed to add client. Check database permissions.", "error"); }
+  const fetchTickets = async () => {
+    let query = supabase.from('tickets').select('*, vendors(business_name, email)');
+    if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
+    const { data } = await query.order('created_at', { ascending: false });
+    if (data) setTickets(data);
     setLoading(false);
   };
 
-  return (
-    <div>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
-        <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
-          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} required/></div>
-          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></div>
-          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Phone</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
-          <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
-        </form>
+  useEffect(() => { if (supabase) fetchTickets(); }, []);
+
+  useEffect(() => {
+    if (activeTicket) {
+      supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true }).then(({ data }) => setMessages(data || []));
+    }
+  }, [activeTicket]);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleCreateTicket = async (e) => {
+    e.preventDefault(); setLoading(true);
+    const { data, error } = await supabase.from('tickets').insert([{ vendor_id: user.id, subject }]).select().single();
+    if (error) showToast("Error", error.message, "error");
+    else {
+      showToast("Ticket Created", "A support agent will be with you shortly.", "success");
+      setSubject("");
+      fetchTickets();
+      await supabase.from('notifications').insert([{ user_id: user.id, title: "New Support Ticket", message: `${user.business_name || 'A user'} opened a ticket: ${subject}` }]);
+    }
+    setLoading(false);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    const msg = newMessage; setNewMessage("");
+    
+    const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
+    if (error) { showToast("Error", error.message, "error"); return; }
+    
+    setMessages([...messages, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
+
+    if (user.role !== 'vendor') {
+      await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
+    }
+  };
+
+  const closeTicket = async () => {
+    await supabase.from('tickets').update({ status: 'closed' }).eq('id', activeTicket.id);
+    setActiveTicket({ ...activeTicket, status: 'closed' });
+    fetchTickets();
+    showToast("Closed", "Ticket has been closed.", "info");
+  };
+
+  if (activeTicket) {
+    return (
+      <div style={{ maxWidth: "800px" }}>
+        <button onClick={() => setActiveTicket(null)} className="btn-hover" style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", gap: "8px" }}>&larr; Back to Tickets</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{activeTicket.subject}</h2>
+          {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
+          {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
+        </div>
+        
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
+            {messages.map(m => {
+              const isMe = m.sender_id === user.id;
+              return (
+                <div key={m.id} className={`chat-bubble ${isMe ? 'user' : 'admin'}`}>
+                  <div style={{ fontSize: "11px", opacity: 0.7, marginBottom: "4px" }}>{isMe ? "You" : "Support Team"}</div>
+                  <div>{m.message}</div>
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+          {activeTicket.status === 'open' ? (
+             <form onSubmit={handleSendMessage} className="chat-input-area">
+              <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={newMessage} onChange={e=>setNewMessage(e.target.value)} required />
+              <button className="btn-primary btn-hover" type="submit">Send</button>
+            </form>
+          ) : (
+            <div style={{ padding: "16px", textAlign: "center", background: "#F1F5F9", color: DESIGN.textMuted, fontWeight: "600", fontSize: "14px" }}>This ticket is closed.</div>
+          )}
+        </div>
       </div>
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, overflowX: "auto" }}>
-        {clients.length === 0 ? <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No clients added yet.</div> : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "500px" }}>
-            <thead style={{ background: "#F1F5F9", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>
-              <tr><th style={{ padding: "16px 24px" }}>Name</th><th style={{ padding: "16px 24px" }}>Email</th><th style={{ padding: "16px 24px" }}>Phone</th></tr>
-            </thead>
-            <tbody>
-              {clients.map(c => <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}><td style={{ padding: "16px 24px", fontWeight: "600" }}>{c.name}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.email}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.phone || "—"}</td></tr>)}
-            </tbody>
-          </table>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><MessageIcon /> {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>{user.role === 'vendor' ? 'Need help? Open a ticket and our team will assist you.' : 'Manage and respond to customer tickets.'}</div>
+
+      {user.role === 'vendor' && (
+        <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Create New Ticket</h3>
+          <form onSubmit={handleCreateTicket} style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <input className="form-input" style={{ flex: 1, minWidth: "200px" }} placeholder="Briefly describe your issue..." value={subject} onChange={e=>setSubject(e.target.value)} required />
+            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "..." : "Open Ticket"}</button>
+          </form>
+        </div>
+      )}
+
+      <div>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>{user.role === 'vendor' ? 'Your Tickets' : 'All Open Tickets'}</h3>
+        {loading ? <div style={{ color: DESIGN.textMuted }}>Loading tickets...</div> : tickets.length === 0 ? <div style={{ padding: "40px", textAlign: "center", background: "#FFF", borderRadius: "12px", border: `1px dashed ${DESIGN.border}`, color: DESIGN.textMuted }}>No tickets found.</div> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {tickets.map(t => (
+              <div key={t.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setActiveTicket(t)}>
+                <div>
+                  <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "4px" }}>{t.subject}</div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{user.role !== 'vendor' ? `From: ${t.vendors?.business_name || 'Vendor'}` : new Date(t.created_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: t.status === 'open' ? "#FEF3C7" : "#F1F5F9", color: t.status === 'open' ? "#D97706" : DESIGN.textMuted }}>{t.status.toUpperCase()}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -879,188 +991,13 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR (With Search & Detailed Views)
-// =========================================================
-function InvoiceGenerator({ user, showToast }) {
-  const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState("");
-  const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
-  const [dueDate, setDueDate] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [invoices, setInvoices] = useState([]);
-  
-  // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("date-desc");
-
-  useEffect(() => {
-    if (!supabase) return;
-    supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
-    fetchRecentInvoices();
-  }, []);
-
-  const fetchRecentInvoices = async () => {
-    const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
-    if(data) setInvoices(data);
-  };
-
-  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
-  const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
-  const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
-  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-
-  const handleGenerateInvoice = async () => {
-    if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
-    setLoading(true);
-    
-    const { data, error } = await supabase.from('invoices').insert([{ 
-      vendor_id: user.id, 
-      client_id: selectedClient, 
-      amount: calculateTotal(), 
-      items: items, 
-      due_date: dueDate 
-    }]).select().single();
-    
-    if (error) { showToast("Database Error", error.message, "error"); } 
-    else {
-      showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
-      fetchRecentInvoices();
-    }
-    setLoading(false);
-  };
-
-  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  const totalPending = totalBilled - totalPaid;
-
-  // Search and Sort Logic
-  const filteredInvoices = invoices.filter(inv => {
-    const clientName = (inv.clients?.name || "").toLowerCase();
-    const itemsStr = JSON.stringify(inv.items || "").toLowerCase();
-    const q = searchQuery.toLowerCase();
-    return clientName.includes(q) || itemsStr.includes(q);
-  }).sort((a, b) => {
-    if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
-    if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
-    if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
-    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
-    return 0;
-  });
-
-  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
-
-  return (
-    <div style={{ maxWidth: "900px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
-        </div>
-        <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div>
-        </div>
-        <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div>
-        </div>
-      </div>
-
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
-          <div>
-            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
-            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}>
-              <option value="">-- Select Client --</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
-        </div>
-        <div style={{ marginBottom: "24px" }}>
-          {items.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
-              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
-              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
-              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
-              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
-            </div>
-          ))}
-          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
-        </div>
-        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
-        </div>
-      </div>
-
-      {/* Invoice Ledger Search & Filter */}
-      {invoices.length > 0 && (
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
-            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
-              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                <option value="date-desc">Newest First</option>
-                <option value="date-asc">Oldest First</option>
-                <option value="name-asc">Client A-Z</option>
-                <option value="name-desc">Client Z-A</option>
-              </select>
-            </div>
-          </div>
-          
-          {filteredInvoices.map(inv => {
-            const safeInvAmount = Number(inv.amount || 0);
-            let parsedItems = [];
-            try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
-            const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
-
-            return (
-              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "16px" }}>
-                <div style={{ flex: 1, minWidth: "250px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-                    <div style={{ fontWeight: "800", fontSize: "16px" }}>{inv.clients?.name}</div>
-                    <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
-                  </div>
-                  <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <span>{inv.clients?.email}</span>
-                    {inv.clients?.phone && <span>{inv.clients.phone}</span>}
-                  </div>
-                  <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
-                </div>
-                
-                <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
-                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
-                  <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
-                  {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>
-                      Send Reminder
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// =========================================================
-// MAIN APP ROUTER 
+// MAIN APP ROUTER (With Mobile Sidebar Overlay)
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Toggle State
   
   const [toast, setToast] = useState(null);
   const showToast = (title, message, type = "success") => {
@@ -1071,7 +1008,10 @@ export default function App() {
   const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
-    const handleHashChange = () => setHash(window.location.hash || "#/");
+    const handleHashChange = () => {
+      setHash(window.location.hash || "#/");
+      setIsSidebarOpen(false); // Auto-close sidebar on route change
+    };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
@@ -1122,7 +1062,7 @@ export default function App() {
       </div>
     );
 
-    // 1. PUBLIC INVOICE ROUTE (Secure extraction)
+    // 1. PUBLIC INVOICE ROUTE 
     if (hash.startsWith('#/pay/')) {
       const cleanId = hash.replace('#/pay/', '').replace(/[^a-zA-Z0-9-]/g, '');
       return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
@@ -1148,13 +1088,34 @@ export default function App() {
     return (
       <div className="dashboard-layout">
         <GlobalStyles />
-        <div className="sidebar">
-          {/* Mobile Sidebar Header */}
+        
+        {/* Mobile Header (Hamburger Menu) */}
+        <div className="mobile-top-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <button onClick={() => setIsSidebarOpen(true)} style={{ background: "none", border: "none", color: DESIGN.textMain, cursor: "pointer", padding: "4px" }}>
+              <MenuIcon />
+            </button>
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "24px" }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
+          </div>
+        </div>
+
+        {/* Mobile Dark Overlay */}
+        {isSidebarOpen && (
+          <div 
+            onClick={() => setIsSidebarOpen(false)} 
+            style={{ position: "fixed", top: 0, bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", zIndex: 999 }}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
-              <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
             </div>
           </div>
           
@@ -1177,22 +1138,28 @@ export default function App() {
                 <ShieldIcon /> Admin Operations
               </a>
             )}
+            
+            {/* Mobile Logout (Appears at bottom of menu links on phone) */}
+            <button className="mobile-nav-logout" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
           <div style={{ flex: 1 }} />
           <div className="sidebar-footer">
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
-              <div onClick={clearNotifications} style={{ display: "none" }}><BellIcon count={unreadCount} /></div>
             </div>
             <button className="menu-btn btn-hover" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
         </div>
+
         <div className="main-content">
           {/* Strictly guard content renders to roles to prevent direct URL sneaking */}
-          {activeTab === "invoices" && user.role !== 'support' && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "invoices" && user.role !== 'support' && (
+             user.subscription_tier === 'premium' && !user.logo_url && false /* We will handle modal locally */ ? null :
+            <InvoiceGenerator user={user} showToast={showToast} />
+          )}
           {activeTab === "clients" && user.role !== 'support' && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && user.role !== 'support' && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => window.location.hash = "#/dashboard/billing"} />}
+          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
           {activeTab === "billing" && user.role !== 'support' && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
           {activeTab === "admin" && user.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
@@ -1201,9 +1168,39 @@ export default function App() {
     );
   };
 
+  // 3. Premium Logo Blocker Logic
+  const isDashboardPremium = user && user.subscription_tier === 'premium';
+  const hasNoLogo = isDashboardPremium && !user.logo_url;
+  const isAttemptingInvoice = hash === "#/dashboard/invoices";
+  const [showLogoPrompt, setShowLogoPrompt] = useState(false);
+
+  useEffect(() => {
+    if (isAttemptingInvoice && hasNoLogo) {
+      setShowLogoPrompt(true);
+    } else {
+      setShowLogoPrompt(false);
+    }
+  }, [hash, user]);
+
   return (
     <>
       <Toast toast={toast} onClose={() => setToast(null)} />
+      
+      {/* PREMIUM LOGO PROMPT MODAL */}
+      {showLogoPrompt && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#FFF", padding: "40px", borderRadius: "16px", maxWidth: "400px", textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+            <div style={{ color: DESIGN.premium, marginBottom: "16px", display: "flex", justifyContent: "center" }}><PaintIcon /></div>
+            <h2 style={{ fontSize: "24px", fontWeight: "900", margin: "0 0 16px" }}>Add Your Logo</h2>
+            <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", marginBottom: "32px", fontSize: "14px" }}>You are a Premium subscriber! Before generating invoices, please upload your business logo so it appears on your receipts instead of the default branding.</p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button className="btn-secondary btn-hover" style={{ flex: 1 }} onClick={() => setShowLogoPrompt(false)}>Skip for now</button>
+              <button className="btn-primary btn-premium btn-hover" style={{ flex: 1 }} onClick={() => { setShowLogoPrompt(false); window.location.hash = "#/dashboard/brand"; }}>Upload Logo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {renderView()}
       
       {/* FLOATING SUPPORT BUTTON (Only for vendors not already in the support tab) */}
