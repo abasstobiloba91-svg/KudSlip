@@ -432,7 +432,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+           <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
               {.map(star => (
                 <StarIcon 
                   key={star} 
