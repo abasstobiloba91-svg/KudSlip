@@ -87,7 +87,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW (WITH BULLETPROOF DATA PARSING)
+// 1. PUBLIC INVOICE VIEW
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -161,7 +161,6 @@ function PublicInvoice({ invoiceId }) {
 
   if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found inside system ledger.</div>;
 
-  // BULLETPROOF PARSING: Prevents array maps and number parsers from crashing React
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
   const safeAmount = Number(invoice.amount || 0);
@@ -740,10 +739,11 @@ export default function App() {
   useEffect(() => {
     if (initializationError) { setView("diagnostic_error"); return; }
     
-    const currentPath = window.location.pathname;
+    // BULLETPROOF PARSER: Prevents the split().replace() crash entirely
+    const currentPath = window.location.pathname || "";
     if (currentPath.startsWith('/pay/')) {
-      const rawId = currentPath.split('/pay/');
-      const cleanId = rawId.replace(/["', ]/g, ''); 
+      const rawId = currentPath.replace('/pay/', '');
+      const cleanId = String(rawId).replace(/[^a-zA-Z0-9-]/g, ''); 
       
       setPublicInvoiceId(cleanId);
       setView("public_invoice");
