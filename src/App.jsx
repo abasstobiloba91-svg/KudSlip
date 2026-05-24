@@ -1013,14 +1013,14 @@ function InvoiceGenerator({ user, showToast }) {
         {showLogoWarning && (
           <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div><strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong><span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span></div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "8px 12px", fontSize: "12px", textDecoration: "none" }}>Upload Logo</a>
               <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "8px 12px", fontSize: "12px", background: "#D97706", border: "none" }}>Ignore & Generate</button>
             </div>
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
             <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
@@ -1029,16 +1029,16 @@ function InvoiceGenerator({ user, showToast }) {
         </div>
         <div style={{ marginBottom: "24px" }}>
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
-              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
+              <input className="form-input" style={{ gridColumn: "span 2" }} placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
               <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
               <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
-              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
+              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "10px" }}>X</button>
             </div>
           ))}
-          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: "10px 0" }}>+ Add Line Item</button>
         </div>
-        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
           <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
         </div>
@@ -1046,10 +1046,11 @@ function InvoiceGenerator({ user, showToast }) {
 
       {invoices.length > 0 && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
-            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
-              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            {/* FIX: Added flexWrap: "wrap" so the search bar doesn't squish */}
+            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <input className="form-input" style={{ maxWidth: "250px", minWidth: "150px", padding: "10px 16px", flex: 1 }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                 <option value="date-desc">Newest First</option>
                 <option value="date-asc">Oldest First</option>
@@ -1066,22 +1067,23 @@ function InvoiceGenerator({ user, showToast }) {
             const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
 
             return (
-              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "16px" }}>
-                <div style={{ flex: 1, minWidth: "250px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "20px" }}>
+                <div style={{ flex: 1, minWidth: "200px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px", flexWrap: "wrap" }}>
                     <div style={{ fontWeight: "800", fontSize: "16px" }}>{inv.clients?.name}</div>
                     <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                   </div>
                   <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <span>{inv.clients?.email}</span>{inv.clients?.phone && <span>{inv.clients.phone}</span>}
+                    <span style={{ wordBreak: "break-all" }}>{inv.clients?.email}</span>{inv.clients?.phone && <span>{inv.clients.phone}</span>}
                   </div>
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
-                <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
+                {/* FIX: Added flexWrap: "wrap" and adjusted alignment for mobile buttons */}
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", width: "100%", justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
-                  <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                  <button className="btn-secondary btn-hover" style={{ padding: "8px 16px", whiteSpace: "nowrap" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
                   {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>Send Reminder</a>
+                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px", whiteSpace: "nowrap" }}>Send Reminder</a>
                   )}
                 </div>
               </div>
