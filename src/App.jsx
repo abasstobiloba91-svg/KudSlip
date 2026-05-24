@@ -66,6 +66,7 @@ const BellIcon = ({ count }) => (
 );
 
 const GlobalStyles = () => (
+const GlobalStyles = () => (
   <style>{`
     *, *::before, *::after { box-sizing: border-box; }
     
@@ -139,7 +140,8 @@ const GlobalStyles = () => (
       .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 45; display: none; }
       .sidebar-overlay.open { display: block !important; }
       
-      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 280px; z-index: 50; transform: translateX(-100%); padding: 24px 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1); }
+      /* FIX: Added overflow-y: auto and height: 100% to prevent the footer from getting cut off by mobile URL bars */
+      .sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 280px; z-index: 50; transform: translateX(-100%); padding: 24px 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1); overflow-y: auto; }
       .sidebar.open { transform: translateX(0); }
       
       .mobile-close-btn { display: block !important; color: #64748B; padding: 8px; }
@@ -153,6 +155,7 @@ const GlobalStyles = () => (
       .support-text-mobile { display: none; }
     }
   `}</style>
+);
 );
 
 class ErrorBoundary extends React.Component {
@@ -1355,6 +1358,14 @@ function AppRouter() {
     window.location.hash = "#/dashboard/support";
   };
 
+  const handleLogout = () => {
+    supabase.auth.signOut().then(() => { 
+      setUser(null); 
+      setSidebarOpen(false);
+      window.location.hash = "#/"; 
+    });
+  };
+
   const renderView = () => {
     if (initializationError) return (
       <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
@@ -1391,9 +1402,11 @@ function AppRouter() {
         
         <div className="mobile-dashboard-header">
           <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            {/* FIX: Quick Access Log Out button placed directly in the header */}
+            <button className="btn-hover" style={{ background: "none", border: "none", color: DESIGN.error, fontWeight: "800", fontSize: "13px", cursor: "pointer", padding: "4px" }} onClick={handleLogout}>Log Out</button>
             <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
-            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
+            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain, padding: "0" }} onClick={() => setSidebarOpen(true)}>☰</button>
           </div>
         </div>
 
@@ -1430,7 +1443,7 @@ function AppRouter() {
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={handleLogout}>Log Out</button>
           </div>
         </div>
 
