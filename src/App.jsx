@@ -1483,7 +1483,25 @@ function AppRouter() {
     if (hash === "#/terms") return <LegalPage type="terms" />;
     if (hash === "#/privacy") return <LegalPage type="privacy" />;
 
-    if (isLoading) return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
+    // FIXED: Upgraded Workspace Loading Screen with Bouncing Logo Effect
+    if (isLoading) return (
+      <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px" }}>
+        <style>{`
+          @keyframes kudiBounce {
+            0%, 100% { transform: scale(2.0) translateY(0); }
+            50% { transform: scale(1.9) translateY(-16px); }
+          }
+          @keyframes textPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+          }
+          .bouncing-logo { animation: kudiBounce 1s infinite cubic-bezier(0.25, 1, 0.5, 1); }
+          .pulsing-text { animation: textPulse 1s infinite ease-in-out; font-weight: 700; font-size: 14px; color: #0F172A; letter-spacing: 0.05em; }
+        `}</style>
+        <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
+        <div className="pulsing-text" style={{ marginTop: "8px" }}>Loading Workspace...</div>
+      </div>
+    );
 
     if (!user) {
       if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
@@ -1500,7 +1518,6 @@ function AppRouter() {
         <div className="mobile-dashboard-header">
           <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            {/* FIX: Quick Access Log Out button placed directly in the header */}
             <button className="btn-hover" style={{ background: "none", border: "none", color: DESIGN.error, fontWeight: "800", fontSize: "13px", cursor: "pointer", padding: "4px" }} onClick={handleLogout}>Log Out</button>
             <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
             <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain, padding: "0" }} onClick={() => setSidebarOpen(true)}>☰</button>
