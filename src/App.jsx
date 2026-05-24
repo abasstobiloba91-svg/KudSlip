@@ -397,7 +397,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
 
-  // BASE64 NATIVE UPLOAD FIX: Bypasses Storage Buckets and gives a 100% upload guarantee!
+  // Native Base64 Conversion - 100% bypasses storage firewalls
   const handleLogoUpload = (e) => {
     const file = e.target.files;
     if (!file) return;
@@ -410,12 +410,8 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setUploading(true);
     setUploadPercent(0);
 
-    // Smart UI Tracker simulating the processing delay
     const progressInterval = setInterval(() => {
-      setUploadPercent((prev) => {
-        if (prev >= 90) return 90;
-        return prev + 20;
-      });
+      setUploadPercent((prev) => (prev >= 90 ? 90 : prev + 20));
     }, 100);
     
     const reader = new FileReader();
@@ -423,13 +419,9 @@ function BrandSettings({ user, onUpdate, showToast }) {
     reader.onloadend = () => {
       clearInterval(progressInterval);
       setUploadPercent(100);
-      setLogoUrl(reader.result); // Saves the raw image string directly!
+      setLogoUrl(reader.result); // Saves the raw string!
       showToast("Logo Processed!", "Image loaded natively. Click Save below to apply it.", "success");
-      
-      setTimeout(() => {
-        setUploading(false);
-        setUploadPercent(0);
-      }, 1500);
+      setTimeout(() => { setUploading(false); setUploadPercent(0); }, 1500);
     };
 
     reader.onerror = () => {
@@ -489,7 +481,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
             
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
-                Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
+                Processing: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
               </div>
             )}
           </div>
@@ -505,7 +497,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
           <div style={{ marginBottom: "32px" }}>
             <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Custom Thank You Message</label>
             <textarea className="form-input" placeholder="e.g. Thank you for shopping with Acme Corp! We appreciate your business." value={customThankYou} onChange={e => setCustomThankYou(e.target.value)} style={{ minHeight: "80px", resize: "vertical" }} />
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>This shows up on the receipt after a client pays.</div>
           </div>
           
           <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ width: "100%" }}>{loading ? "Saving..." : "Save Brand Settings"}</button>
