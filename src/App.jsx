@@ -1397,7 +1397,7 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER
+// MAIN APP ROUTER & MOBILE DRAWER (WITH 3S SPLASH OVERRIDE)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -1421,20 +1421,32 @@ function AppRouter() {
 
   useEffect(() => { setSidebarOpen(false); }, [hash]);
 
+  // THE FIX: Forces a deliberate 3-second premium splash experience before launching workspace
   useEffect(() => {
     if (initializationError || !supabase) { setIsLoading(false); return; }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. Start a mandatory 3-second delay promise
+    const minimumSplashTimer = new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // 2. Start the native database session check promise
+    const authenticationCheck = supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
-          setUser({ ...session.user, ...data });
-          setIsLoading(false);
-          checkNotifications({ ...session.user, ...data });
-          if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
-             window.location.hash = "#/dashboard/invoices";
-          }
-        });
-      } else { setIsLoading(false); }
+        const { data } = await supabase.from('vendors').select('*').eq('id', session.user.id).single();
+        return { sessionUser: session.user, vendorData: data };
+      }
+      return null;
+    });
+
+    // 3. Wait for BOTH conditions to finish before clearing the bounce animation screen
+    Promise.all([minimumSplashTimer, authenticationCheck]).then(([_, accountPayload]) => {
+      if (accountPayload) {
+        setUser({ ...accountPayload.sessionUser, ...accountPayload.vendorData });
+        checkNotifications({ ...accountPayload.sessionUser, ...accountPayload.vendorData });
+        if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
+           window.location.hash = "#/dashboard/invoices";
+        }
+      }
+      setIsLoading(false); // Snaps the splash out of view gracefully after exactly 3s+
     });
   }, []);
 
@@ -1483,7 +1495,7 @@ function AppRouter() {
     if (hash === "#/terms") return <LegalPage type="terms" />;
     if (hash === "#/privacy") return <LegalPage type="privacy" />;
 
-    // FIXED: Upgraded Workspace Loading Screen with Bouncing Logo Effect
+    // Dynamic Viewport Loading Splash with Synthesized Bouncing Logo Loop
     if (isLoading) return (
       <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px" }}>
         <style>{`
