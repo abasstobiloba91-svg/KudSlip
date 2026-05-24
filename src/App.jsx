@@ -580,6 +580,11 @@ function InvoiceGenerator({ user }) {
     setLoading(false);
   };
 
+  // VENDOR ANALYTICS CALCULATIONS
+  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalPending = totalBilled - totalPaid;
+
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
 
   return (
