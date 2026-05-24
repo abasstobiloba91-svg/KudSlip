@@ -80,7 +80,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW 
+// 1. PUBLIC INVOICE VIEW (DEBUG MODE)
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -88,11 +88,20 @@ function PublicInvoice({ invoiceId }) {
   const [vendor, setVendor] = useState(null);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [debugError, setDebugError] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
       if (!supabase) return;
-      const { data: invData } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+      
+      const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+      
+      if (invError) {
+        setDebugError(`Msg: ${invError.message} | Details: ${invError.details} | Hint: ${invError.hint}`);
+        setLoading(false);
+        return;
+      }
+
       if (invData) {
         setInvoice(invData);
         const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
@@ -122,6 +131,15 @@ function PublicInvoice({ invoiceId }) {
   };
 
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
+  
+  if (debugError) return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
+      <GlobalStyles/>
+      <h2 style={{color: "#EF4444"}}>🚨 Database Blocked the Request</h2>
+      <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px", wordWrap: "break-word"}}>{debugError}</p>
+    </div>
+  );
+
   if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
 
   return (
@@ -698,7 +716,6 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
-          // Merge auth user data and vendor profile data
           setUser({ ...session.user, ...data });
           setView("dashboard");
         });
