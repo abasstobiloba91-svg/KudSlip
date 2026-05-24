@@ -133,8 +133,9 @@ const GlobalStyles = () => (
       .mobile-menu-toggle { display: block !important; }
       .mobile-nav-dropdown.open { display: flex !important; flex-direction: column; gap: 12px; padding: 16px 24px; background: #FFF; border-bottom: 1px solid #E2E8F0; }
       
-      .dashboard-layout { flex-direction: column; height: 100vh; overflow: hidden; }
-      .mobile-dashboard-header { display: flex !important; justify-content: space-between; align-items: center; padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; z-index: 40; }
+      /* FIX: 100dvh dynamically adjusts to Safari/Chrome bottom URL bars */
+      .dashboard-layout { flex-direction: column; height: 100dvh; overflow: hidden; }
+      .mobile-dashboard-header { display: flex !important; justify-content: space-between; align-items: center; padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; z-index: 40; height: 68px; }
       
       .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 45; display: none; }
       .sidebar-overlay.open { display: block !important; }
@@ -149,7 +150,8 @@ const GlobalStyles = () => (
       .menu-btn.active { border-left: 4px solid #000000; border-bottom: none; }
       .sidebar-footer { padding: 24px; }
       
-      .main-content { flex: 1; padding: 24px 16px; overflow-y: auto; height: calc(100vh - 73px); }
+      /* FIX: Generous bottom padding added to prevent content from hiding behind the screen edge or support button */
+      .main-content { flex: 1; padding: 24px 16px 120px 16px; overflow-y: auto; height: calc(100dvh - 68px); }
       .support-text-mobile { display: none; }
     }
   `}</style>
@@ -1027,17 +1029,31 @@ function InvoiceGenerator({ user, showToast }) {
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
         </div>
+        
         <div style={{ marginBottom: "24px" }}>
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
-              <input className="form-input" style={{ gridColumn: "span 2" }} placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
-              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
-              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
-              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "10px" }}>X</button>
+            /* FIX: Cleaned up the Line Item "Card" to stack perfectly on mobile */
+            <div key={idx} style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px", background: DESIGN.bg, padding: "16px", borderRadius: "12px", border: `1px solid ${DESIGN.border}` }}>
+              <div style={{ width: "100%" }}>
+                <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Description</label>
+                <input className="form-input" placeholder="e.g. Website Design" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} style={{ background: "#FFFFFF" }} />
+              </div>
+              <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "flex-end", marginTop: "4px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Qty</label>
+                  <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} style={{ background: "#FFFFFF" }} />
+                </div>
+                <div style={{ flex: 2 }}>
+                  <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Price (₦)</label>
+                  <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} style={{ background: "#FFFFFF" }} />
+                </div>
+                <button onClick={() => handleRemoveItem(idx)} style={{ background: "#FEE2E2", color: "#EF4444", border: "none", borderRadius: "8px", minWidth: "46px", height: "46px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "900", cursor: "pointer", transition: "all 0.2s" }}>X</button>
+              </div>
             </div>
           ))}
-          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: "10px 0" }}>+ Add Line Item</button>
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "800", cursor: "pointer", fontSize: "14px", padding: "10px 0" }}>+ Add Line Item</button>
         </div>
+
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
           <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
@@ -1048,7 +1064,6 @@ function InvoiceGenerator({ user, showToast }) {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
-            {/* FIX: Added flexWrap: "wrap" so the search bar doesn't squish */}
             <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <input className="form-input" style={{ maxWidth: "250px", minWidth: "150px", padding: "10px 16px", flex: 1 }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
@@ -1078,7 +1093,6 @@ function InvoiceGenerator({ user, showToast }) {
                   </div>
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
-                {/* FIX: Added flexWrap: "wrap" and adjusted alignment for mobile buttons */}
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", width: "100%", justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px", whiteSpace: "nowrap" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
