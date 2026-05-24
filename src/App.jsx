@@ -6,7 +6,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ""; 
 
-// Diagnostic Safety Initialization
 let supabase = null;
 let initializationError = null;
 
@@ -15,11 +14,8 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
 } else if (!SUPABASE_ANON_KEY) {
   initializationError = "Missing VITE_SUPABASE_ANON_KEY environment variable on Vercel.";
 } else {
-  try { 
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
-  } catch (err) { 
-    initializationError = "Supabase initialization failed: " + err.message; 
-  }
+  try { supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } 
+  catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
 const NIGERIAN_BANKS = [
@@ -40,6 +36,7 @@ const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" h
 const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
 const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
 const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
+const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"></path><path d="M12 18h.01"></path></svg>);
 
 const GlobalStyles = () => (
   <style>{`
@@ -93,7 +90,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW (WITH BULLETPROOF DATA PARSING)
+// 1. PUBLIC INVOICE VIEW 
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -105,78 +102,68 @@ function PublicInvoice({ invoiceId }) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!supabase || !invoiceId) {
-        setDebugError("No valid unique reference payload found in route.");
-        setLoading(false);
-        return;
-      }
-      
+      if (!supabase || !invoiceId) { setDebugError("No valid payload found."); setLoading(false); return; }
       const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
-      
-      if (invError) {
-        setDebugError(`Msg: ${invError.message} | Details: ${invError.details}`);
-        setLoading(false);
-        return;
-      }
+      if (invError) { setDebugError(`Msg: ${invError.message}`); setLoading(false); return; }
 
       if (invData) {
         setInvoice(invData);
         const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
         const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
         setVendor(venData); setClient(cliData);
-      } else {
-        setDebugError("Invoice row key was found empty inside the database.");
-      }
+      } else { setDebugError("Invoice row empty."); }
       setLoading(false);
     }
     fetchData();
   }, [invoiceId]);
 
-  const triggerPDFCompilation = () => {
-    window.print();
-  };
+  const triggerPDFCompilation = () => window.print();
 
   const handlePayment = () => {
-    if (!PAYSTACK_PUBLIC_KEY) return alert("System Configuration Error: Please add VITE_PAYSTACK_PUBLIC_KEY to your Vercel Environment Variables.");
-    if (!vendor?.paystack_subaccount_code) return alert("Vendor Configuration Error: This merchant has not linked a bank account yet.");
-    if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
+    if (!PAYSTACK_PUBLIC_KEY) return alert("System Error: VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.");
+    if (!vendor?.paystack_subaccount_code) return alert("Merchant Error: This merchant has not linked a bank account yet.");
+    if (!window.PaystackPop) return alert("Payment engine loading, please wait...");
     
     const safeAmount = Number(invoice?.amount || 0);
+    if (safeAmount <= 0) return alert("Cannot process payment. The invoice amount must be greater than ₦0.");
+
+    // FIX: Using standard function to prevent Babel/Vite transpilation crashes
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
       amount: safeAmount * 100,
       currency: "NGN",
       subaccount: vendor.paystack_subaccount_code,
-      callback: async function(response) {
-        await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
-        setInvoice({ ...invoice, status: 'paid' });
-        alert("Payment Successful! Receipt saved.");
+      callback: function(response) {
+        supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
+          setInvoice({ ...invoice, status: 'paid' });
+          alert("Payment Successful! Receipt saved.");
+        });
+      },
+      onClose: function() {
+        console.log("Payment window closed.");
       }
     });
     handler.openIframe();
   };
 
-  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
-  
+  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading...</div>;
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}>
-        <AlertIcon />
-        <h2 style={{ margin: 0 }}>System Routing Error</h2>
-      </div>
-      <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px", wordWrap: "break-word"}}>{debugError}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2>System Routing Error</h2></div>
+      <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px"}}>{debugError}</p>
       <button className="btn-primary" style={{marginTop: "16px"}} onClick={() => window.location.href = "/"}>Go to Dashboard</button>
     </div>
   );
-
-  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found inside system ledger.</div>;
+  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
 
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
   const safeAmount = Number(invoice.amount || 0);
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
+  const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
+  const customColor = vendor?.brand_color || DESIGN.primary;
 
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg }}>
@@ -184,58 +171,77 @@ function PublicInvoice({ invoiceId }) {
       
       <div className="no-print" style={{ width: "100%", maxWidth: "600px", display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
         <button onClick={triggerPDFCompilation} style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-          <DownloadIcon /> Download PDF Invoice
+          <DownloadIcon /> Download PDF
         </button>
       </div>
 
       <div style={{ width: "100%", maxWidth: "600px" }}>
-        {(!vendor?.subscription_tier || vendor.subscription_tier === 'free') && (
-          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        {isFreeTier && (
+          <div className="no-print" style={{ textAlign: "center", marginBottom: "24px" }}>
             <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
             <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
           </div>
         )}
-        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
-            <div>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
-              <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
-            </div>
-          </div>
-          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
-              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-              <div style={{ fontWeight: "700" }}>{safeDate}</div>
-            </div>
-          </div>
-          <div style={{ marginBottom: "40px" }}>
-            {safeItems.map((item, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
-                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{Number(item.price || 0).toLocaleString()}</span>
+        
+        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden" }}>
+          
+          {/* THE FREE TIER REPEATING WATERMARK OVERLAY */}
+          {isFreeTier && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "150px", opacity: 0.04, pointerEvents: "none", zIndex: 0, transform: "rotate(-15deg) scale(1.5)" }} />
+          )}
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+              <div>
+                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
+                {vendor?.logo_url ? (
+                  <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} />
+                ) : (
+                  <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                )}
               </div>
-            ))}
-          </div>
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-            <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
-            <div style={{ fontSize: "28px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeAmount.toLocaleString()}</div>
-          </div>
-          <div className="no-print">
-            {invoice.status === 'pending' ? (
-              <button className="btn-primary" style={{ width: "100%", padding: "18px" }} onClick={handlePayment}>Proceed to Payment</button>
-            ) : (
-              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <CheckIcon /> Invoice Paid Securely
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
+                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
               </div>
-            )}
+            </div>
+            
+            <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
+                <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
+                <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
+                <div style={{ fontWeight: "700" }}>{safeDate}</div>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: "40px" }}>
+              {safeItems.map((item, idx) => (
+                <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
+                  <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{Number(item.price || 0).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
+              <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>₦{safeAmount.toLocaleString()}</div>
+            </div>
+            
+            <div className="no-print">
+              {invoice.status === 'pending' ? (
+                <button style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "all 0.2s" }} onClick={handlePayment}>
+                  Proceed to Payment
+                </button>
+              ) : (
+                <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <CheckIcon /> Invoice Paid Securely
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -244,7 +250,68 @@ function PublicInvoice({ invoiceId }) {
 }
 
 // =========================================================
-// 2. SUBSCRIPTION / BILLING DASHBOARD
+// 2. BRAND SETTINGS (PRO FEATURE)
+// =========================================================
+function BrandSettings({ user, onUpdate }) {
+  const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
+  const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor }).eq('id', user.id);
+    if (error) alert("Error saving brand: " + error.message);
+    else {
+      alert("Brand updated successfully!");
+      onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor });
+    }
+    setLoading(false);
+  };
+
+  if (user?.subscription_tier !== 'premium') {
+    return (
+      <div style={{ maxWidth: "600px" }}>
+        <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
+        <div style={{ padding: "32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
+          <div style={{ fontSize: "18px", fontWeight: "800", color: DESIGN.premium, marginBottom: "12px" }}>Premium Feature</div>
+          <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, change the invoice colors, and remove KudiSlip watermarks.</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Customize how your invoices look to your clients.</div>
+      
+      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px" }}>
+        <form onSubmit={handleSave}>
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Company Logo URL</label>
+            <input className="form-input" placeholder="https://example.com/my-logo.png" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>Provide a direct link to your transparent PNG logo.</div>
+          </div>
+          
+          <div style={{ marginBottom: "32px" }}>
+            <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Brand Color (Hex Code)</label>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ width: "50px", height: "40px", border: "none", cursor: "pointer", background: "none" }} />
+              <input className="form-input" placeholder="#000000" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ flex: 1 }} />
+            </div>
+          </div>
+          
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>{loading ? "Saving..." : "Save Brand Settings"}</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+
+// =========================================================
+// 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
 function SubscriptionManager({ user, onUpgradeSuccess }) {
   usePaystack();
@@ -299,7 +366,7 @@ function SubscriptionManager({ user, onUpgradeSuccess }) {
 }
 
 // =========================================================
-// 3. SUPER ADMIN OPERATIONS DASHBOARD 
+// 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
 function SuperAdminDashboard() {
   const [globalVendors, setGlobalVendors] = useState([]);
@@ -371,7 +438,7 @@ function SuperAdminDashboard() {
 }
 
 // =========================================================
-// 4. LANDING PAGE 
+// 5. LANDING PAGE 
 // =========================================================
 function LandingPage({ onNavigate }) {
   return (
@@ -394,14 +461,12 @@ function LandingPage({ onNavigate }) {
           </div>
         </main>
         
-        {/* Features Section */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p></div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p></div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p></div>
         </div>
 
-        {/* Pricing Section */}
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
@@ -432,7 +497,6 @@ function LandingPage({ onNavigate }) {
         </div>
       </div>
       
-      {/* Footer */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
@@ -448,7 +512,7 @@ function LandingPage({ onNavigate }) {
 }
 
 // =========================================================
-// 5. AUTHENTICATION
+// 6. AUTHENTICATION
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -500,7 +564,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
 }
 
 // =========================================================
-// 6. CLIENTS CRM
+// 7. CLIENTS CRM
 // =========================================================
 function ClientsManager({ user }) {
   const [clients, setClients] = useState([]);
@@ -552,7 +616,7 @@ function ClientsManager({ user }) {
 }
 
 // =========================================================
-// 7. INVOICE GENERATOR & VENDOR ANALYTICS
+// 8. INVOICE GENERATOR & VENDOR ANALYTICS
 // =========================================================
 function InvoiceGenerator({ user }) {
   const [clients, setClients] = useState([]);
@@ -582,7 +646,6 @@ function InvoiceGenerator({ user }) {
     if (!selectedClient || !dueDate) return alert("Select a client and due date.");
     setLoading(true);
     
-    // Attempt to save the invoice
     const { data, error } = await supabase.from('invoices').insert([{ 
       vendor_id: user.id, 
       client_id: selectedClient, 
@@ -591,10 +654,8 @@ function InvoiceGenerator({ user }) {
       due_date: dueDate 
     }]).select().single();
     
-    // If it fails, print exactly what Supabase says is wrong!
-    if (error) {
-      alert("Database Error: " + error.message + "\nDetails: " + (error.details || "None"));
-    } else {
+    if (error) { alert("Database Error: " + error.message + "\nDetails: " + (error.details || "None")); } 
+    else {
       alert("Invoice Generated! Link created.");
       setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
       fetchRecentInvoices();
@@ -602,7 +663,6 @@ function InvoiceGenerator({ user }) {
     setLoading(false);
   };
 
-  // VENDOR ANALYTICS CALCULATIONS
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
@@ -614,7 +674,6 @@ function InvoiceGenerator({ user }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
-      {/* VENDOR ANALYTICS DASHBOARD */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
         <div className="metric-card" style={{ padding: "20px" }}>
           <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
@@ -669,8 +728,6 @@ function InvoiceGenerator({ user }) {
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                   <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
-                  
-                  {/* WHATSAPP ONE-CLICK CHASER */}
                   {inv.status === 'pending' && (
                     <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
                       Send Reminder
@@ -687,7 +744,7 @@ function InvoiceGenerator({ user }) {
 }
 
 // =========================================================
-// 8. PAYOUT CONFIGURATION (WITH PAYSTACK FAILSAFE)
+// 9. PAYOUT CONFIGURATION 
 // =========================================================
 function PayoutSettings({ user, onSubaccountLinked }) {
   const [bankCode, setBankCode] = useState("");
@@ -699,18 +756,13 @@ function PayoutSettings({ user, onSubaccountLinked }) {
     if (accountNumber.length !== 10) return alert("Account number must be 10 digits.");
     setLoading(true);
     
-    // THE FAILSAFE: If the database is lagging, force a name through so Paystack accepts it.
     const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
 
     try {
       const res = await fetch("/api/create-subaccount", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          business_name: safeBusinessName, 
-          bank_code: bankCode, 
-          account_number: accountNumber 
-        }),
+        body: JSON.stringify({ business_name: safeBusinessName, bank_code: bankCode, account_number: accountNumber }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
@@ -754,12 +806,10 @@ export default function App() {
   useEffect(() => {
     if (initializationError) { setView("diagnostic_error"); return; }
     
-    // BULLETPROOF PARSER: Prevents the split().replace() crash entirely
     const currentPath = window.location.pathname || "";
     if (currentPath.startsWith('/pay/')) {
       const rawId = currentPath.replace('/pay/', '');
       const cleanId = String(rawId).replace(/[^a-zA-Z0-9-]/g, ''); 
-      
       setPublicInvoiceId(cleanId);
       setView("public_invoice");
       return;
@@ -804,6 +854,7 @@ export default function App() {
           <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Analytics</button>
           <button className={`menu-btn ${activeTab === "clients" ? "active" : ""}`} onClick={() => setActiveTab("clients")}>Client Directory</button>
           <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
+          <button className={`menu-btn ${activeTab === "brand" ? "active" : ""}`} onClick={() => setActiveTab("brand")}>Brand Settings</button>
           <button className={`menu-btn ${activeTab === "billing" ? "active" : ""}`} onClick={() => setActiveTab("billing")}>Billing & Plan</button>
           {user?.is_admin && (
             <button className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setActiveTab("admin")}>
@@ -821,6 +872,7 @@ export default function App() {
         {activeTab === "invoices" && <InvoiceGenerator user={user} />}
         {activeTab === "clients" && <ClientsManager user={user} />}
         {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} />}
+        {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />}
         {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} />}
         {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
       </div>
