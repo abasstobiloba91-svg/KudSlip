@@ -941,11 +941,25 @@ function InvoiceGenerator({ user, showToast }) {
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
 
+  // NEW STATES: Currency, Taxes, and Expense tracking
+  const [currency, setCurrency] = useState("₦");
+  const [applyVat, setApplyVat] = useState(false);
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem(`expenses_${user.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [expenseTitle, setExpenseTitle] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+
   useEffect(() => {
     if (!supabase) return;
     supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
     fetchRecentInvoices();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(`expenses_${user.id}`, JSON.stringify(expenses));
+  }, [expenses, user.id]);
 
   const fetchRecentInvoices = async () => {
     const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
@@ -955,7 +969,13 @@ function InvoiceGenerator({ user, showToast }) {
   const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
   const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
-  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  
+  // Calculates items + optional 7.5% VAT tax
+  const calculateTotal = () => {
+    let base = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    if (applyVat) base += base * 0.075;
+    return base;
+  };
 
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
@@ -967,21 +987,56 @@ function InvoiceGenerator({ user, showToast }) {
     setShowLogoWarning(false);
     setLoading(true);
     
-    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate }]).select().single();
+    // Attaching dynamic currency tag directly to items snapshot array metadata
+    const customizedItems = items.map(item => ({ ...item, invoice_currency: currency }));
+    
+    const { data, error } = await supabase.from('invoices').insert([{ 
+      vendor_id: user.id, 
+      client_id: selectedClient, 
+      amount: calculateTotal(), 
+      items: customizedItems, 
+      due_date: dueDate 
+    }]).select().single();
+    
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
+      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate(""); setApplyVat(false);
       fetchRecentInvoices();
     }
     setLoading(false);
   };
 
+  // CRITIC FEATURE: Bypasses Paystack gateway hooks for manual cash/bank transfers
+  const handleManualPaymentLog = async (invoiceId) => {
+    const { error } = await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoiceId);
+    if (error) {
+      showToast("Error", error.message, "error");
+    } else {
+      showToast("Payment Logged", "Invoice status successfully bypassed and updated to Paid.", "success");
+      fetchRecentInvoices();
+    }
+  };
+
+  const handleAddExpense = (e) => {
+    e.preventDefault();
+    if (!expenseTitle || !expenseAmount) return;
+    setExpenses([...expenses, { id: Date.now(), title: expenseTitle, amount: Number(expenseAmount), date: new Date().toLocaleDateString() }]);
+    setExpenseTitle(""); setExpenseAmount("");
+    showToast("Expense Recorded", "Operation expense updated safely.", "success");
+  };
+
+  const handleClearExpense = (id) => {
+    setExpenses(expenses.filter(exp => exp.id !== id));
+  };
+
   if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
 
+  // Financial Telemetry Aggregators
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  const totalPending = totalBilled - totalPaid;
+  const totalCollected = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const netProfit = totalCollected - totalExpenses;
 
   const filteredInvoices = invoices.filter(inv => {
     const clientName = (inv.clients?.name || "").toLowerCase();
@@ -991,8 +1046,6 @@ function InvoiceGenerator({ user, showToast }) {
   }).sort((a, b) => {
     if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
     if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
-    if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
-    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
     return 0;
   });
 
@@ -1001,65 +1054,89 @@ function InvoiceGenerator({ user, showToast }) {
   return (
     <div style={{ maxWidth: "900px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill clients globally and track net performance parameters.</div>
 
+      {/* FINANCIAL LEDGER OVERVIEW PANELS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalCollected.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Expenses</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalExpenses.toLocaleString()}</div></div>
+        <div className="metric-card" style={{ background: netProfit >= 0 ? "#F0FDF4" : "#FEF2F2", border: netProfit >= 0 ? "1px solid #DCFCE7" : "1px solid #FEE2E2" }}><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Net Cash Profit</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: netProfit >= 0 ? "#16A34A" : "#DC2626" }}>₦{netProfit.toLocaleString()}</div></div>
       </div>
 
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
-        
-        {showLogoWarning && (
-          <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div><strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong><span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span></div>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "8px 12px", fontSize: "12px", textDecoration: "none" }}>Upload Logo</a>
-              <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "8px 12px", fontSize: "12px", background: "#D97706", border: "none" }}>Ignore & Generate</button>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px", marginBottom: "40px", alignItems: "start" }}>
+        {/* INVOICE CONSTRUCTOR PANEL */}
+        <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Create New Invoice</h3>
+          
+          {showLogoWarning && (
+            <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px" }}>
+              <div style={{ fontSize: "13px", color: DESIGN.textMain, marginBottom: "12px" }}><strong>Missing Brand Logo:</strong> The KudiSlip default layout will execute instead.</div>
+              <div style={{ display: "flex", gap: "8px" }}><a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "6px 12px", fontSize: "11px", textDecoration: "none" }}>Upload Now</a><button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "6px 12px", fontSize: "11px", background: "#D97706", border: "none" }}>Ignore</button></div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "32px" }}>
-          <div>
-            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
-            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "6px" }}>Invoicing Currency</label>
+            <select className="form-input" value={currency} onChange={e => setCurrency(e.target.value)} style={{ padding: "10px 12px" }}>
+              <option value="₦">Naira (₦) — Local Route</option>
+              <option value="$">US Dollar ($) — Paystack International</option>
+              <option value="£">British Pound (£) — Paystack International</option>
+            </select>
           </div>
-          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
-        </div>
-        
-        <div style={{ marginBottom: "24px" }}>
-          {items.map((item, idx) => (
-            /* FIX: Cleaned up the Line Item "Card" to stack perfectly on mobile */
-            <div key={idx} style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px", background: DESIGN.bg, padding: "16px", borderRadius: "12px", border: `1px solid ${DESIGN.border}` }}>
-              <div style={{ width: "100%" }}>
-                <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Description</label>
-                <input className="form-input" placeholder="e.g. Website Design" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} style={{ background: "#FFFFFF" }} />
-              </div>
-              <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "flex-end", marginTop: "4px" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Qty</label>
-                  <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} style={{ background: "#FFFFFF" }} />
+
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "6px" }}>Billed To (Client)</label>
+            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)} style={{ padding: "10px 12px" }}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "6px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ padding: "10px 12px" }} /></div>
+          
+          <div style={{ borderTop: `1px solid ${DESIGN.border}`, paddingTop: "16px", marginBottom: "16px" }}>
+            {items.map((item, idx) => (
+              <div key={idx} style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px", background: DESIGN.bg, padding: "12px", borderRadius: "8px" }}>
+                <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} style={{ background: "#FFFFFF", padding: "10px" }} />
+                <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                  <input className="form-input" type="number" min="1" placeholder="Qty" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} style={{ background: "#FFFFFF", padding: "10px", flex: 1 }} />
+                  <input className="form-input" type="number" min="0" placeholder="Price" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} style={{ background: "#FFFFFF", padding: "10px", flex: 2 }} />
+                  <button type="button" onClick={() => handleRemoveItem(idx)} style={{ background: "#FEE2E2", color: "#EF4444", border: "none", borderRadius: "6px", width: "38px", cursor: "pointer", fontWeight: "900" }}>X</button>
                 </div>
-                <div style={{ flex: 2 }}>
-                  <label style={{ fontSize: "11px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "6px", display: "block", textTransform: "uppercase" }}>Price (₦)</label>
-                  <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} style={{ background: "#FFFFFF" }} />
-                </div>
-                <button onClick={() => handleRemoveItem(idx)} style={{ background: "#FEE2E2", color: "#EF4444", border: "none", borderRadius: "8px", minWidth: "46px", height: "46px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "900", cursor: "pointer", transition: "all 0.2s" }}>X</button>
               </div>
-            </div>
-          ))}
-          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "800", cursor: "pointer", fontSize: "14px", padding: "10px 0" }}>+ Add Line Item</button>
+            ))}
+            <button type="button" onClick={handleAddItem} style={{ background: "none", border: "none", color: "#000", fontWeight: "700", fontSize: "13px", cursor: "pointer", padding: 0 }}>+ Add Line Item</button>
+          </div>
+
+          <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <input type="checkbox" id="vat" checked={applyVat} onChange={e => setApplyVat(e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+            <label htmlFor="vat" style={{ fontSize: "13px", fontWeight: "600", color: DESIGN.textMain, cursor: "pointer" }}>Apply 7.5% Government VAT</label>
+          </div>
+
+          <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "18px", fontWeight: "900" }}>Total: {currency}{calculateTotal().toLocaleString()}</div>
+            <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0} style={{ padding: "10px 20px", fontSize: "14px" }}>Generate Invoice</button>
+          </div>
         </div>
 
-        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+        {/* EXPENSE LEDGER REGISTRY ENGINE */}
+        <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Log Business Expense</h3>
+          <form onSubmit={handleAddExpense} style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+            <input className="form-input" placeholder="Expense description (e.g. Internet)" value={expenseTitle} onChange={e => setExpenseTitle(e.target.value)} required style={{ padding: "10px 12px" }} />
+            <input className="form-input" type="number" min="1" placeholder="Amount (₦)" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} required style={{ padding: "10px 12px" }} />
+            <button className="btn-primary btn-hover" type="submit" style={{ padding: "10px", fontSize: "13px" }}>Record Outflow</button>
+          </form>
+          <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+            {expenses.map(exp => (
+              <div key={exp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px dashed ${DESIGN.border}`, fontSize: "13px" }}>
+                <div><span style={{ fontWeight: "700" }}>{exp.title}</span><span style={{ color: DESIGN.textMuted, fontSize: "11px", marginLeft: "8px" }}>{exp.date}</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><span style={{ color: DESIGN.error, fontWeight: "700" }}>-₦{exp.amount.toLocaleString()}</span><button onClick={() => handleClearExpense(exp.id)} style={{ background: "none", border: "none", color: DESIGN.textMuted, cursor: "pointer", fontSize: "11px" }}>✕</button></div>
+              </div>
+            ))}
+            {expenses.length === 0 && <div style={{ color: DESIGN.textMuted, fontSize: "13px", textAlign: "center", padding: "20px" }}>No expenses logged this period.</div>}
+          </div>
         </div>
       </div>
 
+      {/* RECENT INVOICES DATABASE */}
       {invoices.length > 0 && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
@@ -1069,8 +1146,6 @@ function InvoiceGenerator({ user, showToast }) {
               <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                 <option value="date-desc">Newest First</option>
                 <option value="date-asc">Oldest First</option>
-                <option value="name-asc">Client A-Z</option>
-                <option value="name-desc">Client Z-A</option>
               </select>
             </div>
           </div>
@@ -1079,6 +1154,7 @@ function InvoiceGenerator({ user, showToast }) {
             const safeInvAmount = Number(inv.amount || 0);
             let parsedItems = [];
             try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
+            const activeCurrency = parsedItems?.invoice_currency || "₦";
             const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
 
             return (
@@ -1093,17 +1169,25 @@ function InvoiceGenerator({ user, showToast }) {
                   </div>
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
+                
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", width: "100%", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{activeCurrency}{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px", whiteSpace: "nowrap" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                  
                   {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px", whiteSpace: "nowrap" }}>Send Reminder</a>
+                    <>
+                      {/* CRITIC SYSTEM WORKFLOW OVERRIDE LAYER */}
+                      <button className="btn-secondary btn-hover" style={{ padding: "8px 16px", borderColor: DESIGN.success, color: DESIGN.success, whiteSpace: "nowrap" }} onClick={() => handleManualPaymentLog(inv.id)}>Mark Paid (Transfer)</button>
+                      
+                      {/* AUTOMATED/PRE-FILLED WHATSAPP REMINDER DISPATCHER */}
+                      <a href={"https://wa.me/" + (inv.clients?.phone || "").replace(/\D/g, "") + "?text=" + encodeURIComponent(`Hello ${inv.clients?.name || 'Customer'}! This is an automated billing tracker notification from ${user.business_name || 'us'}. Your invoice balance of ${activeCurrency}${safeInvAmount.toLocaleString()} is currently pending settlement. Kindly fulfill payment securely here: https://${window.location.host}/#/pay/${inv.id} Thank you!`)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px", whiteSpace: "nowrap" }}>Send WhatsApp</a>
+                    </>
                   )}
                 </div>
               </div>
             );
           })}
-          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices matching the parameters.</div>}
         </div>
       )}
     </div>
