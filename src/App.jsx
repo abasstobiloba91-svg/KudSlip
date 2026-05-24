@@ -18,6 +18,7 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
   catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
+// EXPANDED NIGERIAN BANKS LIST
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
   { code: "050", name: "Ecobank Nigeria" },
@@ -43,7 +44,8 @@ const NIGERIAN_BANKS = [
 
 const DESIGN = {
   bg: "#F8FAFC", surface: "#FFFFFF", card: "#FFFFFF", border: "#E2E8F0",
-  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6"
+  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6",
+  chatBubble: "#E2E8F0", chatUser: "#000000"
 };
 
 // --- SVG ICONS ---
@@ -190,7 +192,7 @@ const Toast = ({ toast, onClose }) => {
         <div style={{ fontWeight: "800", fontSize: "14px", color: "#0F172A", marginBottom: "4px" }}>{toast.title}</div>
         <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>{toast.message}</div>
       </div>
-      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px", display: "flex", transition: "color 0.2s" }}>
+      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px", display: "flex", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#0F172A"} onMouseOut={(e) => e.currentTarget.style.color = "#64748B"}>
         <CloseIcon />
       </button>
     </div>
@@ -331,9 +333,15 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
       {/* FULL PAGE REPEATING WATERMARK OVERLAY */}
       {isFreeTier && (
         <div style={{ 
-          position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", 
-          backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", 
-          opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" 
+          position: "fixed", 
+          top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", 
+          backgroundImage: 'url("/logo.png")', 
+          backgroundRepeat: "repeat", 
+          backgroundSize: "200px", 
+          opacity: 0.03, 
+          pointerEvents: "none", 
+          zIndex: 9999, 
+          transform: "rotate(-15deg)" 
         }} />
       )}
 
@@ -509,7 +517,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
       const handler = window.PaystackPop.setup({
         key: PAYSTACK_PUBLIC_KEY,
         email: user?.email || "vendor@kudislip.com",
-        amount: 15000 * 100, 
+        amount: 15000 * 100, // NGN 15,000
         currency: "NGN",
         callback: async function(response) {
           try {
@@ -530,7 +538,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
       handler.openIframe();
     } catch (err) {
       setIsProcessing(false);
-      showToast("System Error", "Could not securely launch the payment window.", "error");
+      showToast("System Error", "Could not securely launch the payment window due to browser restrictions.", "error");
     }
   };
 
@@ -788,6 +796,512 @@ function LandingPage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// =========================================================
+// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
+// =========================================================
+function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
+  const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleAuth = async (e) => {
+    e.preventDefault(); setLoading(true); setError("");
+    try {
+      if (isSignUp) {
+        if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
+        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+        if (authError) throw authError;
+        if (authData.user) {
+          const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName }]);
+          if (dbError) throw dbError;
+        }
+        showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
+        setIsSignUp(false);
+      } else {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
+        const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
+        onLoginSuccess({ ...data.user, ...vendorData });
+        window.location.hash = "#/dashboard/invoices";
+      }
+    } catch (err) { setError(err.message); showToast("Authentication Error", err.message, "error"); } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+      <GlobalStyles />
+      <a href="#/" style={{ textDecoration: "none", position: "absolute", top: "24px", left: "24px", color: "#64748B", fontWeight: "600", fontSize: "14px", padding: "8px" }} className="btn-hover">&larr; Back to Home</a>
+      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
+      <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
+        <form onSubmit={handleAuth}>
+          {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
+          {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
+          <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+          <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label><input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+          
+          {isSignUp && (
+            <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+              <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
+              <label htmlFor="terms" style={{ fontSize: "12px", color: DESIGN.textMuted, lineHeight: "1.5" }}>
+                I agree to the <a href="#/terms" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Terms & Conditions</a> and <a href="#/privacy" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Privacy Policy</a>.
+              </label>
+            </div>
+          )}
+
+          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
+        </form>
+        <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
+          {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>
+            {isSignUp ? "Log In" : "Sign Up"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 7. CLIENTS CRM
+// =========================================================
+function ClientsManager({ user, showToast }) {
+  const [clients, setClients] = useState([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from('clients').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false }).then(({ data }) => setClients(data || []));
+  }, []);
+
+  const handleAddClient = async (e) => {
+    e.preventDefault(); setLoading(true);
+    const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
+    if (!error && data) { 
+      setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); 
+      showToast("Client Added", "Customer has been added successfully to your directory.", "success"); 
+    }
+    else if (error) { showToast("Database Error", "Failed to add client. Check database permissions.", "error"); }
+    setLoading(false);
+  };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Client CRM.</div>;
+
+  return (
+    <div>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
+        <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
+          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} required/></div>
+          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></div>
+          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Phone</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
+          <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
+        </form>
+      </div>
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, overflowX: "auto" }}>
+        {clients.length === 0 ? <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No clients added yet.</div> : (
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "500px" }}>
+            <thead style={{ background: "#F1F5F9", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>
+              <tr><th style={{ padding: "16px 24px" }}>Name</th><th style={{ padding: "16px 24px" }}>Email</th><th style={{ padding: "16px 24px" }}>Phone</th></tr>
+            </thead>
+            <tbody>
+              {clients.map(c => <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}><td style={{ padding: "16px 24px", fontWeight: "600" }}>{c.name}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.email}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.phone || "—"}</td></tr>)}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 8. INVOICE GENERATOR (With Search & Detailed Views)
+// =========================================================
+function InvoiceGenerator({ user, showToast }) {
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState("");
+  const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
+  const [dueDate, setDueDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [invoices, setInvoices] = useState([]);
+  
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("date-desc");
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
+    fetchRecentInvoices();
+  }, []);
+
+  const fetchRecentInvoices = async () => {
+    const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
+    if(data) setInvoices(data);
+  };
+
+  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
+  const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
+  const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
+  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+  const handleGenerateInvoice = async () => {
+    if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
+    setLoading(true);
+    
+    const { data, error } = await supabase.from('invoices').insert([{ 
+      vendor_id: user.id, 
+      client_id: selectedClient, 
+      amount: calculateTotal(), 
+      items: items, 
+      due_date: dueDate 
+    }]).select().single();
+    
+    if (error) { showToast("Database Error", error.message, "error"); } 
+    else {
+      showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
+      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
+      fetchRecentInvoices();
+    }
+    setLoading(false);
+  };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
+
+  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPending = totalBilled - totalPaid;
+
+  // Search and Sort Logic
+  const filteredInvoices = invoices.filter(inv => {
+    const clientName = (inv.clients?.name || "").toLowerCase();
+    const itemsStr = JSON.stringify(inv.items || "").toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return clientName.includes(q) || itemsStr.includes(q);
+  }).sort((a, b) => {
+    if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
+    if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
+    if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
+    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
+    return 0;
+  });
+
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <div className="metric-card">
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
+        </div>
+        <div className="metric-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div>
+        </div>
+        <div className="metric-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
+            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}>
+              <option value="">-- Select Client --</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+        </div>
+        <div style={{ marginBottom: "24px" }}>
+          {items.map((item, idx) => (
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
+              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
+              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
+              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
+              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
+            </div>
+          ))}
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
+        </div>
+        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
+          <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+        </div>
+      </div>
+
+      {/* Invoice Ledger Search & Filter */}
+      {invoices.length > 0 && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
+            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
+              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                <option value="date-desc">Newest First</option>
+                <option value="date-asc">Oldest First</option>
+                <option value="name-asc">Client A-Z</option>
+                <option value="name-desc">Client Z-A</option>
+              </select>
+            </div>
+          </div>
+          
+          {filteredInvoices.map(inv => {
+            const safeInvAmount = Number(inv.amount || 0);
+            let parsedItems = [];
+            try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
+            const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
+
+            return (
+              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "16px" }}>
+                <div style={{ flex: 1, minWidth: "250px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                    <div style={{ fontWeight: "800", fontSize: "16px" }}>{inv.clients?.name}</div>
+                    <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                    <span>{inv.clients?.email}</span>
+                    {inv.clients?.phone && <span>{inv.clients.phone}</span>}
+                  </div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
+                </div>
+                
+                <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
+                  <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                  {inv.status === 'pending' && (
+                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>
+                      Send Reminder
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =========================================================
+// 9. PAYOUT CONFIGURATION 
+// =========================================================
+function PayoutSettings({ user, onSubaccountLinked, showToast }) {
+  const [bankCode, setBankCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSetupPayout = async (e) => {
+    e.preventDefault();
+    if (accountNumber.length !== 10) return showToast("Invalid Input", "Account number must be exactly 10 digits.", "error");
+    setLoading(true);
+    
+    const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
+
+    try {
+      const res = await fetch("/api/create-subaccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business_name: safeBusinessName, bank_code: bankCode, account_number: accountNumber }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      
+      await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
+      onSubaccountLinked(result.subaccount_code);
+      showToast("Bank Linked", "Your bank account has been connected securely.", "success");
+    } catch (error) { 
+      showToast("Error Linking Bank", error.message, "error"); 
+    } finally { setLoading(false); }
+  };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Payouts.</div>;
+
+  return (
+    <div style={{ maxWidth: "550px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
+        {user?.paystack_subaccount_code ? (
+          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
+        ) : (
+          <form onSubmit={handleSetupPayout}>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label>
+              <select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required>
+                <option value="">-- Select Bank --</option>
+                {NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
+            <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 10. HELPDESK & SUPPORT TICKETING SYSTEM
+// =========================================================
+function SupportDashboard({ user, showToast }) {
+  const [tickets, setTickets] = useState([]);
+  const [activeTicket, setActiveTicket] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
+
+  const fetchTickets = async () => {
+    let query = supabase.from('tickets').select('*, vendors(business_name, email)');
+    if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
+    const { data } = await query.order('created_at', { ascending: false });
+    if (data) setTickets(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (supabase) fetchTickets(); }, []);
+
+  useEffect(() => {
+    if (activeTicket) {
+      supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true }).then(({ data }) => setMessages(data || []));
+    }
+  }, [activeTicket]);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleCreateTicket = async (e) => {
+    e.preventDefault(); setLoading(true);
+    const { data, error } = await supabase.from('tickets').insert([{ vendor_id: user.id, subject }]).select().single();
+    if (error) showToast("Error", error.message, "error");
+    else {
+      showToast("Ticket Created", "A support agent will be with you shortly.", "success");
+      setSubject("");
+      fetchTickets();
+      
+      await supabase.from('notifications').insert([{ 
+        user_id: user.id,
+        title: "New Support Ticket", 
+        message: `${user.business_name || 'A user'} opened a ticket: ${subject}` 
+      }]);
+    }
+    setLoading(false);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    const msg = newMessage; setNewMessage("");
+    
+    const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
+    if (error) { showToast("Error", error.message, "error"); return; }
+    
+    setMessages([...messages, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
+
+    if (user.role !== 'vendor') {
+      await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
+    }
+  };
+
+  const closeTicket = async () => {
+    await supabase.from('tickets').update({ status: 'closed' }).eq('id', activeTicket.id);
+    setActiveTicket({ ...activeTicket, status: 'closed' });
+    fetchTickets();
+    showToast("Closed", "Ticket has been closed.", "info");
+  };
+
+  if (activeTicket) {
+    return (
+      <div style={{ maxWidth: "800px" }}>
+        <button onClick={() => setActiveTicket(null)} className="btn-hover" style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", gap: "8px" }}>&larr; Back to Tickets</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{activeTicket.subject}</h2>
+          {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
+          {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
+        </div>
+        
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
+            {messages.map(m => {
+              const isMe = m.sender_id === user.id;
+              return (
+                <div key={m.id} className={`chat-bubble ${isMe ? 'user' : 'admin'}`}>
+                  <div style={{ fontSize: "11px", opacity: 0.7, marginBottom: "4px" }}>{isMe ? "You" : "Support Team"}</div>
+                  <div>{m.message}</div>
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+          {activeTicket.status === 'open' ? (
+             <form onSubmit={handleSendMessage} className="chat-input-area">
+              <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={newMessage} onChange={e=>setNewMessage(e.target.value)} required />
+              <button className="btn-primary btn-hover" type="submit">Send</button>
+            </form>
+          ) : (
+            <div style={{ padding: "16px", textAlign: "center", background: "#F1F5F9", color: DESIGN.textMuted, fontWeight: "600", fontSize: "14px" }}>This ticket is closed.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><MessageIcon /> {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>{user.role === 'vendor' ? 'Need help? Open a ticket and our team will assist you.' : 'Manage and respond to customer tickets.'}</div>
+
+      {user.role === 'vendor' && (
+        <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Create New Ticket</h3>
+          <form onSubmit={handleCreateTicket} style={{ display: "flex", gap: "12px" }}>
+            <input className="form-input" style={{ flex: 1 }} placeholder="Briefly describe your issue..." value={subject} onChange={e=>setSubject(e.target.value)} required />
+            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "..." : "Open Ticket"}</button>
+          </form>
+        </div>
+      )}
+
+      <div>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>{user.role === 'vendor' ? 'Your Tickets' : 'All Open Tickets'}</h3>
+        {loading ? <div style={{ color: DESIGN.textMuted }}>Loading tickets...</div> : tickets.length === 0 ? <div style={{ padding: "40px", textAlign: "center", background: "#FFF", borderRadius: "12px", border: `1px dashed ${DESIGN.border}`, color: DESIGN.textMuted }}>No tickets found.</div> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {tickets.map(t => (
+              <div key={t.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setActiveTicket(t)}>
+                <div>
+                  <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "4px" }}>{t.subject}</div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{user.role !== 'vendor' ? `From: ${t.vendors?.business_name || 'Vendor'}` : new Date(t.created_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: t.status === 'open' ? "#FEF3C7" : "#F1F5F9", color: t.status === 'open' ? "#D97706" : DESIGN.textMuted }}>{t.status.toUpperCase()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
