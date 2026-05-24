@@ -399,41 +399,60 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
 
-  // Native Base64 Conversion - 100% bypasses storage firewalls
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files;
     if (!file) return;
     
-    if (file.size > 2097152) {
-      showToast("File Too Large", "Please select a logo smaller than 2MB.", "error");
+    // Check file size (5MB Limit)
+    if (file.size > 5242880) {
+      showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
       return;
     }
 
     setUploading(true);
     setUploadPercent(0);
-
+    
+    // Smart UI Tracker: Animates smoothly up to 90% while uploading
     const progressInterval = setInterval(() => {
-      setUploadPercent((prev) => (prev >= 90 ? 90 : prev + 20));
-    }, 100);
+      setUploadPercent((prev) => (prev >= 90 ? 90 : prev + 15));
+    }, 250);
     
-    const reader = new FileReader();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
     
-    reader.onloadend = () => {
+    try {
+      // FIXED: Changed bucket name to 'LOGOS' to match your Supabase console exactly
+      const { error: uploadError } = await supabase.storage.from('LOGOS').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false 
+      });
+
       clearInterval(progressInterval);
+
+      if (uploadError) { 
+        setUploadPercent(0);
+        setUploading(false);
+        showToast("Upload Blocked", uploadError.message, "error"); 
+        return; 
+      }
+      
+      // Success! Snap to 100%
       setUploadPercent(100);
-      setLogoUrl(reader.result); // Saves the raw string!
-      showToast("Logo Processed!", "Image loaded natively. Click Save below to apply it.", "success");
-      setTimeout(() => { setUploading(false); setUploadPercent(0); }, 1500);
-    };
+      const { data } = supabase.storage.from('LOGOS').getPublicUrl(fileName);
+      setLogoUrl(data.publicUrl);
+      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      
+      setTimeout(() => {
+        setUploading(false);
+        setUploadPercent(0);
+      }, 1500);
 
-    reader.onerror = () => {
+    } catch (err) {
       clearInterval(progressInterval);
-      setUploading(false);
       setUploadPercent(0);
-      showToast("Processing Error", "Your browser failed to read the image.", "error");
-    };
-
-    reader.readAsDataURL(file);
+      setUploading(false);
+      showToast("System Error", err.message, "error");
+    }
   };
 
   const handleSave = async (e) => {
@@ -483,7 +502,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
             
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
-                Processing: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
+                Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
               </div>
             )}
           </div>
@@ -507,7 +526,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
     </div>
   );
 }
-
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
