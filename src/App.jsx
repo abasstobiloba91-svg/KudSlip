@@ -1454,7 +1454,7 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR
+// 8. INVOICE GENERATOR (WITH FOREX & PREMIUM LOGO MODAL)
 // =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -1545,7 +1545,7 @@ function InvoiceGenerator({ user, showToast }) {
     if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
     if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
     if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
-    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
+    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(b.clients?.name || "");
     return 0;
   });
 
@@ -1553,6 +1553,23 @@ function InvoiceGenerator({ user, showToast }) {
 
   return (
     <div style={{ maxWidth: "900px" }}>
+      
+      {/* PREMIUM LOGO MODAL */}
+      {showLogoWarning && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="toast-container" style={{ background: "#FFFFFF", padding: "40px", borderRadius: "20px", maxWidth: "450px", width: "90%", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "20px" }}><PaintIcon /></div>
+            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "12px", color: DESIGN.textMain }}>Missing Brand Logo</h3>
+            <p style={{ color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
+              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "16px", border: "none", background: "#F1F5F9" }}>Ignore & Generate Invoice</button>
+              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: DESIGN.textMuted, fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
@@ -1565,16 +1582,6 @@ function InvoiceGenerator({ user, showToast }) {
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
-        {showLogoWarning && (
-          <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div><strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong><span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span></div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "8px 12px", fontSize: "12px", textDecoration: "none" }}>Upload Logo</a>
-              <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "8px 12px", fontSize: "12px", background: "#D97706", border: "none" }}>Ignore & Generate</button>
-            </div>
-          </div>
-        )}
-
         {calcOpen ? (
           <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "20px", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
@@ -1665,7 +1672,6 @@ function InvoiceGenerator({ user, showToast }) {
             return (
               <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: "16px", padding: "24px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
                 
-                {/* Top Row: Client Info & Status */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{ wordBreak: "break-word" }}>
                     <div style={{ fontWeight: "900", fontSize: "18px", color: DESIGN.textMain, marginBottom: "4px" }}>{inv.clients?.name}</div>
@@ -1679,12 +1685,10 @@ function InvoiceGenerator({ user, showToast }) {
                   </span>
                 </div>
 
-                {/* Middle Row: Items Summary */}
                 <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: DESIGN.textMain, fontWeight: "500", border: "1px solid #F1F5F9" }}>
                   <span style={{ color: DESIGN.textMuted, fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
-                {/* Bottom Row: Amount & Actions */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
                   <div style={{ fontSize: "24px", fontWeight: "900", color: DESIGN.textMain }}>
                     {sym}{safeInvAmount.toLocaleString()}
@@ -1703,207 +1707,6 @@ function InvoiceGenerator({ user, showToast }) {
           {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
         </div>
       )}
-    </div>
-  );
-}
-// =========================================================
-// 9. PAYOUT CONFIGURATION 
-// =========================================================
-function PayoutSettings({ user, onSubaccountLinked, showToast }) {
-  const [bankCode, setBankCode] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSetupPayout = async (e) => {
-    e.preventDefault();
-    if (accountNumber.length !== 10) return showToast("Invalid Input", "Account number must be exactly 10 digits.", "error");
-    setLoading(true);
-    
-    const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
-
-    try {
-      const res = await fetch("/api/create-subaccount", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ business_name: safeBusinessName, bank_code: bankCode, account_number: accountNumber }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      
-      await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
-      onSubaccountLinked(result.subaccount_code);
-      showToast("Bank Linked", "Your bank account has been connected securely.", "success");
-    } catch (error) { 
-      showToast("Error Linking Bank", error.message, "error"); 
-    } finally { setLoading(false); }
-  };
-
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Payouts.</div>;
-
-  return (
-    <div style={{ maxWidth: "550px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
-        {user?.paystack_subaccount_code ? (
-          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
-        ) : (
-          <form onSubmit={handleSetupPayout}>
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label>
-              <select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required>
-                <option value="">-- Select Bank --</option>
-                {NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}
-              </select>
-            </div>
-            <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
-            <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// =========================================================
-// 10. HELPDESK & SUPPORT TICKETING SYSTEM
-// =========================================================
-function SupportDashboard({ user, showToast }) {
-  const [tickets, setTickets] = useState([]);
-  const [activeTicket, setActiveTicket] = useState(null);
-  const [subject, setSubject] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef(null);
-
-  const fetchTickets = async () => {
-    let query = supabase.from('tickets').select('*, vendors(business_name)');
-    if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
-    const { data, error } = await query.order('created_at', { ascending: false });
-    if (data) setTickets(data);
-    setLoading(false);
-  };
-
-  useEffect(() => { 
-    if (!supabase) return;
-    fetchTickets(); 
-    const inboxInterval = setInterval(fetchTickets, 10000);
-    return () => clearInterval(inboxInterval);
-  }, []);
-
-  useEffect(() => {
-    if (!activeTicket) return;
-    const fetchMessages = async () => {
-      const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true });
-      if (data) setMessages(data);
-    };
-    fetchMessages();
-    const chatInterval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(chatInterval);
-  }, [activeTicket]);
-
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
-
-  const handleCreateTicket = async (e) => {
-    e.preventDefault(); setLoading(true);
-    const { data, error } = await supabase.from('tickets').insert([{ vendor_id: user.id, subject }]).select().single();
-    if (error) showToast("Error", error.message, "error");
-    else {
-      showToast("Ticket Created", "A support agent will be with you shortly.", "success");
-      setSubject("");
-      fetchTickets();
-      await supabase.from('notifications').insert([{ user_id: user.id, title: "New Support Ticket", message: `${user.business_name || 'A user'} opened a ticket: ${subject}` }]);
-    }
-    setLoading(false);
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    const msg = newMessage; setNewMessage("");
-    setMessages(prev => [...prev, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
-    const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
-    if (error) { showToast("Error", error.message, "error"); return; }
-    if (user.role !== 'vendor') {
-      await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
-    }
-  };
-
-  const closeTicket = async () => {
-    await supabase.from('tickets').update({ status: 'closed' }).eq('id', activeTicket.id);
-    setActiveTicket({ ...activeTicket, status: 'closed' });
-    fetchTickets();
-    showToast("Closed", "Ticket has been closed.", "info");
-  };
-
-  if (activeTicket) {
-    return (
-      <div style={{ maxWidth: "800px" }}>
-        <button onClick={() => setActiveTicket(null)} className="btn-hover" style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", gap: "8px" }}>&larr; Back to Tickets</button>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{activeTicket.subject}</h2>
-          {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
-          {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
-        </div>
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
-            {messages.map(m => {
-              const isMe = m.sender_id === user.id;
-              return (
-                <div key={m.id} className={`chat-bubble ${isMe ? 'user' : 'admin'}`}>
-                  <div style={{ fontSize: "11px", opacity: 0.7, marginBottom: "4px" }}>{isMe ? "You" : "Support Team"}</div>
-                  <div>{m.message}</div>
-                </div>
-              )
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-          {activeTicket.status === 'open' ? (
-             <form onSubmit={handleSendMessage} className="chat-input-area">
-              <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={newMessage} onChange={e=>setNewMessage(e.target.value)} required />
-              <button className="btn-primary btn-hover" type="submit">Send</button>
-            </form>
-          ) : (
-            <div style={{ padding: "16px", textAlign: "center", background: "#F1F5F9", color: DESIGN.textMuted, fontWeight: "600", fontSize: "14px" }}>This ticket is closed.</div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ maxWidth: "900px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><MessageIcon /> {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}</div>
-      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>{user.role === 'vendor' ? 'Need help? Open a ticket and our team will assist you.' : 'Manage and respond to customer tickets.'}</div>
-
-      {user.role === 'vendor' && (
-        <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Create New Ticket</h3>
-          <form onSubmit={handleCreateTicket} style={{ display: "flex", gap: "12px" }}>
-            <input className="form-input" style={{ flex: 1 }} placeholder="Briefly describe your issue..." value={subject} onChange={e=>setSubject(e.target.value)} required />
-            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "..." : "Open Ticket"}</button>
-          </form>
-        </div>
-      )}
-
-      <div>
-        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>{user.role === 'vendor' ? 'Your Tickets' : 'All Open Tickets'}</h3>
-        {loading ? <div style={{ color: DESIGN.textMuted }}>Loading tickets...</div> : tickets.length === 0 ? <div style={{ padding: "40px", textAlign: "center", background: "#FFF", borderRadius: "12px", border: `1px dashed ${DESIGN.border}`, color: DESIGN.textMuted }}>No tickets found.</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {tickets.map(t => (
-              <div key={t.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setActiveTicket(t)}>
-                <div>
-                  <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "4px" }}>{t.subject}</div>
-                  <div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{user.role !== 'vendor' ? `From: ${t.vendors?.business_name || 'Vendor'}` : new Date(t.created_at).toLocaleDateString()}</div>
-                </div>
-                <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: t.status === 'open' ? "#FEF3C7" : "#F1F5F9", color: t.status === 'open' ? "#D97706" : DESIGN.textMuted }}>{t.status.toUpperCase()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
