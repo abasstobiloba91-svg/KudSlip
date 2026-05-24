@@ -24,6 +24,33 @@ const NIGERIAN_BANKS = [
   { code: "057", name: "Zenith Bank" },
 ];
 
+// --- ENTERPRISE MONOCHROME DESIGN SYSTEM ---
+const DESIGN = {
+  bg: "#F8FAFC",
+  surface: "#FFFFFF",
+  card: "#FFFFFF",
+  border: "#E2E8F0",
+  primary: "#000000",
+  primaryHover: "#333333",
+  textMain: "#0F172A",
+  textMuted: "#64748B",
+  error: "#EF4444",
+  success: "#10B981"
+};
+
+const styles = {
+  appWrapper: { minHeight: "100vh", background: DESIGN.bg, color: DESIGN.textMain, fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column" },
+  container: { maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" },
+  navbar: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid ${DESIGN.border}` },
+  card: { background: DESIGN.card, border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", boxSizing: "border-box", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" },
+  input: { width: "100%", padding: "14px 16px", background: "#F1F5F9", border: `1px solid ${DESIGN.border}`, borderRadius: 8, color: DESIGN.textMain, fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" },
+  buttonPrimary: { padding: "14px 28px", background: DESIGN.primary, color: "#FFF", border: "none", borderRadius: 8, fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "background 0.2s" },
+  buttonSecondary: { padding: "14px 28px", background: "transparent", color: DESIGN.primary, border: `2px solid ${DESIGN.primary}`, borderRadius: 8, fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "background 0.2s" },
+  label: { fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em" },
+  sidebar: { width: "260px", background: DESIGN.surface, borderRight: `1px solid ${DESIGN.border}`, display: "flex", flexDirection: "column", padding: "32px 0", minHeight: "100vh" },
+  sidebarBtn: (isActive) => ({ display: "block", width: "100%", padding: "16px 32px", background: isActive ? "#F1F5F9" : "transparent", border: "none", borderLeft: isActive ? `4px solid ${DESIGN.primary}` : "4px solid transparent", color: isActive ? DESIGN.primary : DESIGN.textMuted, textAlign: "left", cursor: "pointer", fontWeight: isActive ? "700" : "500", fontSize: "14px" }),
+};
+
 // --- CSS INJECTION FOR RESPONSIVENESS & HOVER EFFECTS ---
 const GlobalStyles = () => (
   <style>{`
@@ -36,7 +63,6 @@ const GlobalStyles = () => (
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Buttons & Hover Effects */
     .btn-primary {
       padding: 14px 28px;
       background: #000000;
@@ -82,7 +108,6 @@ const GlobalStyles = () => (
       box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08);
     }
 
-    /* Inputs */
     .form-input {
       width: 100%;
       padding: 14px 16px;
@@ -99,7 +124,6 @@ const GlobalStyles = () => (
       border-color: #000000;
     }
 
-    /* Dashboard Layout */
     .dashboard-layout {
       display: flex;
       min-height: 100vh;
@@ -150,13 +174,12 @@ const GlobalStyles = () => (
       overflow-y: auto;
     }
 
-    /* Mobile Responsiveness */
     @media (max-width: 768px) {
       .hero-title {
         font-size: 38px !important;
       }
       .nav-buttons {
-        display: none !important; /* Hide auth buttons on mobile nav for clean look */
+        display: none !important;
       }
       .features-grid {
         grid-template-columns: 1fr !important;
@@ -210,7 +233,6 @@ function LandingPage({ onNavigate }) {
       <GlobalStyles />
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" }}>
         
-        {/* Navigation */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
@@ -219,7 +241,6 @@ function LandingPage({ onNavigate }) {
           </div>
         </nav>
 
-        {/* Hero Section */}
         <main style={{ textAlign: "center", padding: "80px 0 60px" }}>
           <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>
             The #1 CRM & Invoicing Tool
@@ -232,12 +253,10 @@ function LandingPage({ onNavigate }) {
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
             <button className="btn-primary" style={{ padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
-            {/* Mobile login button (hidden on desktop nav, shown here) */}
             <button className="btn-secondary" style={{ padding: "16px 36px", fontSize: "16px", display: window.innerWidth <= 768 ? "block" : "none" }} onClick={() => onNavigate("auth", false)}>Log In</button>
           </div>
         </main>
 
-        {/* Feature Highlights */}
         <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", paddingBottom: "100px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
@@ -443,4 +462,106 @@ function PayoutSettings({ user, onSubaccountLinked }) {
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
-  const [view, setView] = useState("landing"); //
+  const [view, setView] = useState("landing");
+  const [authSignUpIntent, setAuthSignUpIntent] = useState(false);
+  const [activeTab, setActiveTab] = useState("invoices");
+  const [loadingWorkspace, setLoadingWorkspace] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          setUser({ ...session.user, ...data });
+          setView("dashboard");
+        });
+      }
+      setLoadingWorkspace(false);
+    });
+  }, []);
+
+  const handleNavigateToAuth = (isSignUp) => {
+    setAuthSignUpIntent(isSignUp);
+    setView("auth");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setView("landing");
+  };
+
+  if (loadingWorkspace) {
+    return (
+      <div style={{ background: "#F8FAFC", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#0F172A", fontFamily: "system-ui" }}>
+        <GlobalStyles />
+        <img src="/logo.png" alt="KudiSlip" style={{ height: "48px", width: "auto", marginBottom: "24px", objectFit: "contain" }} />
+        <div style={{ color: "#64748B", fontSize: "14px", fontWeight: "500" }}>Loading Workspace...</div>
+      </div>
+    );
+  }
+
+  if (view === "landing") {
+    return <LandingPage onNavigate={handleNavigateToAuth} />;
+  }
+
+  if (view === "auth") {
+    return <KudiSlipAuth initialIsSignUp={authSignUpIntent} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
+  }
+
+  return (
+    <div className="dashboard-layout">
+      <GlobalStyles />
+      
+      {/* SIDEBAR */}
+      <div className="sidebar">
+        <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "24px" }}>
+          <img src="/logo.png" alt="KudiSlip" style={{ height: "32px", width: "auto", objectFit: "contain" }} />
+        </div>
+        
+        <div className="sidebar-menu">
+          <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & CRM</button>
+          <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
+        </div>
+
+        <div style={{ flex: 1, display: window.innerWidth <= 768 ? "none" : "block" }} />
+        
+        {/* User Info & Logout */}
+        <div style={{ padding: "16px 32px", marginTop: "auto" }}>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {user.business_name}
+          </div>
+          <button className="menu-btn" style={{ padding: "0", color: "#EF4444" }} onClick={handleLogout}>Log Out</button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="main-content">
+        {activeTab === "payouts" && (
+          <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} />
+        )}
+        
+        {activeTab === "invoices" && (
+          <div>
+            <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>CRM & Invoicing</div>
+            <div style={{ color: "#64748B", fontSize: "15px", marginBottom: "28px" }}>Create and manage customer invoices here.</div>
+            
+            {!user.paystack_subaccount_code ? (
+              <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", display: "inline-block", maxWidth: "600px" }}>
+                <div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px", fontSize: "15px" }}>Action Required: Payout Target Missing</div>
+                <div style={{ color: "#0F172A", fontSize: "14px", lineHeight: "1.6" }}>
+                  You cannot generate active billing links for customers until you link a direct payout institution. Please click on <strong>Payout Settings</strong> on your sidebar to connect your bank account.
+                </div>
+              </div>
+            ) : (
+              <div className="card-hover" style={{ padding: "40px", background: "#FFFFFF", border: `2px dashed #E2E8F0`, borderRadius: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>Ready to create your first invoice</div>
+                <div style={{ color: "#64748B", fontSize: "14px", marginBottom: "24px" }}>Click below to generate a new billing link for a customer.</div>
+                <button className="btn-primary">+ Create New Invoice</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
