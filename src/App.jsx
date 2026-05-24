@@ -1441,3 +1441,44 @@ function AppRouter() {
             </div>
             <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
+        </div>
+
+        <div className="main-content">
+          {activeTab === "invoices" && user.role !== 'support' && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "clients" && user.role !== 'support' && <ClientsManager user={user} showToast={showToast} />}
+          {activeTab === "payouts" && user.role !== 'support' && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
+          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
+          {activeTab === "billing" && user.role !== 'support' && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
+          {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
+          {activeTab === "admin" && user.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+      {renderView()}
+      
+      {/* FLOATING SUPPORT BUTTON */}
+      {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
+        <a
+          href="#/dashboard/support"
+          className="btn-primary btn-hover" 
+          style={{ position: "fixed", bottom: "24px", right: "24px", borderRadius: "50px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "8px", zIndex: 999, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)", textDecoration: "none" }}
+        >
+          <MessageIcon /> <span className="support-text-mobile">Support</span>
+        </a>
+      )}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppRouter />
+    </ErrorBoundary>
+  );
+}
