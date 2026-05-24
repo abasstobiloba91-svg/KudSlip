@@ -417,72 +417,51 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadPercent, setUploadPercent] = useState(0);
 
-  const handleLogoUpload = async (e) => {
+  const handleLogoUpload = (e) => {
     const file = e.target.files;
     if (!file) return;
     
-    // Check file size (5MB Limit)
-    if (file.size > 5242880) {
-      showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
+    // Strict 2MB limit for instant Base64 string conversion
+    if (file.size > 2097152) {
+      showToast("File Too Large", "Please select a logo smaller than 2MB for instant processing.", "error");
       return;
     }
 
     setUploading(true);
-    setUploadPercent(0);
     
-    // Smart UI Tracker: Animates smoothly up to 90% while the background upload processes
-    const progressInterval = setInterval(() => {
-      setUploadPercent((prev) => (prev < 90 ? prev + 10 : prev));
-    }, 250);
+    // THE ULTIMATE BYPASS: Read image natively in browser and convert to Base64 String!
+    const reader = new FileReader();
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-    
-    try {
-      // Official SDK upload with explicit error boundary safety nets
-      const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false 
-      });
-
-      clearInterval(progressInterval); // Stop the progress animation loop
-
-      if (uploadError) { 
-        showToast("Upload Error", uploadError.message, "error"); 
-        setUploading(false); 
-        setUploadPercent(0);
-        return; 
-      }
-      
-      // Successfully passed the database check!
-      setUploadPercent(100);
-      const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
-      setLogoUrl(data.publicUrl);
-      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
-      
-      // Clear out the tracking state smoothly
-      setTimeout(() => {
-        setUploading(false);
-        setUploadPercent(0);
-      }, 1500);
-
-    } catch (err) {
-      // Catches and exposes systemic errors on screen
-      clearInterval(progressInterval);
-      showToast("System Error", err.message, "error");
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      setLogoUrl(base64String); // Sets the preview instantly
+      showToast("Logo Processed!", "Image loaded natively. Click Save below to apply it.", "success");
       setUploading(false);
-      setUploadPercent(0);
-    }
+    };
+
+    reader.onerror = () => {
+      showToast("Processing Error", "Your browser failed to read the image.", "error");
+      setUploading(false);
+    };
+
+    reader.readAsDataURL(file); // Fire the local conversion
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou }).eq('id', user.id);
-    if (error) { showToast("Database Error", error.message, "error"); }
-    else {
+    
+    // Saves the direct Base64 string directly into the vendors table. No Storage buckets needed!
+    const { error } = await supabase.from('vendors').update({ 
+      logo_url: logoUrl, 
+      brand_color: brandColor, 
+      custom_thank_you: customThankYou 
+    }).eq('id', user.id);
+    
+    if (error) { 
+      showToast("Database Error", error.message, "error"); 
+    } else {
       showToast("Brand Updated", "Your custom brand settings have been saved successfully.", "success");
       onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou });
     }
@@ -522,10 +501,9 @@ function BrandSettings({ user, onUpdate, showToast }) {
               <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
             </div>
             
-            {/* The Live Percentage Tracker UI */}
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
-                Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Processing...)" : ""}
+                Processing image natively...
               </div>
             )}
           </div>
@@ -550,6 +528,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
     </div>
   );
 }
+
 
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
