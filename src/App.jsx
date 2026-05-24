@@ -411,6 +411,9 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
 // =========================================================
+// =========================================================
+// 2. BRAND SETTINGS (PRO FEATURE)
+// =========================================================
 function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
@@ -441,13 +444,14 @@ function BrandSettings({ user, onUpdate, showToast }) {
     }, 300);
     
     const fileExt = file.name.split('.').pop();
-    // THE FIX: Add a random number to the filename so it is ALWAYS treated as a brand new file (bypassing the overwrite block)
+    // THE FIX: Add a random number to the filename so it is ALWAYS treated as a brand new file
     const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
     
     try {
+      // Official SDK upload
       const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false // We don't need upsert anymore because the filename is always 100% unique!
+        upsert: false 
       });
 
       clearInterval(progressInterval); // Stop the animation
@@ -523,7 +527,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
               <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
             </div>
             
-            {/* The Percentage Tracker UI */}
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
                 Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
@@ -551,7 +554,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
     </div>
   );
 }
-
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
