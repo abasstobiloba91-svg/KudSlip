@@ -92,7 +92,7 @@ function PublicInvoice({ invoiceId }) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!supabase) return;
+      if (!supabase || !invoiceId) return;
       
       const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
       
@@ -706,7 +706,11 @@ export default function App() {
     
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
-      setPublicInvoiceId(currentPath.split('/pay/'));
+      // THE FIX: Automatically scrub any stray commas, spaces, or symbols from the URL!
+      const rawId = currentPath.split('/pay/');
+      const cleanId = rawId.replace(/[^a-zA-Z0-9-]/g, ''); 
+      
+      setPublicInvoiceId(cleanId);
       setView("public_invoice");
       return;
     }
