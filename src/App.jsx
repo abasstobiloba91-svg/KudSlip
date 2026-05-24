@@ -1167,6 +1167,9 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 // =========================================================
 // 10. HELPDESK & SUPPORT TICKETING SYSTEM
 // =========================================================
+// =========================================================
+// 10. HELPDESK & SUPPORT TICKETING SYSTEM
+// =========================================================
 function SupportDashboard({ user, showToast }) {
   const [tickets, setTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -1177,9 +1180,12 @@ function SupportDashboard({ user, showToast }) {
   const messagesEndRef = useRef(null);
 
   const fetchTickets = async () => {
-    let query = supabase.from('tickets').select('*, vendors(business_name, email)');
+    // FIX: Removed 'email' to prevent the silent Supabase crash!
+    let query = supabase.from('tickets').select('*, vendors(business_name)');
     if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
-    const { data } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) console.error("Ticket fetch error:", error.message);
     if (data) setTickets(data);
     setLoading(false);
   };
