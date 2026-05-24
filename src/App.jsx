@@ -1167,9 +1167,6 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 // =========================================================
 // 10. HELPDESK & SUPPORT TICKETING SYSTEM
 // =========================================================
-// =========================================================
-// 10. HELPDESK & SUPPORT TICKETING SYSTEM
-// =========================================================
 function SupportDashboard({ user, showToast }) {
   const [tickets, setTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -1180,25 +1177,35 @@ function SupportDashboard({ user, showToast }) {
   const messagesEndRef = useRef(null);
 
   const fetchTickets = async () => {
-    // FIX: Removed 'email' to prevent the silent Supabase crash!
     let query = supabase.from('tickets').select('*, vendors(business_name)');
     if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
     const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) console.error("Ticket fetch error:", error.message);
     if (data) setTickets(data);
     setLoading(false);
   };
 
-  useEffect(() => { if (supabase) fetchTickets(); }, []);
+  // LIVE UPDATE: Refresh Inbox every 10 seconds
+  useEffect(() => { 
+    if (!supabase) return;
+    fetchTickets(); 
+    const inboxInterval = setInterval(fetchTickets, 10000);
+    return () => clearInterval(inboxInterval);
+  }, []);
 
+  // LIVE UPDATE: Refresh Chat Window every 3 seconds
   useEffect(() => {
-    if (activeTicket) {
-      supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true }).then(({ data }) => setMessages(data || []));
-    }
+    if (!activeTicket) return;
+    const fetchMessages = async () => {
+      const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true });
+      if (data) setMessages(data);
+    };
+    fetchMessages();
+    const chatInterval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(chatInterval);
   }, [activeTicket]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // Auto-scroll to bottom only when new messages arrive
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 
   const handleCreateTicket = async (e) => {
     e.preventDefault(); setLoading(true);
@@ -1223,10 +1230,11 @@ function SupportDashboard({ user, showToast }) {
     if (!newMessage.trim()) return;
     const msg = newMessage; setNewMessage("");
     
+    // Instantly show message locally for a fast feel
+    setMessages(prev => [...prev, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
+
     const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
     if (error) { showToast("Error", error.message, "error"); return; }
-    
-    setMessages([...messages, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
 
     if (user.role !== 'vendor') {
       await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
