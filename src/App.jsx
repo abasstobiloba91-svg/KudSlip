@@ -412,7 +412,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setUploading(true);
     setUploadPercent(0);
     
-    // Smart UI Tracker: Animates smoothly up to 90% while uploading
+    // Smart UI Tracker: Animates smoothly up to 90%
     const progressInterval = setInterval(() => {
       setUploadPercent((prev) => (prev >= 90 ? 90 : prev + 15));
     }, 250);
@@ -421,11 +421,21 @@ function BrandSettings({ user, onUpdate, showToast }) {
     const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
     
     try {
-      // FIXED: Changed bucket name to 'LOGOS' to match your Supabase console exactly
-      const { error: uploadError } = await supabase.storage.from('LOGOS').upload(fileName, file, {
+      // SHIELD 1: Convert the raw file into an in-memory binary Blob to bypass mobile browser stream lockups
+      const fileBlob = new Blob([file], { type: file.type });
+
+      // SHIELD 2: Set an 8-second timeout racer so the upload can NEVER hang at 90% infinitely
+      const uploadPromise = supabase.storage.from('LOGOS').upload(fileName, fileBlob, {
         cacheControl: '3600',
         upsert: false 
       });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Database connection timed out. Check your RLS target or network status.")), 8000)
+      );
+
+      // Execute race track conditions
+      const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
       clearInterval(progressInterval);
 
@@ -436,10 +446,10 @@ function BrandSettings({ user, onUpdate, showToast }) {
         return; 
       }
       
-      // Success! Snap to 100%
+      // Success! Snap straight to 100%
       setUploadPercent(100);
-      const { data } = supabase.storage.from('LOGOS').getPublicUrl(fileName);
-      setLogoUrl(data.publicUrl);
+      const { data: urlData } = supabase.storage.from('LOGOS').getPublicUrl(fileName);
+      setLogoUrl(urlData.publicUrl);
       showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
       
       setTimeout(() => {
@@ -448,10 +458,11 @@ function BrandSettings({ user, onUpdate, showToast }) {
       }, 1500);
 
     } catch (err) {
+      // Forces any silent backend dropouts to reveal their logs to us directly on screen
       clearInterval(progressInterval);
       setUploadPercent(0);
       setUploading(false);
-      showToast("System Error", err.message, "error");
+      showToast("System Timeout", err.message || "The backend dropped the connection payload.", "error");
     }
   };
 
