@@ -432,58 +432,40 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setUploading(true);
     setUploadPercent(0);
     
+    // Smart UI Tracker: Animates smoothly while the official SDK uploads securely
+    const progressInterval = setInterval(() => {
+      setUploadPercent((prev) => (prev < 90 ? prev + 10 : prev));
+    }, 250);
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}-${Date.now()}.${fileExt}`;
     
-    // Grab the user's secure session token so the database allows the upload
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || SUPABASE_ANON_KEY;
-
-    // Create a secure upload pathway to track progress
-    const xhr = new XMLHttpRequest();
-
-    // Hook into the native browser progress tracker
-    xhr.upload.addEventListener("progress", (event) => {
-      if (event.lengthComputable) {
-        const percentComplete = Math.round((event.loaded / event.total) * 100);
-        setUploadPercent(percentComplete);
-      }
+    // Use the official Supabase SDK to guarantee the upload bypasses browser CORS blocks!
+    const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true
     });
 
-    xhr.addEventListener("load", () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        // Grab the public URL from our bucket storage
-        const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
-        setLogoUrl(data.publicUrl);
-        showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
-      } else {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          showToast("Upload Failed", res.message || res.error || "Storage error", "error");
-        } catch(err) {
-          showToast("Upload Error", `Server returned status code ${xhr.status}`, "error");
-        }
-      }
-      setUploading(false);
-    });
+    clearInterval(progressInterval); // Stop the animation
 
-    xhr.addEventListener("error", () => {
-      showToast("Network Error", "Upload stream broke. Check your connection.", "error");
-      setUploading(false);
-    });
-
-    // Fire the RAW file directly to your Supabase project bucket
-    const targetUrl = `${SUPABASE_URL}/storage/v1/object/logos/${fileName}`;
-    xhr.open("POST", targetUrl, true);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
+    if (uploadError) { 
+      showToast("Upload Error", uploadError.message, "error"); 
+      setUploading(false); 
+      setUploadPercent(0);
+      return; 
+    }
     
-    // Tell Supabase exactly what kind of raw image file is coming
-    xhr.setRequestHeader("Content-Type", file.type);
-    xhr.setRequestHeader("cache-control", "3600");
+    // Boom! 100% Complete.
+    setUploadPercent(100);
+    const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
+    setLogoUrl(data.publicUrl);
+    showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
     
-    // Send the raw file directly!
-    xhr.send(file);
+    // Hide the progress bar after 1.5 seconds so it looks clean
+    setTimeout(() => {
+      setUploading(false);
+      setUploadPercent(0);
+    }, 1500);
   };
 
   const handleSave = async (e) => {
