@@ -432,7 +432,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setUploading(true);
     setUploadPercent(0);
     
-    // Smart UI Tracker: Animates smoothly while the official SDK uploads securely
+    // Smart UI Tracker: Animates smoothly up to 90% while the background upload processes
     const progressInterval = setInterval(() => {
       setUploadPercent((prev) => (prev < 90 ? prev + 10 : prev));
     }, 250);
@@ -440,32 +440,41 @@ function BrandSettings({ user, onUpdate, showToast }) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}-${Date.now()}.${fileExt}`;
     
-    // Use the official Supabase SDK to guarantee the upload bypasses browser CORS blocks!
-    const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: true
-    });
+    try {
+      // Official SDK upload with explicit error boundary safety nets
+      const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false 
+      });
 
-    clearInterval(progressInterval); // Stop the animation
+      clearInterval(progressInterval); // Stop the progress animation loop
 
-    if (uploadError) { 
-      showToast("Upload Error", uploadError.message, "error"); 
-      setUploading(false); 
-      setUploadPercent(0);
-      return; 
-    }
-    
-    // Boom! 100% Complete.
-    setUploadPercent(100);
-    const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
-    setLogoUrl(data.publicUrl);
-    showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
-    
-    // Hide the progress bar after 1.5 seconds so it looks clean
-    setTimeout(() => {
+      if (uploadError) { 
+        showToast("Upload Error", uploadError.message, "error"); 
+        setUploading(false); 
+        setUploadPercent(0);
+        return; 
+      }
+      
+      // Successfully passed the database check!
+      setUploadPercent(100);
+      const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
+      setLogoUrl(data.publicUrl);
+      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      
+      // Clear out the tracking state smoothly
+      setTimeout(() => {
+        setUploading(false);
+        setUploadPercent(0);
+      }, 1500);
+
+    } catch (err) {
+      // Catches and exposes systemic errors on screen
+      clearInterval(progressInterval);
+      showToast("System Error", err.message, "error");
       setUploading(false);
       setUploadPercent(0);
-    }, 1500);
+    }
   };
 
   const handleSave = async (e) => {
@@ -513,7 +522,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
               <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
             </div>
             
-            {/* The Live Percentage Tracker */}
+            {/* The Live Percentage Tracker UI */}
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
                 Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Processing...)" : ""}
