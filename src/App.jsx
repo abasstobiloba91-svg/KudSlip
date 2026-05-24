@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// --- SUPABASE ARCHITECTURE CONFIGURATION ---
+// --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -24,35 +24,90 @@ const NIGERIAN_BANKS = [
   { code: "057", name: "Zenith Bank" },
 ];
 
-// --- KUDISLIP PREMIUM DARK DESIGN SYSTEM ---
-const DESIGN_SYSTEM = {
-  bg: "#0A0D14",
-  surface: "#121620",
-  card: "#1A1F2B",
-  border: "rgba(255,255,255,0.08)",
-  primary: "#00E676", // Money Green
-  textMain: "#FFFFFF",
-  textMuted: "#8B95A5",
-  error: "#FF3B30"
+// --- ENTERPRISE MONOCHROME DESIGN SYSTEM ---
+const DESIGN = {
+  bg: "#F8FAFC",
+  surface: "#FFFFFF",
+  card: "#FFFFFF",
+  border: "#E2E8F0",
+  primary: "#000000", // Solid black to match the logo
+  primaryHover: "#333333",
+  textMain: "#0F172A",
+  textMuted: "#64748B",
+  error: "#EF4444",
+  success: "#10B981"
 };
 
 const styles = {
-  appWrapper: { minHeight: "100vh", background: DESIGN_SYSTEM.bg, color: DESIGN_SYSTEM.textMain, fontFamily: "system-ui, sans-serif", display: "flex" },
-  authWrapper: { minHeight: "100vh", background: DESIGN_SYSTEM.bg, color: DESIGN_SYSTEM.textMain, fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" },
-  sidebar: { width: "260px", background: DESIGN_SYSTEM.surface, borderRight: `1px solid ${DESIGN_SYSTEM.border}`, display: "flex", flexDirection: "column", padding: "32px 0" },
-  sidebarMenuBtn: (isActive) => ({ display: "block", width: "100%", padding: "16px 32px", background: isActive ? "rgba(0, 230, 118, 0.06)" : "transparent", border: "none", borderLeft: isActive ? `4px solid ${DESIGN_SYSTEM.primary}` : "4px solid transparent", color: isActive ? DESIGN_SYSTEM.textMain : DESIGN_SYSTEM.textMuted, textAlign: "left", cursor: "pointer", fontWeight: isActive ? "700" : "500", fontSize: "14px", outline: "none", transition: "all 0.15s ease" }),
-  mainContent: { flex: 1, padding: "48px", boxSizing: "border-box", overflowY: "auto" },
-  card: { background: DESIGN_SYSTEM.card, border: `1px solid ${DESIGN_SYSTEM.border}`, borderRadius: 16, padding: "28px", boxSizing: "border-box", marginBottom: "24px" },
-  input: { width: "100%", padding: "14px 16px", background: DESIGN_SYSTEM.surface, border: `1px solid ${DESIGN_SYSTEM.border}`, borderRadius: 10, color: DESIGN_SYSTEM.textMain, fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" },
-  buttonPrimary: { padding: "14px 28px", background: DESIGN_SYSTEM.primary, color: "#000", border: "none", borderRadius: 10, fontWeight: "800", fontSize: "15px", cursor: "pointer", transition: "opacity 0.2s" },
-  label: { fontSize: "11px", color: DESIGN_SYSTEM.textMuted, display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em" }
+  appWrapper: { minHeight: "100vh", background: DESIGN.bg, color: DESIGN.textMain, fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column" },
+  container: { maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" },
+  navbar: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid ${DESIGN.border}` },
+  card: { background: DESIGN.card, border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", boxSizing: "border-box", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" },
+  input: { width: "100%", padding: "14px 16px", background: "#F1F5F9", border: `1px solid ${DESIGN.border}`, borderRadius: 8, color: DESIGN.textMain, fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" },
+  buttonPrimary: { padding: "14px 28px", background: DESIGN.primary, color: "#FFF", border: "none", borderRadius: 8, fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "background 0.2s" },
+  buttonSecondary: { padding: "14px 28px", background: "transparent", color: DESIGN.primary, border: `2px solid ${DESIGN.primary}`, borderRadius: 8, fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "background 0.2s" },
+  label: { fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em" },
+  sidebar: { width: "260px", background: DESIGN.surface, borderRight: `1px solid ${DESIGN.border}`, display: "flex", flexDirection: "column", padding: "32px 0", minHeight: "100vh" },
+  sidebarBtn: (isActive) => ({ display: "block", width: "100%", padding: "16px 32px", background: isActive ? "#F1F5F9" : "transparent", border: "none", borderLeft: isActive ? `4px solid ${DESIGN.primary}` : "4px solid transparent", color: isActive ? DESIGN.primary : DESIGN.textMuted, textAlign: "left", cursor: "pointer", fontWeight: isActive ? "700" : "500", fontSize: "14px" }),
 };
 
 // =========================================================
-// FEATURE 1: CORE GATEWAY AUTHENTICATION (SPRINT 1)
+// 1. LANDING PAGE
 // =========================================================
-function KudiSlipAuth({ onLoginSuccess }) {
-  const [isSignUp, setIsSignUp] = useState(false);
+function LandingPage({ onNavigate }) {
+  return (
+    <div style={styles.appWrapper}>
+      <div style={styles.container}>
+        {/* Navigation */}
+        <nav style={styles.navbar}>
+          <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px" }} />
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button style={{ ...styles.buttonSecondary, padding: "10px 20px", fontSize: "14px" }} onClick={() => onNavigate("auth", false)}>Log In</button>
+            <button style={{ ...styles.buttonPrimary, padding: "10px 20px", fontSize: "14px" }} onClick={() => onNavigate("auth", true)}>Get Started Free</button>
+          </div>
+        </nav>
+
+        {/* Hero Section */}
+        <main style={{ textAlign: "center", padding: "100px 0 80px" }}>
+          <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid ${DESIGN.border}`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: DESIGN.textMuted, marginBottom: "24px" }}>
+            The #1 CRM & Invoicing Tool
+          </div>
+          <h1 style={{ fontSize: "56px", fontWeight: "900", letterSpacing: "-1.5px", margin: "0 0 24px", color: DESIGN.textMain, lineHeight: "1.1" }}>
+            Manage Customers.<br />Automate Payments.
+          </h1>
+          <p style={{ fontSize: "18px", color: DESIGN.textMuted, maxWidth: "600px", margin: "0 auto 40px", lineHeight: "1.6" }}>
+            KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+            <button style={{ ...styles.buttonPrimary, padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
+          </div>
+        </main>
+
+        {/* Feature Highlights */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", paddingBottom: "100px" }}>
+          <div style={{ ...styles.card, padding: "32px 24px", textAlign: "center" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
+            <p style={{ color: DESIGN.textMuted, fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p>
+          </div>
+          <div style={{ ...styles.card, padding: "32px 24px", textAlign: "center" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3>
+            <p style={{ color: DESIGN.textMuted, fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p>
+          </div>
+          <div style={{ ...styles.card, padding: "32px 24px", textAlign: "center" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3>
+            <p style={{ color: DESIGN.textMuted, fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 2. AUTHENTICATION
+// =========================================================
+function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
+  const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -92,42 +147,47 @@ function KudiSlipAuth({ onLoginSuccess }) {
   };
 
   return (
-    <div style={styles.authWrapper}>
-      <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "6px", letterSpacing: "-1px" }}>
-        KudiSlip<span style={{ color: DESIGN_SYSTEM.primary }}>.</span>
-      </div>
-      <div style={{ color: DESIGN_SYSTEM.textMuted, fontSize: "14px", marginBottom: "36px" }}>Professional invoicing with instant payout settlement splits.</div>
+    <div style={{ ...styles.appWrapper, justifyContent: "center", alignItems: "center", padding: "20px" }}>
+      <button onClick={onBack} style={{ position: "absolute", top: "24px", left: "24px", background: "none", border: "none", color: DESIGN.textMuted, cursor: "pointer", fontWeight: "600", fontSize: "14px" }}>
+        &larr; Back to Home
+      </button>
+      
+      <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "60px", marginBottom: "24px" }} />
       
       <div style={{ ...styles.card, width: "100%", maxWidth: "420px" }}>
+        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>
+          {isSignUp ? "Create your account" : "Welcome back"}
+        </h2>
+
         <form onSubmit={handleAuth}>
-          {error && <div style={{ color: DESIGN_SYSTEM.error, marginBottom: "16px", fontSize: "14px", fontWeight: "600" }}>{error}</div>}
+          {error && <div style={{ color: DESIGN.error, background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
           
           {isSignUp && (
             <div style={{ marginBottom: "16px" }}>
-              <label style={styles.label}>Registered Trading / Business Name</label>
-              <input style={styles.input} placeholder="e.g. Famous Stores" value={businessName} onChange={e => setBusinessName(e.target.value)} required />
+              <label style={styles.label}>Business Name</label>
+              <input style={styles.input} placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required />
             </div>
           )}
           
           <div style={{ marginBottom: "16px" }}>
             <label style={styles.label}>Email Address</label>
-            <input style={styles.input} type="email" placeholder="merchant@domain.com" value={email} onChange={e => setEmail(e.target.value)} required />
+            <input style={styles.input} type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           
           <div style={{ marginBottom: "28px" }}>
-            <label style={styles.label}>Secure Account Password</label>
+            <label style={styles.label}>Password</label>
             <input style={styles.input} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           
           <button style={{ ...styles.buttonPrimary, width: "100%" }} type="submit" disabled={loading}>
-            {loading ? "Authorizing Profile..." : (isSignUp ? "Create Merchant Account" : "Access Workspace")}
+            {loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}
           </button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: "24px", color: DESIGN_SYSTEM.textMuted, fontSize: "14px" }}>
-          {isSignUp ? "Already operating on KudiSlip? " : "New to the automated ledger? "}
-          <span style={{ color: DESIGN_SYSTEM.primary, fontWeight: "700", cursor: "pointer" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>
-            {isSignUp ? "Sign In" : "Sign Up Free"}
+        <div style={{ textAlign: "center", marginTop: "24px", color: DESIGN.textMuted, fontSize: "14px" }}>
+          {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          <span style={{ color: DESIGN.primary, fontWeight: "800", cursor: "pointer" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>
+            {isSignUp ? "Log In" : "Sign Up"}
           </span>
         </div>
       </div>
@@ -136,7 +196,7 @@ function KudiSlipAuth({ onLoginSuccess }) {
 }
 
 // =========================================================
-// FEATURE 2: AUTOMATED PAYSTACK SUBACCOUNTS (SPRINT 2)
+// 3. PAYOUT SETTINGS (DASHBOARD)
 // =========================================================
 function PayoutSettings({ user, onSubaccountLinked }) {
   const [bankCode, setBankCode] = useState("");
@@ -154,7 +214,6 @@ function PayoutSettings({ user, onSubaccountLinked }) {
     setErr("");
 
     try {
-      // Connect safely to your secure serverless runtime endpoint
       const res = await fetch("/api/create-subaccount", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -168,7 +227,6 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Paystack connection timeout.");
 
-      // Link backend payload reference into user table mapping
       const { error: dbError } = await supabase
         .from("vendors")
         .update({ paystack_subaccount_code: result.subaccount_code })
@@ -177,7 +235,7 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       if (dbError) throw dbError;
 
       onSubaccountLinked(result.subaccount_code);
-      alert("Banking node verified and linked successfully!");
+      alert("Banking details verified and linked successfully!");
     } catch (error) {
       setErr(error.message);
     } finally {
@@ -187,36 +245,36 @@ function PayoutSettings({ user, onSubaccountLinked }) {
 
   return (
     <div style={{ maxWidth: "550px" }}>
-      <div style={{ fontSize: "26px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>Payout Configuration</div>
-      <div style={{ color: DESIGN_SYSTEM.textMuted, marginBottom: "36px", fontSize: "14px", lineHeight: "1.5" }}>
-        Connect your localized financial bank node. Invoices generated through your dashboard will automatically isolate and credit settlements directly, deducting our flat 1.5% application platform fee.
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>Payout Configuration</div>
+      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px", lineHeight: "1.6" }}>
+        Connect your bank account. Invoices generated through your dashboard will automatically settle into this account, deducting our standard 1.5% platform fee.
       </div>
       
       <div style={styles.card}>
         {user.paystack_subaccount_code ? (
-          <div style={{ padding: "20px", background: "rgba(0, 230, 118, 0.03)", border: `1px solid ${DESIGN_SYSTEM.primary}`, borderRadius: "12px", textAlign: "center" }}>
-            <div style={{ color: DESIGN_SYSTEM.primary, fontWeight: "700", fontSize: "16px", marginBottom: "4px" }}>✓ Instant Processing Active</div>
-            <div style={{ color: DESIGN_SYSTEM.textMuted, fontSize: "13px" }}>Paystack Node Identifier: {user.paystack_subaccount_code}</div>
+          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid ${DESIGN.success}`, borderRadius: "8px", textAlign: "center" }}>
+            <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", marginBottom: "4px" }}>✓ Settlements Active</div>
+            <div style={{ color: DESIGN.textMain, fontSize: "13px", fontWeight: "600" }}>Paystack ID: <span style={{color: DESIGN.textMuted}}>{user.paystack_subaccount_code}</span></div>
           </div>
         ) : (
           <form onSubmit={handleSetupPayout}>
-            {err && <div style={{ color: DESIGN_SYSTEM.error, marginBottom: "16px", fontSize: "14px", fontWeight: "600" }}>{err}</div>}
+            {err && <div style={{ color: DESIGN.error, background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{err}</div>}
             
             <div style={{ marginBottom: "20px" }}>
-              <label style={styles.label}>Settlement Financial Institution</label>
+              <label style={styles.label}>Financial Institution</label>
               <select style={styles.input} value={bankCode} onChange={e => setBankCode(e.target.value)} required>
-                <option value="">-- Choose Your Bank Source --</option>
+                <option value="">-- Select Bank --</option>
                 {NIGERIAN_BANKS.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
               </select>
             </div>
             
             <div style={{ marginBottom: "28px" }}>
-              <label style={styles.label}>10-Digit NUBAN Account Number</label>
-              <input style={styles.input} type="text" maxLength={10} placeholder="e.g. 0123456789" value={accountNumber} onChange={e => setAccountNumber(e.target.value.replace(/\D/g, ""))} required />
+              <label style={styles.label}>10-Digit Account Number</label>
+              <input style={styles.input} type="text" maxLength={10} placeholder="0123456789" value={accountNumber} onChange={e => setAccountNumber(e.target.value.replace(/\D/g, ""))} required />
             </div>
             
             <button type="submit" style={{ ...styles.buttonPrimary, width: "100%" }} disabled={loading}>
-              {loading ? "Running CBN Verification Checks..." : "Verify & Lock Payout Node"}
+              {loading ? "Verifying..." : "Securely Link Bank Account"}
             </button>
           </form>
         )}
@@ -226,70 +284,97 @@ function PayoutSettings({ user, onSubaccountLinked }) {
 }
 
 // =========================================================
-// 4. MAIN GLOBAL SAAS APP CONTAINER
+// 4. MAIN APP ROUTER & DASHBOARD CONTAINER
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
+  const [view, setView] = useState("landing"); // 'landing', 'auth', 'dashboard'
+  const [authSignUpIntent, setAuthSignUpIntent] = useState(false);
   const [activeTab, setActiveTab] = useState("invoices");
   const [loadingWorkspace, setLoadingWorkspace] = useState(true);
 
   useEffect(() => {
-    // Monitor local active storage keys
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
           setUser({ ...session.user, ...data });
+          setView("dashboard");
         });
       }
       setLoadingWorkspace(false);
     });
   }, []);
 
+  const handleNavigateToAuth = (isSignUp) => {
+    setAuthSignUpIntent(isSignUp);
+    setView("auth");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setView("landing");
+  };
+
   if (loadingWorkspace) {
     return (
-      <div style={{ background: DESIGN_SYSTEM.bg, height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#FFF", fontFamily: "system-ui" }}>
-        <div style={{ fontSize: "24px", fontWeight: "900", marginBottom: "8px" }}>KudiSlip<span style={{ color: DESIGN_SYSTEM.primary }}>.</span></div>
-        <div style={{ color: DESIGN_SYSTEM.textMuted, fontSize: "14px" }}>Initializing Cloud Matrix Ledger...</div>
+      <div style={{ ...styles.appWrapper, alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", marginBottom: "16px" }} />
+        <div style={{ color: DESIGN.textMuted, fontSize: "14px", fontWeight: "500" }}>Loading KudiSlip...</div>
       </div>
     );
   }
 
-  return user ? (
-    <div style={styles.appWrapper}>
-      {/* PERSISTENT RUNTIME SIDEBAR */}
+  if (view === "landing") {
+    return <LandingPage onNavigate={(v, isSignUp) => handleNavigateToAuth(isSignUp)} />;
+  }
+
+  if (view === "auth") {
+    return <KudiSlipAuth initialIsSignUp={authSignUpIntent} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
+  }
+
+  // Dashboard View
+  return (
+    <div style={{ ...styles.appWrapper, flexDirection: "row" }}>
       <div style={styles.sidebar}>
-        <div style={{ padding: "0 28px", marginBottom: "40px", fontSize: "24px", fontWeight: "900", letterSpacing: "-1px" }}>
-          KudiSlip<span style={{ color: DESIGN_SYSTEM.primary }}>.</span>
+        <div style={{ padding: "0 32px", marginBottom: "40px" }}>
+          <img src="/logo.png" alt="KudiSlip" style={{ height: "32px" }} />
         </div>
-        <button style={styles.sidebarMenuBtn(activeTab === "invoices")} onClick={() => setActiveTab("invoices")}>Invoices & Billing</button>
-        <button style={styles.sidebarMenuBtn(activeTab === "payouts")} onClick={() => setActiveTab("payouts")}>Settlement Payouts</button>
+        <button style={styles.sidebarBtn(activeTab === "invoices")} onClick={() => setActiveTab("invoices")}>Invoices & CRM</button>
+        <button style={styles.sidebarBtn(activeTab === "payouts")} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
         <div style={{ flex: 1 }} />
-        <button style={styles.sidebarMenuBtn(false)} onClick={() => supabase.auth.signOut()}>Disconnect Ledger</button>
+        <div style={{ padding: "0 32px", marginBottom: "16px", fontSize: "12px", color: DESIGN.textMuted, fontWeight: "600" }}>
+          {user.business_name}
+        </div>
+        <button style={styles.sidebarBtn(false)} onClick={handleLogout}>Log Out</button>
       </div>
 
-      {/* CORE WORKSPACE APPLICATION VIEWS */}
       <div style={styles.mainContent}>
         {activeTab === "payouts" && (
           <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} />
         )}
         {activeTab === "invoices" && (
           <div>
-            <div style={{ fontSize: "26px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>Invoice Infrastructure Engine</div>
-            <div style={{ color: DESIGN_SYSTEM.textMuted, fontSize: "14px", marginBottom: "24px" }}>The billing generator architecture under Phase 3 maps here dynamically.</div>
+            <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>CRM & Invoicing</div>
+            <div style={{ color: DESIGN.textMuted, fontSize: "15px", marginBottom: "28px" }}>Create and manage customer invoices here.</div>
             
-            {!user.paystack_subaccount_code && (
-              <div style={{ padding: "20px", background: "rgba(255, 59, 48, 0.03)", border: `1px solid ${DESIGN_SYSTEM.error}`, borderRadius: "12px", display: "inline-block", maxWidth: "600px" }}>
-                <div style={{ color: DESIGN_SYSTEM.error, fontWeight: "700", marginBottom: "4px" }}>Action Required: Payout Target Missing</div>
-                <div style={{ color: DESIGN_SYSTEM.textMuted, fontSize: "13px", lineHeight: "1.5" }}>
-                  You cannot generate active billing links for customers until you link a direct payout institution. Please click on <strong>Settlement Payouts</strong> on your sidebar workspace to authenticate your bank profile.
+            {!user.paystack_subaccount_code ? (
+              <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid ${DESIGN.error}`, borderRadius: "8px", display: "inline-block", maxWidth: "600px" }}>
+                <div style={{ color: DESIGN.error, fontWeight: "800", marginBottom: "6px", fontSize: "15px" }}>Action Required: Payout Target Missing</div>
+                <div style={{ color: DESIGN.textMain, fontSize: "14px", lineHeight: "1.6" }}>
+                  You cannot generate active billing links for customers until you link a direct payout institution. Please click on <strong>Payout Settings</strong> on your sidebar to connect your bank account.
                 </div>
+              </div>
+            ) : (
+              <div style={{ padding: "40px", background: DESIGN.card, border: `1px dashed ${DESIGN.border}`, borderRadius: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>Ready to create your first invoice</div>
+                <div style={{ color: DESIGN.textMuted, fontSize: "14px", marginBottom: "24px" }}>Click below to generate a new billing link for a customer.</div>
+                <button style={styles.buttonPrimary}>+ Create New Invoice</button>
               </div>
             )}
           </div>
         )}
       </div>
     </div>
-  ) : (
-    <KudiSlipAuth onLoginSuccess={(u) => setUser(u)} />
   );
 }
