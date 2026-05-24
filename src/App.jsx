@@ -267,7 +267,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
-    if (!vendor?.paystack_subaccount_code) return showToast("Action Required", "This merchant has not linked a settlement bank account yet.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
     const safeAmount = Number(invoice?.amount || 0);
@@ -276,12 +275,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
 
     try {
-      const handler = window.PaystackPop.setup({
+      // 1. Setup the core Paystack checkout payload
+      let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
-        amount: safeAmount * 100, // Paystack expects lowest denomination (kobo/cents/pence)
-        currency: invoiceCurrency, // FIX: DYNAMIC CURRENCY
-        subaccount: vendor.paystack_subaccount_code,
+        amount: safeAmount * 100, // Paystack standardizes the lowest denomination (kobo/cents)
+        currency: invoiceCurrency,
         callback: function(response) {
           supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid' });
@@ -289,7 +288,17 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           });
         },
         onClose: function() { console.log("Payment window closed."); }
-      });
+      };
+
+      // 2. CRITICAL GATEWAY FIX: Only attach the local bank subaccount if the transaction is in Naira. 
+      // If it's USD/GBP, we let it settle into the main Paystack merchant balance to prevent bank rejection.
+      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
+        paystackPayload.subaccount = vendor.paystack_subaccount_code;
+      } else if (invoiceCurrency !== "NGN" && vendor?.paystack_subaccount_code) {
+         console.log("Foreign currency detected. Subaccount routing disabled to prevent bank rejection.");
+      }
+
+      const handler = window.PaystackPop.setup(paystackPayload);
       handler.openIframe();
     } catch(err) {
       showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
