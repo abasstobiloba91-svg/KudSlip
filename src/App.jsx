@@ -60,7 +60,7 @@ function LandingPage({ onNavigate }) {
       <div style={styles.container}>
         {/* Navigation */}
         <nav style={styles.navbar}>
-          <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "70px", width: "auto" }} />
+          <img src="/logo.png" alt="KudiSlip Logo" style={{ width: "240px", height: "auto", objectFit: "contain" }} />
           <div style={{ display: "flex", gap: "12px" }}>
             <button style={{ ...styles.buttonSecondary, padding: "10px 20px", fontSize: "14px" }} onClick={() => onNavigate("auth", false)}>Log In</button>
             <button style={{ ...styles.buttonPrimary, padding: "10px 20px", fontSize: "14px" }} onClick={() => onNavigate("auth", true)}>Get Started Free</button>
@@ -152,7 +152,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
         &larr; Back to Home
       </button>
       
-      <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "100px", width: "auto", marginBottom: "32px" }} />
+      <img src="/logo.png" alt="KudiSlip Logo" style={{ width: "350px", height: "auto", marginBottom: "32px", objectFit: "contain" }} />
       
       <div style={{ ...styles.card, width: "100%", maxWidth: "420px" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>
@@ -319,7 +319,7 @@ export default function App() {
   if (loadingWorkspace) {
     return (
       <div style={{ ...styles.appWrapper, alignItems: "center", justifyContent: "center" }}>
-        <img src="/logo.png" alt="KudiSlip" style={{ height: "80px", width: "auto", marginBottom: "24px" }} />
+        <img src="/logo.png" alt="KudiSlip" style={{ width: "250px", height: "auto", marginBottom: "24px", objectFit: "contain" }} />
         <div style={{ color: DESIGN.textMuted, fontSize: "14px", fontWeight: "500" }}>Loading KudiSlip...</div>
       </div>
     );
@@ -338,7 +338,7 @@ export default function App() {
     <div style={{ ...styles.appWrapper, flexDirection: "row" }}>
       <div style={styles.sidebar}>
         <div style={{ padding: "0 24px", marginBottom: "40px" }}>
-          <img src="/logo.png" alt="KudiSlip" style={{ height: "60px", width: "auto" }} />
+          <img src="/logo.png" alt="KudiSlip" style={{ width: "210px", height: "auto", objectFit: "contain" }} />
         </div>
         <button style={styles.sidebarBtn(activeTab === "invoices")} onClick={() => setActiveTab("invoices")}>Invoices & CRM</button>
         <button style={styles.sidebarBtn(activeTab === "payouts")} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
