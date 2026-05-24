@@ -56,6 +56,13 @@ const GlobalStyles = () => (
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
     .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+    
+    @media print {
+      body { background: #FFFFFF !important; color: #000000 !important; }
+      .no-print { display: none !important; }
+      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+    }
+    
     @media (max-width: 768px) {
       .hero-title { font-size: 38px !important; }
       .nav-buttons { display: none !important; }
@@ -80,7 +87,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW (DEBUG MODE)
+// 1. PUBLIC INVOICE VIEW (WITH AUTOMATED PDF DOWNLOAD)
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -92,12 +99,16 @@ function PublicInvoice({ invoiceId }) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!supabase || !invoiceId) return;
+      if (!supabase || !invoiceId) {
+        setDebugError("No valid unique reference payload found in route.");
+        setLoading(false);
+        return;
+      }
       
       const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
       
       if (invError) {
-        setDebugError(`Msg: ${invError.message} | Details: ${invError.details} | Hint: ${invError.hint}`);
+        setDebugError(`Msg: ${invError.message} | Details: ${invError.details}`);
         setLoading(false);
         return;
       }
@@ -107,11 +118,17 @@ function PublicInvoice({ invoiceId }) {
         const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
         const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
         setVendor(venData); setClient(cliData);
+      } else {
+        setDebugError("Invoice row key was found empty inside the database.");
       }
       setLoading(false);
     }
     fetchData();
   }, [invoiceId]);
+
+  const triggerPDFCompilation = () => {
+    window.print();
+  };
 
   const handlePayment = () => {
     if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
@@ -135,16 +152,22 @@ function PublicInvoice({ invoiceId }) {
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
-      <h2 style={{color: "#EF4444"}}>🚨 Database Blocked the Request</h2>
+      <h2 style={{color: "#EF4444"}}>🚨 System Routing Error</h2>
       <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px", wordWrap: "break-word"}}>{debugError}</p>
+      <button className="btn-primary" style={{marginTop: "16px"}} onClick={() => window.location.href = "/"}>Go to Dashboard</button>
     </div>
   );
 
-  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
-
   return (
-    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", justifyContent: "center", background: DESIGN.bg }}>
+    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg }}>
       <GlobalStyles />
+      
+      <div className="no-print" style={{ width: "100%", maxWidth: "600px", display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+        <button onClick={triggerPDFCompilation} style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+          📥 Download PDF Invoice
+        </button>
+      </div>
+
       <div style={{ width: "100%", maxWidth: "600px" }}>
         {(!vendor?.subscription_tier || vendor.subscription_tier === 'free') && (
           <div style={{ textAlign: "center", marginBottom: "24px" }}>
@@ -152,7 +175,7 @@ function PublicInvoice({ invoiceId }) {
             <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
           </div>
         )}
-        <div className="card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
+        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
@@ -185,11 +208,13 @@ function PublicInvoice({ invoiceId }) {
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
             <div style={{ fontSize: "28px", fontWeight: "900", color: DESIGN.textMain }}>₦{invoice.amount.toLocaleString()}</div>
           </div>
-          {invoice.status === 'pending' ? (
-            <button className="btn-primary" style={{ width: "100%", padding: "18px" }} onClick={handlePayment}>Proceed to Payment</button>
-          ) : (
-            <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px" }}>✓ Invoice Paid Securely</div>
-          )}
+          <div className="no-print">
+            {invoice.status === 'pending' ? (
+              <button className="btn-primary" style={{ width: "100%", padding: "18px" }} onClick={handlePayment}>Proceed to Payment</button>
+            ) : (
+              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px" }}>✓ Invoice Paid Securely</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -392,7 +417,7 @@ function LandingPage({ onNavigate }) {
           <div style={{ display: "flex", gap: "24px" }}>
             <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Terms & Conditions will go here.")}>Terms & Conditions</span>
             <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Privacy Policy will go here.")}>Privacy Policy</span>
-            <span style={{ pointer: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
           </div>
         </div>
       </footer>
@@ -555,11 +580,6 @@ function InvoiceGenerator({ user }) {
     setLoading(false);
   };
 
-  // Vendor Analytics Calculations
-  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount), 0);
-  const totalPending = totalBilled - totalPaid;
-
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
 
   return (
@@ -604,7 +624,7 @@ function InvoiceGenerator({ user }) {
               <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
             </div>
           ))}
-          <button onClick={handleAddItem} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
@@ -619,11 +639,12 @@ function InvoiceGenerator({ user }) {
               <div><div style={{ fontWeight: "700" }}>{inv.clients?.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>₦{inv.amount.toLocaleString()}</div></div>
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
-                <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open(`/pay/${inv.id}`, '_blank')}>View Link</button>
+                {/* RE-ENGINEERED STRIPPED INLINE PATH ROUTING */}
+                <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
                 
                 {/* WHATSAPP ONE-CLICK CHASER */}
                 {inv.status === 'pending' && (
-                  <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${inv.amount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
+                  <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + inv.amount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
                     Send Reminder
                   </a>
                 )}
@@ -706,9 +727,9 @@ export default function App() {
     
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
-      // THE FIX: Automatically scrub any stray commas, spaces, or symbols from the URL!
+      // MASTER CLEANER: Scrub quotes, commas, symbols, and stray arrays seamlessly
       const rawId = currentPath.split('/pay/');
-      const cleanId = rawId.replace(/[^a-zA-Z0-9-]/g, ''); 
+      const cleanId = rawId.replace(/["', ]/g, ''); 
       
       setPublicInvoiceId(cleanId);
       setView("public_invoice");
