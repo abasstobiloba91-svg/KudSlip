@@ -233,14 +233,19 @@ function LandingPage({ onNavigate }) {
       <GlobalStyles />
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" }}>
         
+        {/* Navigation */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
-          <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+          {/* SCALED LOGO FIX FOR NAVBAR */}
+          <div style={{ width: "180px", display: "flex", alignItems: "center" }}>
+            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} />
+          </div>
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
             <button className="btn-secondary" onClick={() => onNavigate("auth", false)}>Log In</button>
             <button className="btn-primary" onClick={() => onNavigate("auth", true)}>Get Started Free</button>
           </div>
         </nav>
 
+        {/* Hero Section */}
         <main style={{ textAlign: "center", padding: "80px 0 60px" }}>
           <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>
             The #1 CRM & Invoicing Tool
@@ -257,6 +262,7 @@ function LandingPage({ onNavigate }) {
           </div>
         </main>
 
+        {/* Feature Highlights */}
         <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", paddingBottom: "100px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
@@ -326,7 +332,10 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
         &larr; Back to Home
       </button>
       
-      <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "54px", width: "auto", marginBottom: "24px", objectFit: "contain" }} />
+      {/* SCALED LOGO FIX FOR AUTH SCREEN */}
+      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
+      </div>
       
       <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>
@@ -462,7 +471,7 @@ function PayoutSettings({ user, onSubaccountLinked }) {
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
-  const [view, setView] = useState("landing");
+  const [view, setView] = useState("landing"); // 'landing', 'auth', 'dashboard'
   const [authSignUpIntent, setAuthSignUpIntent] = useState(false);
   const [activeTab, setActiveTab] = useState("invoices");
   const [loadingWorkspace, setLoadingWorkspace] = useState(true);
@@ -494,28 +503,35 @@ export default function App() {
     return (
       <div style={{ background: "#F8FAFC", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#0F172A", fontFamily: "system-ui" }}>
         <GlobalStyles />
-        <img src="/logo.png" alt="KudiSlip" style={{ height: "48px", width: "auto", marginBottom: "24px", objectFit: "contain" }} />
+        {/* SCALED LOGO FIX FOR LOADING SCREEN */}
+        <div style={{ height: "60px", marginBottom: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src="/logo.png" alt="KudiSlip" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
+        </div>
         <div style={{ color: "#64748B", fontSize: "14px", fontWeight: "500" }}>Loading Workspace...</div>
       </div>
     );
   }
 
   if (view === "landing") {
-    return <LandingPage onNavigate={handleNavigateToAuth} />;
+    return <LandingPage onNavigate={(v, isSignUp) => handleNavigateToAuth(isSignUp)} />;
   }
 
   if (view === "auth") {
     return <KudiSlipAuth initialIsSignUp={authSignUpIntent} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
   }
 
+  // Dashboard View
   return (
     <div className="dashboard-layout">
       <GlobalStyles />
       
       {/* SIDEBAR */}
       <div className="sidebar">
-        <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "24px" }}>
-          <img src="/logo.png" alt="KudiSlip" style={{ height: "32px", width: "auto", objectFit: "contain" }} />
+        <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "40px", overflow: "visible" }}>
+          {/* SCALED LOGO FIX FOR SIDEBAR */}
+          <div style={{ height: "40px", display: "flex", alignItems: "center" }}>
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
+          </div>
         </div>
         
         <div className="sidebar-menu">
@@ -523,9 +539,10 @@ export default function App() {
           <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
         </div>
 
+        {/* Spacer for desktop */}
         <div style={{ flex: 1, display: window.innerWidth <= 768 ? "none" : "block" }} />
         
-        {/* User Info & Logout */}
+        {/* User Info & Logout (Desktop pushes to bottom, mobile stacks inline) */}
         <div style={{ padding: "16px 32px", marginTop: "auto" }}>
           <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {user.business_name}
