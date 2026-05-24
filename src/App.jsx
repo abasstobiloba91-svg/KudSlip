@@ -512,43 +512,55 @@ function BrandSettings({ user, onUpdate, showToast }) {
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
 function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
-  usePaystack();
   const [isProcessing, setIsProcessing] = useState(false);
   const isPremium = user?.subscription_tier === 'premium';
 
   const handleUpgrade = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.", "error");
-    if (!window.PaystackPop) return showToast("Browser Blocked", "Your browser is blocking the secure payment window. Please disable adblockers.", "error");
 
     setIsProcessing(true);
     
-    try {
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: user?.email || "vendor@kudislip.com",
-        amount: 15000 * 100,
-        currency: "NGN",
-        callback: async function(response) {
-          try {
-            const { error } = await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
-            if (error) throw error;
-            onUpgradeSuccess();
-            showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
-          } catch (err) {
-            showToast("Upgrade Error", err.message, "error");
+    // Dynamically call Paystack v2 Engine to bypass mobile Safari/Chrome iframe blocks
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v2/inline.js";
+    script.async = true;
+    
+    script.onload = () => {
+      try {
+        const paystack = new window.PaystackPop();
+        paystack.newTransaction({
+          key: PAYSTACK_PUBLIC_KEY,
+          email: user?.email || "vendor@kudislip.com",
+          amount: 15000 * 100, // ₦15,000 in kobo
+          currency: "NGN",
+          onSuccess: async function(transaction) {
+            try {
+              const { error } = await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
+              if (error) throw error;
+              onUpgradeSuccess();
+              showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
+            } catch (err) {
+              showToast("Upgrade Error", err.message, "error");
+            }
+            setIsProcessing(false);
+          },
+          onCancel: function() {
+            setIsProcessing(false);
+            showToast("Cancelled", "Upgrade transaction closed.", "info");
           }
-          setIsProcessing(false);
-        },
-        onClose: function() {
-          setIsProcessing(false);
-          showToast("Cancelled", "Upgrade transaction closed.", "info");
-        }
-      });
-      handler.openIframe();
-    } catch (err) {
+        });
+      } catch (err) {
+        setIsProcessing(false);
+        showToast("Initialization Error", err.message, "error");
+      }
+    };
+
+    script.onerror = () => {
       setIsProcessing(false);
-      showToast("System Error", "Could not securely launch the payment window due to browser restrictions.", "error");
-    }
+      showToast("Network Error", "Failed to compile the secure checkout system window.", "error");
+    };
+
+    document.body.appendChild(script);
   };
 
   if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Billing.</div>;
@@ -578,13 +590,12 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
             <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
             <li>Fully Independent Branding</li>
           </ul>
-          {!isPremium && <button className="btn-primary btn-premium btn-hover" style={{ width: "100%", padding: "14px", display: "block" }} onClick={handleUpgrade} disabled={isProcessing}>{isProcessing ? "Loading Payment..." : "Upgrade Now"}</button>}
+          {!isPremium && <button className="btn-primary btn-premium btn-hover" style={{ width: "100%", padding: "14px", display: "block" }} onClick={handleUpgrade} disabled={isProcessing}>{isProcessing ? "Opening Secure Checkout..." : "Upgrade Now"}</button>}
         </div>
       </div>
     </div>
   );
 }
-
 // =========================================================
 // 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
