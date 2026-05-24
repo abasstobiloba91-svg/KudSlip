@@ -106,7 +106,7 @@ function PublicInvoice({ invoiceId }) {
 
   const handlePayment = () => {
     if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
-    handler = window.PaystackPop.setup({
+    const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
       amount: invoice.amount * 100,
@@ -315,7 +315,7 @@ function LandingPage({ onNavigate }) {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" }}>
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
             <button className="btn-secondary" onClick={() => onNavigate("auth", false)}>Log In</button>
             <button className="btn-primary" onClick={() => onNavigate("auth", true)}>Get Started Free</button>
           </div>
@@ -415,7 +415,7 @@ function ClientsManager({ user }) {
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>`Manage your customer database.`</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
         <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
@@ -524,7 +524,7 @@ function InvoiceGenerator({ user }) {
                 <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                 <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open(`/pay/${inv.id}`, '_blank')}>View Link</button>
               </div>
-            </tr>
+            </div>
           ))}
         </div>
       )}
