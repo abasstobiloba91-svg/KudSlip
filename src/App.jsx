@@ -18,7 +18,6 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
   catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
-// EXPANDED NIGERIAN BANKS LIST
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
   { code: "050", name: "Ecobank Nigeria" },
@@ -44,8 +43,7 @@ const NIGERIAN_BANKS = [
 
 const DESIGN = {
   bg: "#F8FAFC", surface: "#FFFFFF", card: "#FFFFFF", border: "#E2E8F0",
-  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6",
-  chatBubble: "#E2E8F0", chatUser: "#000000"
+  primary: "#000000", textMain: "#0F172A", textMuted: "#64748B", error: "#EF4444", success: "#10B981", premium: "#8B5CF6"
 };
 
 // --- SVG ICONS ---
@@ -60,9 +58,9 @@ const MapPinIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" hei
 const TagIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>);
 const MessageIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>);
 const BellIcon = ({ count }) => (
-  <div style={{ position: "relative", display: "inline-block", cursor: "pointer" }}>
+  <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: "8px" }}>
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-    {count > 0 && <span style={{ position: "absolute", top: "-5px", right: "-5px", background: DESIGN.error, color: "white", borderRadius: "50%", padding: "2px 6px", fontSize: "10px", fontWeight: "900" }}>{count}</span>}
+    {count > 0 && <span style={{ position: "absolute", top: "0", right: "0", background: DESIGN.error, color: "white", borderRadius: "50%", padding: "2px 6px", fontSize: "10px", fontWeight: "900" }}>{count}</span>}
   </div>
 );
 
@@ -91,9 +89,10 @@ const GlobalStyles = () => (
     
     .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
     .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; }
-    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
     .sidebar-footer { padding: 16px 32px; margin-top: auto; }
+    
     .mobile-nav-logout { display: none; }
     .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
@@ -122,10 +121,10 @@ const GlobalStyles = () => (
       .nav-buttons { display: none !important; }
       .dashboard-layout { flex-direction: column; }
       .sidebar { width: 100%; padding: 16px 0 0 0; min-height: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; }
+      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; display: flex; justify-content: space-between; align-items: center; width: 100%; }
       .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 0 16px; white-space: nowrap; border-top: 1px solid #F1F5F9; }
       .sidebar-footer { display: none !important; }
-      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; }
+      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 8px; }
       .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
       .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
       .main-content { padding: 24px 16px; }
@@ -217,7 +216,7 @@ function LegalPage({ type }) {
 // =========================================================
 // 1. PUBLIC INVOICE VIEW
 // =========================================================
-function PublicInvoice({ invoiceId, showToast }) {
+function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
   const [vendor, setVendor] = useState(null);
@@ -247,7 +246,7 @@ function PublicInvoice({ invoiceId, showToast }) {
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!vendor?.paystack_subaccount_code) return showToast("Action Required", "This merchant has not linked a settlement bank account yet.", "error");
-    if (!window.PaystackPop) return showToast("Loading", "Payment engine is blocked by your browser. Please disable adblockers or refresh.", "error");
+    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
     const safeAmount = Number(invoice?.amount || 0);
     if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than ₦0.", "error");
@@ -292,6 +291,7 @@ function PublicInvoice({ invoiceId, showToast }) {
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
   const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
   const customColor = vendor?.brand_color || DESIGN.primary;
+  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor.custom_thank_you || `Thank you for your payment! ${vendor.business_name} cares.`);
 
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
@@ -312,6 +312,7 @@ function PublicInvoice({ invoiceId, showToast }) {
         }} />
       )}
 
+      {/* Main Content Wrapper */}
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
         
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
@@ -374,9 +375,19 @@ function PublicInvoice({ invoiceId, showToast }) {
                 Proceed to Payment
               </button>
             ) : (
-              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <CheckIcon /> Invoice Paid Securely
+              <div style={{ textAlign: "center", padding: "24px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
+                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
+                  <CheckIcon /> Payment Successful
+                </div>
+                <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>
+                  {thankYouMessage}
+                </div>
               </div>
+            )}
+
+            {/* Smart Redirect for the Vendor checking their own invoice */}
+            {currentUser?.id === vendor?.id && (
+              <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
             )}
           </div>
         </div>
@@ -391,21 +402,20 @@ function PublicInvoice({ invoiceId, showToast }) {
 function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
+  const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor }).eq('id', user.id);
+    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou }).eq('id', user.id);
     if (error) { showToast("Database Error", error.message, "error"); }
     else {
       showToast("Brand Updated", "Your custom brand settings have been saved successfully.", "success");
-      onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor });
+      onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou });
     }
     setLoading(false);
   };
-
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Brand Settings.</div>;
 
   if (user?.subscription_tier !== 'premium') {
     return (
@@ -413,7 +423,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
         <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
         <div style={{ padding: "40px 32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
           <div style={{ fontSize: "18px", fontWeight: "800", color: DESIGN.premium, marginBottom: "12px" }}>Premium Feature</div>
-          <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, change the invoice colors, and remove KudiSlip watermarks.</div>
+          <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, alter colors, and set custom thank-you messages.</div>
           <a href="#/dashboard/billing" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
         </div>
       </div>
@@ -433,12 +443,18 @@ function BrandSettings({ user, onUpdate, showToast }) {
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>Provide a direct link to your transparent PNG logo.</div>
           </div>
           
-          <div style={{ marginBottom: "32px" }}>
+          <div style={{ marginBottom: "24px" }}>
             <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Brand Color (Hex Code)</label>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ width: "50px", height: "40px", border: "none", cursor: "pointer", background: "none" }} />
               <input className="form-input" placeholder="#000000" value={brandColor} onChange={e => setBrandColor(e.target.value)} style={{ flex: 1 }} />
             </div>
+          </div>
+
+          <div style={{ marginBottom: "32px" }}>
+            <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Custom Thank You Message</label>
+            <textarea className="form-input" placeholder="e.g. Thank you for shopping with Acme Corp! We appreciate your business." value={customThankYou} onChange={e => setCustomThankYou(e.target.value)} style={{ minHeight: "80px", resize: "vertical" }} />
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>This shows up on the receipt after a client pays.</div>
           </div>
           
           <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ width: "100%" }}>{loading ? "Saving..." : "Save Brand Settings"}</button>
@@ -491,8 +507,6 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
     }
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Billing.</div>;
-
   return (
     <div style={{ maxWidth: "700px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Billing & Plan</div>
@@ -526,7 +540,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 }
 
 // =========================================================
-// 4. SUPER ADMIN OPERATIONS DASHBOARD (Role Management)
+// 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
 function SuperAdminDashboard({ showToast }) {
   const [globalVendors, setGlobalVendors] = useState([]);
@@ -740,7 +754,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION
+// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -835,8 +849,6 @@ function ClientsManager({ user, showToast }) {
     setLoading(false);
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Client CRM.</div>;
-
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
@@ -867,7 +879,7 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR & VENDOR ANALYTICS
+// 8. INVOICE GENERATOR (With Search & Detailed Views)
 // =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -876,6 +888,10 @@ function InvoiceGenerator({ user, showToast }) {
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
+  
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("date-desc");
 
   useEffect(() => {
     if (!supabase) return;
@@ -884,7 +900,7 @@ function InvoiceGenerator({ user, showToast }) {
   }, []);
 
   const fetchRecentInvoices = async () => {
-    const { data } = await supabase.from('invoices').select('*, clients(name)').eq('vendor_id', user.id).order('created_at', { ascending: false });
+    const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
     if(data) setInvoices(data);
   };
 
@@ -914,11 +930,23 @@ function InvoiceGenerator({ user, showToast }) {
     setLoading(false);
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
-
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
+
+  // Search and Sort Logic
+  const filteredInvoices = invoices.filter(inv => {
+    const clientName = (inv.clients?.name || "").toLowerCase();
+    const itemsStr = JSON.stringify(inv.items || "").toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return clientName.includes(q) || itemsStr.includes(q);
+  }).sort((a, b) => {
+    if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
+    if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
+    if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
+    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
+    return 0;
+  });
 
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
@@ -970,16 +998,45 @@ function InvoiceGenerator({ user, showToast }) {
           <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
         </div>
       </div>
+
+      {/* Invoice Ledger Search & Filter */}
       {invoices.length > 0 && (
         <div>
-          <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Recent Invoices</h3>
-          {invoices.map(inv => {
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Invoices</h3>
+            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
+              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                <option value="date-desc">Newest First</option>
+                <option value="date-asc">Oldest First</option>
+                <option value="name-asc">Client A-Z</option>
+                <option value="name-desc">Client Z-A</option>
+              </select>
+            </div>
+          </div>
+          
+          {filteredInvoices.map(inv => {
             const safeInvAmount = Number(inv.amount || 0);
+            let parsedItems = [];
+            try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
+            const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
+
             return (
-              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
-                <div><div style={{ fontWeight: "700" }}>{inv.clients?.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>₦{safeInvAmount.toLocaleString()}</div></div>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
+              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "16px" }}>
+                <div style={{ flex: 1, minWidth: "250px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                    <div style={{ fontWeight: "800", fontSize: "16px" }}>{inv.clients?.name}</div>
+                    <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                    <span>{inv.clients?.email}</span>
+                    {inv.clients?.phone && <span>{inv.clients.phone}</span>}
+                  </div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
+                </div>
+                
+                <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
                   {inv.status === 'pending' && (
                     <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>
@@ -990,211 +1047,9 @@ function InvoiceGenerator({ user, showToast }) {
               </div>
             );
           })}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
         </div>
       )}
-    </div>
-  );
-}
-
-// =========================================================
-// 9. PAYOUT CONFIGURATION 
-// =========================================================
-function PayoutSettings({ user, onSubaccountLinked, showToast }) {
-  const [bankCode, setBankCode] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSetupPayout = async (e) => {
-    e.preventDefault();
-    if (accountNumber.length !== 10) return showToast("Invalid Input", "Account number must be exactly 10 digits.", "error");
-    setLoading(true);
-    
-    const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
-
-    try {
-      const res = await fetch("/api/create-subaccount", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ business_name: safeBusinessName, bank_code: bankCode, account_number: accountNumber }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      
-      await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
-      onSubaccountLinked(result.subaccount_code);
-      showToast("Bank Linked", "Your bank account has been connected securely.", "success");
-    } catch (error) { 
-      showToast("Error Linking Bank", error.message, "error"); 
-    } finally { setLoading(false); }
-  };
-
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Payouts.</div>;
-
-  return (
-    <div style={{ maxWidth: "550px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
-        {user?.paystack_subaccount_code ? (
-          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
-        ) : (
-          <form onSubmit={handleSetupPayout}>
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label>
-              <select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required>
-                <option value="">-- Select Bank --</option>
-                {NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}
-              </select>
-            </div>
-            <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
-            <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// =========================================================
-// 10. HELPDESK & SUPPORT TICKETING SYSTEM
-// =========================================================
-function SupportDashboard({ user, showToast }) {
-  const [tickets, setTickets] = useState([]);
-  const [activeTicket, setActiveTicket] = useState(null);
-  const [subject, setSubject] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef(null);
-
-  const fetchTickets = async () => {
-    let query = supabase.from('tickets').select('*, vendors(business_name, email)');
-    if (user.role === 'vendor') query = query.eq('vendor_id', user.id);
-    const { data } = await query.order('created_at', { ascending: false });
-    if (data) setTickets(data);
-    setLoading(false);
-  };
-
-  useEffect(() => { if (supabase) fetchTickets(); }, []);
-
-  useEffect(() => {
-    if (activeTicket) {
-      supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true }).then(({ data }) => setMessages(data || []));
-    }
-  }, [activeTicket]);
-
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  const handleCreateTicket = async (e) => {
-    e.preventDefault(); setLoading(true);
-    const { data, error } = await supabase.from('tickets').insert([{ vendor_id: user.id, subject }]).select().single();
-    if (error) showToast("Error", error.message, "error");
-    else {
-      showToast("Ticket Created", "A support agent will be with you shortly.", "success");
-      setSubject("");
-      fetchTickets();
-      
-      // Notify Admins
-      await supabase.from('notifications').insert([{ 
-        user_id: user.id, // For RLS bypass, we tie it to the ticket creator, but admins fetch all.
-        title: "New Support Ticket", 
-        message: `${user.business_name || 'A user'} opened a ticket: ${subject}` 
-      }]);
-    }
-    setLoading(false);
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    const msg = newMessage; setNewMessage("");
-    
-    const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
-    if (error) { showToast("Error", error.message, "error"); return; }
-    
-    setMessages([...messages, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
-
-    // Notifications
-    if (user.role !== 'vendor') {
-      await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
-    }
-  };
-
-  const closeTicket = async () => {
-    await supabase.from('tickets').update({ status: 'closed' }).eq('id', activeTicket.id);
-    setActiveTicket({ ...activeTicket, status: 'closed' });
-    fetchTickets();
-    showToast("Closed", "Ticket has been closed.", "info");
-  };
-
-  if (activeTicket) {
-    return (
-      <div style={{ maxWidth: "800px" }}>
-        <button onClick={() => setActiveTicket(null)} style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", gap: "8px" }}>&larr; Back to Tickets</button>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: "900", margin: 0 }}>{activeTicket.subject}</h2>
-          {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
-          {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
-        </div>
-        
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
-            {messages.map(m => {
-              const isMe = m.sender_id === user.id;
-              return (
-                <div key={m.id} className={`chat-bubble ${isMe ? 'user' : 'admin'}`}>
-                  <div style={{ fontSize: "11px", opacity: 0.7, marginBottom: "4px" }}>{isMe ? "You" : "Support Team"}</div>
-                  <div>{m.message}</div>
-                </div>
-              )
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-          {activeTicket.status === 'open' ? (
-             <form onSubmit={handleSendMessage} className="chat-input-area">
-              <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={newMessage} onChange={e=>setNewMessage(e.target.value)} required />
-              <button className="btn-primary btn-hover" type="submit">Send</button>
-            </form>
-          ) : (
-            <div style={{ padding: "16px", textAlign: "center", background: "#F1F5F9", color: DESIGN.textMuted, fontWeight: "600", fontSize: "14px" }}>This ticket is closed.</div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ maxWidth: "900px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><MessageIcon /> {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}</div>
-      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>{user.role === 'vendor' ? 'Need help? Open a ticket and our team will assist you.' : 'Manage and respond to customer tickets.'}</div>
-
-      {user.role === 'vendor' && (
-        <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Create New Ticket</h3>
-          <form onSubmit={handleCreateTicket} style={{ display: "flex", gap: "12px" }}>
-            <input className="form-input" style={{ flex: 1 }} placeholder="Briefly describe your issue..." value={subject} onChange={e=>setSubject(e.target.value)} required />
-            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "..." : "Open Ticket"}</button>
-          </form>
-        </div>
-      )}
-
-      <div>
-        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>{user.role === 'vendor' ? 'Your Tickets' : 'All Open Tickets'}</h3>
-        {loading ? <div style={{ color: DESIGN.textMuted }}>Loading tickets...</div> : tickets.length === 0 ? <div style={{ padding: "40px", textAlign: "center", background: "#FFF", borderRadius: "12px", border: `1px dashed ${DESIGN.border}`, color: DESIGN.textMuted }}>No tickets found.</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {tickets.map(t => (
-              <div key={t.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setActiveTicket(t)}>
-                <div>
-                  <div style={{ fontWeight: "800", fontSize: "15px", marginBottom: "4px" }}>{t.subject}</div>
-                  <div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{user.role !== 'vendor' ? `From: ${t.vendors?.business_name || 'Vendor'}` : new Date(t.created_at).toLocaleDateString()}</div>
-                </div>
-                <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: t.status === 'open' ? "#FEF3C7" : "#F1F5F9", color: t.status === 'open' ? "#D97706" : DESIGN.textMuted }}>{t.status.toUpperCase()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -1207,7 +1062,6 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   
-  // Custom Toast State Manager
   const [toast, setToast] = useState(null);
   const showToast = (title, message, type = "success") => {
     setToast({ title, message, type });
@@ -1243,13 +1097,12 @@ export default function App() {
     if (!supabase || !userData) return;
     let query = supabase.from('notifications').select('*', { count: 'exact' }).eq('is_read', false);
     if (userData.role === 'vendor') query = query.eq('user_id', userData.id);
-    // If admin/support, they see all unread notifications globally.
     const { count } = await query;
     if (count !== null) setUnreadCount(count);
   };
 
   const clearNotifications = async () => {
-    if (!user || unreadCount === 0) return;
+    if (!user || unreadCount === 0) { window.location.hash = "#/dashboard/support"; return; }
     let query = supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
     if (user.role === 'vendor') query = query.eq('user_id', user.id);
     await query;
@@ -1269,10 +1122,10 @@ export default function App() {
       </div>
     );
 
-    // 1. PUBLIC INVOICE ROUTE (Synchronous extraction stops the race condition crash!)
+    // 1. PUBLIC INVOICE ROUTE (Secure extraction)
     if (hash.startsWith('#/pay/')) {
       const cleanId = hash.replace('#/pay/', '').replace(/[^a-zA-Z0-9-]/g, '');
-      return <PublicInvoice invoiceId={cleanId} showToast={showToast} />;
+      return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
     }
 
     // 2. PUBLIC LEGAL ROUTES
@@ -1296,9 +1149,10 @@ export default function App() {
       <div className="dashboard-layout">
         <GlobalStyles />
         <div className="sidebar">
+          {/* Mobile Sidebar Header */}
           <div className="sidebar-header">
             <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
-            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
               <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
             </div>
@@ -1315,7 +1169,7 @@ export default function App() {
               </>
             )}
             <a href="#/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-               {user.role === 'vendor' ? 'Help & Support' : 'Support Inbox'}
+               {user.role === 'vendor' ? 'Helpdesk & Chat' : 'Support Inbox'}
             </a>
 
             {user?.role === 'admin' && (
@@ -1328,19 +1182,20 @@ export default function App() {
           <div className="sidebar-footer">
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
-              <div onClick={clearNotifications} style={{display: "none"}} className="desktop-bell"><BellIcon count={unreadCount} /></div>
+              <div onClick={clearNotifications} style={{ display: "none" }}><BellIcon count={unreadCount} /></div>
             </div>
             <button className="menu-btn btn-hover" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
         </div>
         <div className="main-content">
-          {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
-          {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
-          {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => window.location.hash = "#/dashboard/billing"} />}
-          {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
+          {/* Strictly guard content renders to roles to prevent direct URL sneaking */}
+          {activeTab === "invoices" && user.role !== 'support' && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "clients" && user.role !== 'support' && <ClientsManager user={user} showToast={showToast} />}
+          {activeTab === "payouts" && user.role !== 'support' && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
+          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => window.location.hash = "#/dashboard/billing"} />}
+          {activeTab === "billing" && user.role !== 'support' && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
-          {activeTab === "admin" && user?.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
+          {activeTab === "admin" && user.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
         </div>
       </div>
     );
@@ -1350,6 +1205,17 @@ export default function App() {
     <>
       <Toast toast={toast} onClose={() => setToast(null)} />
       {renderView()}
+      
+      {/* FLOATING SUPPORT BUTTON (Only for vendors not already in the support tab) */}
+      {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
+        <button 
+          className="btn-primary btn-hover" 
+          onClick={() => window.location.hash = "#/dashboard/support"}
+          style={{ position: "fixed", bottom: "32px", right: "32px", borderRadius: "50px", padding: "16px 24px", display: "flex", alignItems: "center", gap: "8px", zIndex: 999, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)" }}
+        >
+          <MessageIcon /> Support
+        </button>
+      )}
     </>
   );
 }
