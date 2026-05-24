@@ -250,7 +250,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
+// VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
   const starsArray =;
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
