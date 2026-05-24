@@ -1454,9 +1454,9 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR (WITH FOREX & PREMIUM LOGO MODAL)
+// 8. KUDISLIP UNIQUE INVOICE ENGINE (BYPASSES DUPLICATES)
 // =========================================================
-function InvoiceGenerator({ user, showToast }) {
+function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
@@ -1471,6 +1471,7 @@ function InvoiceGenerator({ user, showToast }) {
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
 
+  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -1907,7 +1908,7 @@ function AppRouter() {
         </div>
 
         <div className="main-content">
-          {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "invoices" && <KudiSlipInvoiceEngine user={user} showToast={showToast} />}
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
