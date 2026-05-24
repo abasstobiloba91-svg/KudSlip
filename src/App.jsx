@@ -68,7 +68,7 @@ const GlobalStyles = () => (
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the watermark */
+    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -111,7 +111,7 @@ const Toast = ({ toast, onClose }) => {
   }[toast.type] || { bg: "#ECFDF5", border: "#A7F3D0", color: "#10B981", icon: <CheckIcon /> };
 
   return (
-    <div className="toast-container" style={{ position: "fixed", top: "24px", left: "50%", zIndex: 9999, background: styles.bg, border: `1px solid ${styles.border}`, padding: "16px 24px", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", display: "flex", alignItems: "flex-start", gap: "16px", minWidth: "320px", maxWidth: "90%" }}>
+    <div className="toast-container" style={{ position: "fixed", top: "24px", left: "50%", zIndex: 10000, background: styles.bg, border: `1px solid ${styles.border}`, padding: "16px 24px", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", display: "flex", alignItems: "flex-start", gap: "16px", minWidth: "320px", maxWidth: "90%" }}>
       <div style={{ color: styles.color, display: "flex", marginTop: "2px" }}>{styles.icon}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: "800", fontSize: "14px", color: "#0F172A", marginBottom: "4px" }}>{toast.title}</div>
@@ -200,82 +200,91 @@ function PublicInvoice({ invoiceId, showToast }) {
   const customColor = vendor?.brand_color || DESIGN.primary;
 
   return (
-    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg }}>
+    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
       
-      <div className="no-print" style={{ width: "100%", maxWidth: "600px", display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-        <button onClick={triggerPDFCompilation} style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-          <DownloadIcon /> Download PDF
-        </button>
-      </div>
+      {/* FULL PAGE REPEATING WATERMARK OVERLAY (Oversized to prevent blank corners when rotated) */}
+      {isFreeTier && (
+        <div style={{ 
+          position: "fixed", 
+          top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", 
+          backgroundImage: 'url("/logo.png")', 
+          backgroundRepeat: "repeat", 
+          backgroundSize: "200px", 
+          opacity: 0.03, 
+          pointerEvents: "none", 
+          zIndex: 9999, 
+          transform: "rotate(-15deg)" 
+        }} />
+      )}
 
-      <div style={{ width: "100%", maxWidth: "600px" }}>
+      {/* Main Content Wrapper - Set to z-index 10 to ensure it is clickable but visually under the watermark */}
+      <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        
+        <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={triggerPDFCompilation} style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+            <DownloadIcon /> Download PDF
+          </button>
+        </div>
+
         {isFreeTier && (
-          <div className="no-print" style={{ textAlign: "center", marginBottom: "24px" }}>
+          <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
             <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
             <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
           </div>
         )}
         
-        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden" }}>
-          
-          {/* THE FREE TIER REPEATING WATERMARK OVERLAY (Now protected for printing) */}
-          {isFreeTier && (
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "150px", opacity: 0.04, pointerEvents: "none", zIndex: 0, transform: "rotate(-15deg) scale(1.5)" }} />
-          )}
-
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
-              <div>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
-                {vendor?.logo_url ? (
-                  <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} />
-                ) : (
-                  <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
-                )}
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
-              </div>
-            </div>
-            
-            <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-                <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
-                <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-                <div style={{ fontWeight: "700" }}>{safeDate}</div>
-              </div>
-            </div>
-            
-            <div style={{ marginBottom: "40px" }}>
-              {safeItems.map((item, idx) => (
-                <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
-                  <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{Number(item.price || 0).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-              <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
-              <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>₦{safeAmount.toLocaleString()}</div>
-            </div>
-            
-            <div className="no-print">
-              {invoice.status === 'pending' ? (
-                <button style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "all 0.2s" }} onClick={handlePayment}>
-                  Proceed to Payment
-                </button>
+        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
+              {vendor?.logo_url ? (
+                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} />
               ) : (
-                <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                  <CheckIcon /> Invoice Paid Securely
-                </div>
+                <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
               )}
             </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
+              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
+            </div>
+          </div>
+          
+          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
+              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
+              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
+              <div style={{ fontWeight: "700" }}>{safeDate}</div>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: "40px" }}>
+            {safeItems.map((item, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
+                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>₦{Number(item.price || 0).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+            <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
+            <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>₦{safeAmount.toLocaleString()}</div>
+          </div>
+          
+          <div className="no-print">
+            {invoice.status === 'pending' ? (
+              <button style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "all 0.2s" }} onClick={handlePayment}>
+                Proceed to Payment
+              </button>
+            ) : (
+              <div style={{ textAlign: "center", color: DESIGN.success, fontWeight: "800", fontSize: "16px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <CheckIcon /> Invoice Paid Securely
+              </div>
+            )}
           </div>
         </div>
       </div>
