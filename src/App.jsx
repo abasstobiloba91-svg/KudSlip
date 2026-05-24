@@ -34,7 +34,7 @@ const DESIGN = {
 // --- SVG ICONS ---
 const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
 const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
-const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
 const InfoIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>);
 const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
 const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"></path><path d="M12 18h.01"></path></svg>);
@@ -68,10 +68,12 @@ const GlobalStyles = () => (
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
       .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     
     @media (max-width: 768px) {
@@ -122,9 +124,8 @@ const Toast = ({ toast, onClose }) => {
   );
 };
 
-
 // =========================================================
-// 1. PUBLIC INVOICE VIEW 
+// 1. PUBLIC INVOICE VIEW
 // =========================================================
 function PublicInvoice({ invoiceId, showToast }) {
   usePaystack();
@@ -218,7 +219,7 @@ function PublicInvoice({ invoiceId, showToast }) {
         
         <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden" }}>
           
-          {/* THE FREE TIER REPEATING WATERMARK OVERLAY */}
+          {/* THE FREE TIER REPEATING WATERMARK OVERLAY (Now protected for printing) */}
           {isFreeTier && (
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "150px", opacity: 0.04, pointerEvents: "none", zIndex: 0, transform: "rotate(-15deg) scale(1.5)" }} />
           )}
@@ -285,7 +286,7 @@ function PublicInvoice({ invoiceId, showToast }) {
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
 // =========================================================
-function BrandSettings({ user, onUpdate, showToast }) {
+function BrandSettings({ user, onUpdate, showToast, onGoToBilling }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
   const [loading, setLoading] = useState(false);
@@ -306,9 +307,10 @@ function BrandSettings({ user, onUpdate, showToast }) {
     return (
       <div style={{ maxWidth: "600px" }}>
         <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
-        <div style={{ padding: "32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
+        <div style={{ padding: "40px 32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
           <div style={{ fontSize: "18px", fontWeight: "800", color: DESIGN.premium, marginBottom: "12px" }}>Premium Feature</div>
           <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, change the invoice colors, and remove KudiSlip watermarks.</div>
+          <button className="btn-primary btn-premium" onClick={onGoToBilling}>Upgrade to Premium</button>
         </div>
       </div>
     );
@@ -342,7 +344,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
   );
 }
 
-
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
@@ -351,16 +352,25 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
   const isPremium = user?.subscription_tier === 'premium';
 
   const handleUpgrade = () => {
-    if (!window.PaystackPop) return showToast("Loading", "Payment engine loading...", "info");
+    if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.", "error");
+    if (!window.PaystackPop) return showToast("Loading Error", "Payment engine blocked. Please wait a second or disable adblockers.", "error");
+
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: user?.email || "vendor@kudislip.com",
       amount: 15000 * 100,
       currency: "NGN",
       callback: async function(response) {
-        await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
-        onUpgradeSuccess();
-        showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
+        const { error } = await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
+        if (error) {
+          showToast("Upgrade Error", error.message, "error");
+        } else {
+          onUpgradeSuccess();
+          showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
+        }
+      },
+      onClose: function() {
+        showToast("Cancelled", "Upgrade transaction cancelled.", "info");
       }
     });
     handler.openIframe();
@@ -915,7 +925,7 @@ export default function App() {
           {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
+          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => setActiveTab("billing")} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
         </div>
