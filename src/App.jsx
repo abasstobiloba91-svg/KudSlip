@@ -34,9 +34,11 @@ const DESIGN = {
 // --- SVG ICONS ---
 const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
 const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
-const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+const InfoIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>);
 const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
 const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"></path><path d="M12 18h.01"></path></svg>);
+const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 
 const GlobalStyles = () => (
   <style>{`
@@ -60,6 +62,12 @@ const GlobalStyles = () => (
     .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
+    @keyframes toastSlideIn {
+      0% { transform: translate(-50%, -100%); opacity: 0; }
+      100% { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -90,9 +98,35 @@ const usePaystack = () => {
 };
 
 // =========================================================
+// CUSTOM UI TOAST NOTIFICATION
+// =========================================================
+const Toast = ({ toast, onClose }) => {
+  if (!toast) return null;
+  const styles = {
+    error: { bg: "#FEF2F2", border: "#FECACA", color: "#EF4444", icon: <AlertIcon /> },
+    info: { bg: "#F8FAFC", border: "#E2E8F0", color: "#3B82F6", icon: <InfoIcon /> },
+    success: { bg: "#ECFDF5", border: "#A7F3D0", color: "#10B981", icon: <CheckIcon /> }
+  }[toast.type] || { bg: "#ECFDF5", border: "#A7F3D0", color: "#10B981", icon: <CheckIcon /> };
+
+  return (
+    <div className="toast-container" style={{ position: "fixed", top: "24px", left: "50%", zIndex: 9999, background: styles.bg, border: `1px solid ${styles.border}`, padding: "16px 24px", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", display: "flex", alignItems: "flex-start", gap: "16px", minWidth: "320px", maxWidth: "90%" }}>
+      <div style={{ color: styles.color, display: "flex", marginTop: "2px" }}>{styles.icon}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: "800", fontSize: "14px", color: "#0F172A", marginBottom: "4px" }}>{toast.title}</div>
+        <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>{toast.message}</div>
+      </div>
+      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px", display: "flex", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#0F172A"} onMouseOut={(e) => e.currentTarget.style.color = "#64748B"}>
+        <CloseIcon />
+      </button>
+    </div>
+  );
+};
+
+
+// =========================================================
 // 1. PUBLIC INVOICE VIEW 
 // =========================================================
-function PublicInvoice({ invoiceId }) {
+function PublicInvoice({ invoiceId, showToast }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
   const [vendor, setVendor] = useState(null);
@@ -120,14 +154,13 @@ function PublicInvoice({ invoiceId }) {
   const triggerPDFCompilation = () => window.print();
 
   const handlePayment = () => {
-    if (!PAYSTACK_PUBLIC_KEY) return alert("System Error: VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.");
-    if (!vendor?.paystack_subaccount_code) return alert("Merchant Error: This merchant has not linked a bank account yet.");
-    if (!window.PaystackPop) return alert("Payment engine loading, please wait...");
+    if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
+    if (!vendor?.paystack_subaccount_code) return showToast("Action Required", "This merchant has not linked a settlement bank account yet.", "error");
+    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
     const safeAmount = Number(invoice?.amount || 0);
-    if (safeAmount <= 0) return alert("Cannot process payment. The invoice amount must be greater than ₦0.");
+    if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than ₦0.", "error");
 
-    // FIX: Using standard function to prevent Babel/Vite transpilation crashes
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
@@ -137,7 +170,7 @@ function PublicInvoice({ invoiceId }) {
       callback: function(response) {
         supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
           setInvoice({ ...invoice, status: 'paid' });
-          alert("Payment Successful! Receipt saved.");
+          showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
         });
       },
       onClose: function() {
@@ -151,7 +184,7 @@ function PublicInvoice({ invoiceId }) {
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2>System Routing Error</h2></div>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2 style={{ margin: 0 }}>System Routing Error</h2></div>
       <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px"}}>{debugError}</p>
       <button className="btn-primary" style={{marginTop: "16px"}} onClick={() => window.location.href = "/"}>Go to Dashboard</button>
     </div>
@@ -252,7 +285,7 @@ function PublicInvoice({ invoiceId }) {
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
 // =========================================================
-function BrandSettings({ user, onUpdate }) {
+function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
   const [loading, setLoading] = useState(false);
@@ -261,9 +294,9 @@ function BrandSettings({ user, onUpdate }) {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor }).eq('id', user.id);
-    if (error) alert("Error saving brand: " + error.message);
+    if (error) { showToast("Database Error", error.message, "error"); }
     else {
-      alert("Brand updated successfully!");
+      showToast("Brand Updated", "Your custom brand settings have been saved successfully.", "success");
       onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor });
     }
     setLoading(false);
@@ -313,12 +346,12 @@ function BrandSettings({ user, onUpdate }) {
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
-function SubscriptionManager({ user, onUpgradeSuccess }) {
+function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
   usePaystack();
   const isPremium = user?.subscription_tier === 'premium';
 
   const handleUpgrade = () => {
-    if (!window.PaystackPop) return alert("Payment engine loading...");
+    if (!window.PaystackPop) return showToast("Loading", "Payment engine loading...", "info");
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: user?.email || "vendor@kudislip.com",
@@ -327,7 +360,7 @@ function SubscriptionManager({ user, onUpgradeSuccess }) {
       callback: async function(response) {
         await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
         onUpgradeSuccess();
-        alert("Welcome to Premium! Watermarks have been removed from your invoices.");
+        showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
       }
     });
     handler.openIframe();
@@ -440,7 +473,7 @@ function SuperAdminDashboard() {
 // =========================================================
 // 5. LANDING PAGE 
 // =========================================================
-function LandingPage({ onNavigate }) {
+function LandingPage({ onNavigate, showToast }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
@@ -501,9 +534,9 @@ function LandingPage({ onNavigate }) {
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
           <div style={{ display: "flex", gap: "24px" }}>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Terms & Conditions will go here.")}>Terms & Conditions</span>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Privacy Policy will go here.")}>Privacy Policy</span>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Info", "Terms & Conditions will go here.", "info")}>Terms & Conditions</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Info", "Privacy Policy will go here.", "info")}>Privacy Policy</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => showToast("Contact Us", "Reach out to our support team anytime at support@kudislip.com", "info")}>Contact Us</span>
           </div>
         </div>
       </footer>
@@ -514,7 +547,7 @@ function LandingPage({ onNavigate }) {
 // =========================================================
 // 6. AUTHENTICATION
 // =========================================================
-function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
+function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -532,7 +565,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
           const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName }]);
           if (dbError) throw dbError;
         }
-        alert("Account setup complete! Please log in.");
+        showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
         setIsSignUp(false);
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -540,7 +573,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
         const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
         onLoginSuccess({ ...data.user, ...vendorData });
       }
-    } catch (err) { setError(err.message); } finally { setLoading(false); }
+    } catch (err) { setError(err.message); showToast("Authentication Error", err.message, "error"); } finally { setLoading(false); }
   };
 
   return (
@@ -566,7 +599,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
 // =========================================================
 // 7. CLIENTS CRM
 // =========================================================
-function ClientsManager({ user }) {
+function ClientsManager({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -581,8 +614,11 @@ function ClientsManager({ user }) {
   const handleAddClient = async (e) => {
     e.preventDefault(); setLoading(true);
     const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
-    if (!error && data) { setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); alert("Client added successfully!"); }
-    else if (error) { alert("Failed to add client. Check database permissions."); }
+    if (!error && data) { 
+      setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); 
+      showToast("Client Added", "Customer has been added successfully to your directory.", "success"); 
+    }
+    else if (error) { showToast("Database Error", "Failed to add client. Check database permissions.", "error"); }
     setLoading(false);
   };
 
@@ -618,7 +654,7 @@ function ClientsManager({ user }) {
 // =========================================================
 // 8. INVOICE GENERATOR & VENDOR ANALYTICS
 // =========================================================
-function InvoiceGenerator({ user }) {
+function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
@@ -643,7 +679,7 @@ function InvoiceGenerator({ user }) {
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
   const handleGenerateInvoice = async () => {
-    if (!selectedClient || !dueDate) return alert("Select a client and due date.");
+    if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     setLoading(true);
     
     const { data, error } = await supabase.from('invoices').insert([{ 
@@ -654,9 +690,9 @@ function InvoiceGenerator({ user }) {
       due_date: dueDate 
     }]).select().single();
     
-    if (error) { alert("Database Error: " + error.message + "\nDetails: " + (error.details || "None")); } 
+    if (error) { showToast("Database Error", error.message, "error"); } 
     else {
-      alert("Invoice Generated! Link created.");
+      showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
       setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
       fetchRecentInvoices();
     }
@@ -746,14 +782,14 @@ function InvoiceGenerator({ user }) {
 // =========================================================
 // 9. PAYOUT CONFIGURATION 
 // =========================================================
-function PayoutSettings({ user, onSubaccountLinked }) {
+function PayoutSettings({ user, onSubaccountLinked, showToast }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSetupPayout = async (e) => {
     e.preventDefault();
-    if (accountNumber.length !== 10) return alert("Account number must be 10 digits.");
+    if (accountNumber.length !== 10) return showToast("Invalid Input", "Account number must be exactly 10 digits.", "error");
     setLoading(true);
     
     const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
@@ -769,9 +805,9 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       
       await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
       onSubaccountLinked(result.subaccount_code);
-      alert("Bank linked successfully!");
+      showToast("Bank Linked", "Your bank account has been connected securely.", "success");
     } catch (error) { 
-      alert("Failed to link bank. Error: " + error.message); 
+      showToast("Error Linking Bank", error.message, "error"); 
     } finally { setLoading(false); }
   };
 
@@ -802,6 +838,13 @@ export default function App() {
   const [view, setView] = useState("loading"); 
   const [activeTab, setActiveTab] = useState("invoices");
   const [publicInvoiceId, setPublicInvoiceId] = useState(null);
+  
+  // Custom Toast State Manager
+  const [toast, setToast] = useState(null);
+  const showToast = (title, message, type = "success") => {
+    setToast({ title, message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
     if (initializationError) { setView("diagnostic_error"); return; }
@@ -829,53 +872,61 @@ export default function App() {
     });
   }, []);
 
-  if (view === "diagnostic_error") return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
-      <GlobalStyles />
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: DESIGN.error, marginBottom: "12px" }}>
-        <AlertIcon />
-        <div style={{ fontSize: "22px", fontWeight: "900" }}>Configuration Warning</div>
+  const renderView = () => {
+    if (view === "diagnostic_error") return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
+        <GlobalStyles />
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: DESIGN.error, marginBottom: "12px" }}>
+          <AlertIcon />
+          <div style={{ fontSize: "22px", fontWeight: "900" }}>Configuration Warning</div>
+        </div>
+        <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
       </div>
-      <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
-    </div>
-  );
+    );
+    if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
+    if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} showToast={showToast} />;
+    if (view === "landing") return <LandingPage onNavigate={(v) => setView("auth")} showToast={showToast} />;
+    if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} showToast={showToast} />;
 
-  if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
-  if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} />;
-  if (view === "landing") return <LandingPage onNavigate={(v) => setView("auth")} />;
-  if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
+    return (
+      <div className="dashboard-layout">
+        <GlobalStyles />
+        <div className="sidebar">
+          <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "40px" }}><img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} /></div>
+          <div className="sidebar-menu">
+            <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Analytics</button>
+            <button className={`menu-btn ${activeTab === "clients" ? "active" : ""}`} onClick={() => setActiveTab("clients")}>Client Directory</button>
+            <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
+            <button className={`menu-btn ${activeTab === "brand" ? "active" : ""}`} onClick={() => setActiveTab("brand")}>Brand Settings</button>
+            <button className={`menu-btn ${activeTab === "billing" ? "active" : ""}`} onClick={() => setActiveTab("billing")}>Billing & Plan</button>
+            {user?.is_admin && (
+              <button className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setActiveTab("admin")}>
+                <ShieldIcon /> Admin Operations
+              </button>
+            )}
+          </div>
+          <div style={{ flex: 1 }} />
+          <div style={{ padding: "16px 32px", marginTop: "auto" }}>
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name || user?.email}</div>
+            <button className="menu-btn" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => setView("landing"))}>Log Out</button>
+          </div>
+        </div>
+        <div className="main-content">
+          {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
+          {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
+          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
+          {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
+          {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="dashboard-layout">
-      <GlobalStyles />
-      <div className="sidebar">
-        <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "40px" }}><img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} /></div>
-        <div className="sidebar-menu">
-          <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Analytics</button>
-          <button className={`menu-btn ${activeTab === "clients" ? "active" : ""}`} onClick={() => setActiveTab("clients")}>Client Directory</button>
-          <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
-          <button className={`menu-btn ${activeTab === "brand" ? "active" : ""}`} onClick={() => setActiveTab("brand")}>Brand Settings</button>
-          <button className={`menu-btn ${activeTab === "billing" ? "active" : ""}`} onClick={() => setActiveTab("billing")}>Billing & Plan</button>
-          {user?.is_admin && (
-            <button className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setActiveTab("admin")}>
-              <ShieldIcon /> Admin Operations
-            </button>
-          )}
-        </div>
-        <div style={{ flex: 1 }} />
-        <div style={{ padding: "16px 32px", marginTop: "auto" }}>
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name || user?.email}</div>
-          <button className="menu-btn" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => setView("landing"))}>Log Out</button>
-        </div>
-      </div>
-      <div className="main-content">
-        {activeTab === "invoices" && <InvoiceGenerator user={user} />}
-        {activeTab === "clients" && <ClientsManager user={user} />}
-        {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} />}
-        {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />}
-        {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} />}
-        {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
-      </div>
-    </div>
+    <>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+      {renderView()}
+    </>
   );
 }
