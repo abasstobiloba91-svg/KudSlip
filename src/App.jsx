@@ -1108,7 +1108,7 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR (WITH HACK 1 FOREX CALCULATOR)
+// 8. INVOICE GENERATOR
 // =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -1121,9 +1121,11 @@ function InvoiceGenerator({ user, showToast }) {
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
 
-  // NEW: Live Forex Calculator State
+  // Live Forex Calculator State
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
+
+  const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
     if (!supabase) return;
@@ -1141,7 +1143,6 @@ function InvoiceGenerator({ user, showToast }) {
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-  // NEW: Ping global market for live exchange rate
   const handleCalculateRate = async (e) => {
     e.preventDefault();
     if (!calcData.amount) return;
@@ -1173,7 +1174,6 @@ function InvoiceGenerator({ user, showToast }) {
     setShowLogoWarning(false);
     setLoading(true);
     
-    // Hardcoded back to NGN so Paystack does not reject it
     const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: 'NGN' }]).select().single();
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
@@ -1229,7 +1229,6 @@ function InvoiceGenerator({ user, showToast }) {
           </div>
         )}
 
-        {/* NEW: FOREX CALCULATOR UI */}
         {calcOpen ? (
           <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "20px", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
@@ -1310,30 +1309,48 @@ function InvoiceGenerator({ user, showToast }) {
           
           {filteredInvoices.map(inv => {
             const safeInvAmount = Number(inv.amount || 0);
+            const invCurrency = inv.currency || "NGN";
+            const sym = CURRENCY_SYMBOLS[invCurrency] || "₦";
             
             let parsedItems = [];
             try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
             const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
 
             return (
-              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "16px" }}>
-                <div style={{ flex: 1, minWidth: "250px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-                    <div style={{ fontWeight: "800", fontSize: "16px" }}>{inv.clients?.name}</div>
-                    <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
+              <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: "16px", padding: "24px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+                
+                {/* Top Row: Client Info & Status */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ wordBreak: "break-word" }}>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: DESIGN.textMain, marginBottom: "4px" }}>{inv.clients?.name}</div>
+                    <div style={{ fontSize: "13px", color: DESIGN.textMuted, lineHeight: "1.4" }}>
+                      <div>{inv.clients?.email}</div>
+                      {inv.clients?.phone && <div>{inv.clients.phone}</div>}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <span>{inv.clients?.email}</span>{inv.clients?.phone && <span>{inv.clients.phone}</span>}
+                  <span style={{ fontSize: "11px", fontWeight: "900", padding: "6px 12px", borderRadius: "20px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
+                    {inv.status}
+                  </span>
+                </div>
+
+                {/* Middle Row: Items Summary */}
+                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: DESIGN.textMain, fontWeight: "500", border: "1px solid #F1F5F9" }}>
+                  <span style={{ color: DESIGN.textMuted, fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
+                </div>
+
+                {/* Bottom Row: Amount & Actions */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "900", color: DESIGN.textMain }}>
+                    {sym}{safeInvAmount.toLocaleString()}
                   </div>
-                  <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
+                  <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <button className="btn-secondary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "140px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                    {inv.status === 'pending' && (
+                      <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>Send Reminder</a>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
-                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
-                  <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
-                  {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>Send Reminder</a>
-                  )}
-                </div>
+
               </div>
             );
           })}
@@ -1546,7 +1563,64 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH 3S SPLASH OVERRIDE)
+// DRAGGABLE SUPPORT BUTTON COMPONENT
+// =========================================================
+function DraggableSupportButton() {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const hasMoved = useRef(false);
+
+  const handleStart = (clientX, clientY) => {
+    setIsDragging(true);
+    hasMoved.current = false;
+    dragStart.current = { x: clientX - pos.x, y: clientY - pos.y };
+  };
+
+  const handleMove = (clientX, clientY) => {
+    if (!isDragging) return;
+    hasMoved.current = true;
+    setPos({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y });
+  };
+
+  const handleEnd = () => setIsDragging(false);
+
+  return (
+    <a
+      href="#/dashboard/support"
+      onClick={(e) => { if (hasMoved.current) e.preventDefault(); }}
+      onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
+      onMouseMove={(e) => isDragging && handleMove(e.clientX, e.clientY)}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+      onTouchStart={(e) => handleStart(e.touches.clientX, e.touches.clientY)}
+      onTouchMove={(e) => isDragging && handleMove(e.touches.clientX, e.touches.clientY)}
+      onTouchEnd={handleEnd}
+      className="btn-primary btn-hover"
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        transform: `translate(${pos.x}px, ${pos.y}px)`,
+        borderRadius: "50px",
+        padding: "14px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        zIndex: 9999,
+        boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)",
+        textDecoration: "none",
+        touchAction: "none",
+        cursor: isDragging ? "grabbing" : "grab"
+      }}
+    >
+      <MessageIcon /> <span className="support-text-mobile">Support</span>
+    </a>
+  );
+}
+
+// =========================================================
+// MAIN APP ROUTER & MOBILE DRAWER
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -1570,32 +1644,20 @@ function AppRouter() {
 
   useEffect(() => { setSidebarOpen(false); }, [hash]);
 
-  // THE FIX: Forces a deliberate 3-second premium splash experience before launching workspace
   useEffect(() => {
     if (initializationError || !supabase) { setIsLoading(false); return; }
 
-    // 1. Start a mandatory 3-second delay promise
-    const minimumSplashTimer = new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // 2. Start the native database session check promise
-    const authenticationCheck = supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const { data } = await supabase.from('vendors').select('*').eq('id', session.user.id).single();
-        return { sessionUser: session.user, vendorData: data };
-      }
-      return null;
-    });
-
-    // 3. Wait for BOTH conditions to finish before clearing the bounce animation screen
-    Promise.all([minimumSplashTimer, authenticationCheck]).then(([_, accountPayload]) => {
-      if (accountPayload) {
-        setUser({ ...accountPayload.sessionUser, ...accountPayload.vendorData });
-        checkNotifications({ ...accountPayload.sessionUser, ...accountPayload.vendorData });
-        if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
-           window.location.hash = "#/dashboard/invoices";
-        }
-      }
-      setIsLoading(false); // Snaps the splash out of view gracefully after exactly 3s+
+        supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          setUser({ ...session.user, ...data });
+          setIsLoading(false);
+          checkNotifications({ ...session.user, ...data });
+          if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
+             window.location.hash = "#/dashboard/invoices";
+          }
+        });
+      } else { setIsLoading(false); }
     });
   }, []);
 
@@ -1614,14 +1676,6 @@ function AppRouter() {
     await query;
     setUnreadCount(0);
     window.location.hash = "#/dashboard/support";
-  };
-
-  const handleLogout = () => {
-    supabase.auth.signOut().then(() => { 
-      setUser(null); 
-      setSidebarOpen(false);
-      window.location.hash = "#/"; 
-    });
   };
 
   const renderView = () => {
@@ -1644,25 +1698,7 @@ function AppRouter() {
     if (hash === "#/terms") return <LegalPage type="terms" />;
     if (hash === "#/privacy") return <LegalPage type="privacy" />;
 
-    // Dynamic Viewport Loading Splash with Synthesized Bouncing Logo Loop
-    if (isLoading) return (
-      <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px" }}>
-        <style>{`
-          @keyframes kudiBounce {
-            0%, 100% { transform: scale(2.0) translateY(0); }
-            50% { transform: scale(1.9) translateY(-16px); }
-          }
-          @keyframes textPulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-          }
-          .bouncing-logo { animation: kudiBounce 1s infinite cubic-bezier(0.25, 1, 0.5, 1); }
-          .pulsing-text { animation: textPulse 1s infinite ease-in-out; font-weight: 700; font-size: 14px; color: #0F172A; letter-spacing: 0.05em; }
-        `}</style>
-        <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
-        <div className="pulsing-text" style={{ marginTop: "8px" }}>Loading Workspace...</div>
-      </div>
-    );
+    if (isLoading) return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
 
     if (!user) {
       if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
@@ -1678,10 +1714,9 @@ function AppRouter() {
         
         <div className="mobile-dashboard-header">
           <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <button className="btn-hover" style={{ background: "none", border: "none", color: DESIGN.error, fontWeight: "800", fontSize: "13px", cursor: "pointer", padding: "4px" }} onClick={handleLogout}>Log Out</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
-            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain, padding: "0" }} onClick={() => setSidebarOpen(true)}>☰</button>
+            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
           </div>
         </div>
 
@@ -1718,18 +1753,18 @@ function AppRouter() {
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={handleLogout}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
         </div>
 
         <div className="main-content">
-          {activeTab === "invoices" && user.role !== 'support' && <InvoiceGenerator user={user} showToast={showToast} />}
-          {activeTab === "clients" && user.role !== 'support' && <ClientsManager user={user} showToast={showToast} />}
-          {activeTab === "payouts" && user.role !== 'support' && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
-          {activeTab === "billing" && user.role !== 'support' && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
+          {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
+          {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
+          {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
+          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
+          {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
-          {activeTab === "admin" && user.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
+          {activeTab === "admin" && user?.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
         </div>
       </div>
     );
@@ -1737,27 +1772,17 @@ function AppRouter() {
 
   return (
     <>
+      <ErrorBoundary>
+        {renderView()}
+      </ErrorBoundary>
       <Toast toast={toast} onClose={() => setToast(null)} />
-      {renderView()}
       
-      {/* FLOATING SUPPORT BUTTON */}
+      {/* FLOATING SUPPORT BUTTON (DRAGGABLE) */}
       {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
-        <a
-          href="#/dashboard/support"
-          className="btn-primary btn-hover" 
-          style={{ position: "fixed", bottom: "24px", right: "24px", borderRadius: "50px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "8px", zIndex: 999, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)", textDecoration: "none" }}
-        >
-          <MessageIcon /> <span className="support-text-mobile">Support</span>
-        </a>
+        <DraggableSupportButton />
       )}
     </>
   );
 }
 
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppRouter />
-    </ErrorBoundary>
-  );
-}
+export default AppRouter;
