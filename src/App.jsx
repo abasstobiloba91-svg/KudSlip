@@ -805,7 +805,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION
+// 6. AUTHENTICATION (WITH PASSWORD TOGGLE & SPLASH INTERCEPT)
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -815,6 +815,9 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  
+  // NEW: State for password visibility toggle
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault(); setLoading(true); setError("");
@@ -829,6 +832,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         }
         showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
         setIsSignUp(false);
+        setLoading(false);
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
@@ -836,8 +840,32 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         onLoginSuccess({ ...data.user, ...vendorData });
         window.location.hash = "#/dashboard/invoices";
       }
-    } catch (err) { setError(err.message); showToast("Authentication Error", err.message, "error"); } finally { setLoading(false); }
+    } catch (err) { 
+      setError(err.message); 
+      showToast("Authentication Error", err.message, "error"); 
+      setLoading(false); // Drop the splash intercept screen only if authentication errors out
+    }
   };
+
+  // NEW: Premium splash screen intercepts the UI instantly upon clicking submit
+  if (loading) return (
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px", width: "100vw", position: "fixed", top: 0, left: 0, zIndex: 99999 }}>
+      <style>{`
+        @keyframes kudiBounce {
+          0%, 100% { transform: scale(2.0) translateY(0); }
+          50% { transform: scale(1.9) translateY(-16px); }
+        }
+        @keyframes textPulse {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        .bouncing-logo { animation: kudiBounce 1s infinite cubic-bezier(0.25, 1, 0.5, 1); }
+        .pulsing-text { animation: textPulse 1s infinite ease-in-out; font-weight: 700; font-size: 14px; color: #0F172A; letter-spacing: 0.05em; }
+      `}</style>
+      <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
+      <div className="pulsing-text" style={{ marginTop: "8px" }}>Loading Your Workspace...</div>
+    </div>
+  );
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
@@ -850,7 +878,35 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
           {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
           {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
           <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-          <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label><input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+          
+          {/* PASSWORD FIELD WITH INTEGRATED SVG VISIBILITY TOGGLE */}
+          <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label>
+            <div style={{ position: "relative", width: "100%" }}>
+              <input 
+                className="form-input" 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                style={{ paddingRight: "48px" }} 
+                required 
+              />
+              <div 
+                onClick={() => setShowPassword(!showPassword)} 
+                style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}
+              >
+                {showPassword ? (
+                  /* Eye Open icon */
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                ) : (
+                  /* Eye Closed icon */
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                )}
+              </div>
+            </div>
+          </div>
+
           {isSignUp && (
             <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
               <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
@@ -859,9 +915,11 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
               </label>
             </div>
           )}
-          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
+          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit">
+            {isSignUp ? "Sign Up" : "Log In"}
+          </button>
         </form>
-        <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
+        <div style={{ textAngle: "center", textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
           <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span>
         </div>
@@ -869,7 +927,6 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
     </div>
   );
 }
-
 // =========================================================
 // 7. CLIENTS CRM
 // =========================================================
