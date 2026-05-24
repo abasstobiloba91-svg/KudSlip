@@ -297,9 +297,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
           });
         },
-        onClose: function() {
-          console.log("Payment window closed.");
-        }
+        onClose: function() { console.log("Payment window closed."); }
       });
       handler.openIframe();
     } catch(err) {
@@ -329,47 +327,34 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
-      
-      {/* FULL PAGE REPEATING WATERMARK OVERLAY */}
       {isFreeTier && (
-        <div style={{ 
-          position: "fixed", 
-          top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", 
-          backgroundImage: 'url("/logo.png")', 
-          backgroundRepeat: "repeat", 
-          backgroundSize: "200px", 
-          opacity: 0.03, 
-          pointerEvents: "none", 
-          zIndex: 9999, 
-          transform: "rotate(-15deg)" 
-        }} />
+        <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />
       )}
-
-      {/* Main Content Wrapper */}
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-            <DownloadIcon /> Download PDF
-          </button>
+          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><DownloadIcon /> Download PDF</button>
         </div>
-
         {isFreeTier && (
           <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
             <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
             <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
           </div>
         )}
-        
         <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
+              
+              {/* FALLBACK LOGO LOGIC */}
               {vendor?.logo_url ? (
-                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", marginTop: "8px", objectFit: "contain" }} />
+                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
               ) : (
-                <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                </div>
               )}
+
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
@@ -409,18 +394,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               </button>
             ) : (
               <div style={{ textAlign: "center", padding: "24px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
-                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
-                  <CheckIcon /> Payment Successful
-                </div>
-                <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>
-                  {thankYouMessage}
-                </div>
+                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}><CheckIcon /> Payment Successful</div>
+                <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
               </div>
             )}
-
-            {/* Smart Redirect for the Vendor checking their own invoice */}
             {currentUser?.id === vendor?.id && (
-              <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
+              <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
             )}
           </div>
         </div>
@@ -437,6 +416,31 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
   const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files;
+    if (!file) return;
+    setUploading(true);
+    
+    // Generate a unique file name to prevent overriding
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+    
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file);
+    if (uploadError) { 
+      showToast("Upload Error", uploadError.message, "error"); 
+      setUploading(false); 
+      return; 
+    }
+    
+    // Get the Public URL and save it to the form state
+    const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
+    setLogoUrl(data.publicUrl);
+    setUploading(false);
+    showToast("Logo Uploaded", "Image ready! Remember to click Save.", "success");
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -473,9 +477,16 @@ function BrandSettings({ user, onUpdate, showToast }) {
       <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px" }}>
         <form onSubmit={handleSave}>
           <div style={{ marginBottom: "24px" }}>
-            <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Company Logo URL</label>
-            <input className="form-input" placeholder="https://example.com/my-logo.png" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>Provide a direct link to your transparent PNG logo.</div>
+            <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Upload Company Logo</label>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo Preview" style={{ width: "60px", height: "60px", objectFit: "contain", border: `1px solid ${DESIGN.border}`, borderRadius: "8px", padding: "4px" }} />
+              ) : (
+                <div style={{ width: "60px", height: "60px", background: "#F1F5F9", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: DESIGN.textMuted }}>No Logo</div>
+              )}
+              <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
+            </div>
+            {uploading && <div style={{ fontSize: "12px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>Uploading image... please wait.</div>}
           </div>
           
           <div style={{ marginBottom: "24px" }}>
@@ -489,7 +500,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
           <div style={{ marginBottom: "32px" }}>
             <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Custom Thank You Message</label>
             <textarea className="form-input" placeholder="e.g. Thank you for shopping with Acme Corp! We appreciate your business." value={customThankYou} onChange={e => setCustomThankYou(e.target.value)} style={{ minHeight: "80px", resize: "vertical" }} />
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, marginTop: "8px" }}>This shows up on the receipt after a client pays.</div>
           </div>
           
           <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ width: "100%" }}>{loading ? "Saving..." : "Save Brand Settings"}</button>
@@ -930,6 +940,9 @@ function ClientsManager({ user, showToast }) {
 // =========================================================
 // 8. INVOICE GENERATOR (With Search & Detailed Views)
 // =========================================================
+// =========================================================
+// 8. INVOICE GENERATOR (With Search & Detailed Views)
+// =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
@@ -938,9 +951,9 @@ function InvoiceGenerator({ user, showToast }) {
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
   
-  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
+  const [showLogoWarning, setShowLogoWarning] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -958,8 +971,16 @@ function InvoiceGenerator({ user, showToast }) {
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-  const handleGenerateInvoice = async () => {
+  const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
+    
+    // Check if Pro user is missing a logo. If they haven't clicked 'Ignore', show warning!
+    if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
+      setShowLogoWarning(true);
+      return;
+    }
+    
+    setShowLogoWarning(false);
     setLoading(true);
     
     const { data, error } = await supabase.from('invoices').insert([{ 
@@ -985,7 +1006,6 @@ function InvoiceGenerator({ user, showToast }) {
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
 
-  // Search and Sort Logic
   const filteredInvoices = invoices.filter(inv => {
     const clientName = (inv.clients?.name || "").toLowerCase();
     const itemsStr = JSON.stringify(inv.items || "").toLowerCase();
@@ -1007,29 +1027,32 @@ function InvoiceGenerator({ user, showToast }) {
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <div className="metric-card">
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
-        </div>
-        <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div>
-        </div>
-        <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div>
-        </div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div></div>
       </div>
 
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
+        
+        {/* LOGO WARNING OVERLAY */}
+        {showLogoWarning && (
+          <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong>
+              <span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "8px 12px", fontSize: "12px", textDecoration: "none" }}>Upload Logo</a>
+              <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "8px 12px", fontSize: "12px", background: "#D97706", border: "none" }}>Ignore & Generate</button>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
-            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}>
-              <option value="">-- Select Client --</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
         </div>
@@ -1046,11 +1069,10 @@ function InvoiceGenerator({ user, showToast }) {
         </div>
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+          <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
         </div>
       </div>
 
-      {/* Invoice Ledger Search & Filter */}
       {invoices.length > 0 && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
@@ -1080,8 +1102,7 @@ function InvoiceGenerator({ user, showToast }) {
                     <span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                   </div>
                   <div style={{ fontSize: "13px", color: DESIGN.textMuted, marginBottom: "4px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <span>{inv.clients?.email}</span>
-                    {inv.clients?.phone && <span>{inv.clients.phone}</span>}
+                    <span>{inv.clients?.email}</span>{inv.clients?.phone && <span>{inv.clients.phone}</span>}
                   </div>
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
@@ -1090,9 +1111,7 @@ function InvoiceGenerator({ user, showToast }) {
                   <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
                   {inv.status === 'pending' && (
-                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>
-                      Send Reminder
-                    </a>
+                    <a href={"https://wa.me/?text=" + encodeURIComponent("Hello! Just a reminder that your invoice for ₦" + safeInvAmount.toLocaleString() + " from " + (user.business_name || "us") + " is due. You can pay securely here: https://" + window.location.host + "/#/pay/" + inv.id)} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "8px 16px", fontSize: "14px" }}>Send Reminder</a>
                   )}
                 </div>
               </div>
