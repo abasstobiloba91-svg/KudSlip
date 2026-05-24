@@ -41,47 +41,55 @@ const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 const MapPinIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>);
 const TagIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>);
+const MenuIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>);
 
 const GlobalStyles = () => (
   <style>{`
     body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
     
-    /* Global Button Hover Physics */
+    /* Global Button Hover Physics & Strict Box Sizing */
     .btn-hover { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
     .btn-hover:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
     .btn-hover:active:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 
-    .btn-primary { padding: 14px 28px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+    .btn-primary { padding: 14px 28px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
     .btn-premium { background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); color: white; border: none; }
-    .btn-secondary { padding: 12px 24px; background: transparent; color: #000000; border: 2px solid #000000; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+    .btn-secondary { padding: 12px 24px; background: transparent; color: #000000; border: 2px solid #000000; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box; }
     
     .form-input { width: 100%; padding: 14px 16px; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px; color: #0F172A; font-size: 14px; outline: none; box-sizing: border-box; transition: border-color 0.2s ease; }
     .form-input:focus { border-color: #000000; }
     
-    .menu-btn { display: block; width: 100%; padding: 16px 32px; background: transparent; border: none; border-left: 4px solid transparent; color: #64748B; text-align: left; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.15s ease; }
+    .menu-btn { display: block; width: 100%; padding: 16px 32px; background: transparent; border: none; border-left: 4px solid transparent; color: #64748B; text-align: left; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.15s ease; box-sizing: border-box; }
     .menu-btn:hover { background: #F8FAFC; color: #000000; }
     .menu-btn.active { background: #F1F5F9; border-left: 4px solid #000000; color: #000000; font-weight: 700; }
     
     .card-hover { transition: all 0.3s ease; }
     .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
     
-    .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
-    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; }
+    /* Layout Framework */
+    .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; position: relative; }
+    .mobile-header { display: none; }
+    .sidebar-overlay { display: none; }
+    
+    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; box-sizing: border-box; }
     .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
     .sidebar-footer { padding: 16px 32px; margin-top: auto; }
-    .mobile-nav-logout { display: none; }
-    .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; }
+    
+    .main-content { flex: 1; padding: 48px; box-sizing: border-box; overflow-y: auto; background: #F8FAFC; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
+    /* Responsive Form Grids */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; marginBottom: 32px; }
+    .item-grid { display: grid; grid-template-columns: 3fr 1fr 1.5fr auto; gap: 12px; margin-bottom: 12px; align-items: center; }
+
     @keyframes toastSlideIn {
       0% { transform: translate(-50%, -100%); opacity: 0; }
       100% { transform: translate(-50%, 0); opacity: 1; }
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -94,15 +102,25 @@ const GlobalStyles = () => (
       .hero-text-container { padding-right: 0 !important; }
       .hero-title { font-size: 38px !important; }
       .nav-buttons { display: none !important; }
+      
+      /* Mobile Layout Engine */
       .dashboard-layout { flex-direction: column; }
-      .sidebar { width: 100%; padding: 16px 0 0 0; min-height: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; }
-      .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 0 16px; white-space: nowrap; border-top: 1px solid #F1F5F9; }
-      .sidebar-footer { display: none !important; }
-      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; }
-      .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
-      .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
+      .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; position: sticky; top: 0; z-index: 50; }
+      
+      /* Off-Canvas Sidebar */
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 1000; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 10px 0 25px rgba(0,0,0,0.1); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
+      
+      .sidebar-header { margin-bottom: 24px !important; padding: 0 24px !important; }
+      .sidebar-footer { padding: 24px !important; border-top: 1px solid #E2E8F0; }
+      .menu-btn { padding: 16px 24px !important; }
+
+      /* Fix Squished Mobile Forms */
       .main-content { padding: 24px 16px; }
+      .form-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+      .item-grid { grid-template-columns: 1fr 1fr auto !important; }
+      .item-grid > :nth-child(1) { grid-column: span 3; } /* Makes the item description full width on mobile */
     }
   `}</style>
 );
@@ -153,7 +171,7 @@ function LegalPage({ type }) {
         <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">
           &larr; Back Home
         </a>
-        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
+        <a href="#/"><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} /></a>
       </nav>
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
         <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
@@ -221,28 +239,36 @@ function PublicInvoice({ invoiceId, showToast }) {
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!vendor?.paystack_subaccount_code) return showToast("Action Required", "This merchant has not linked a settlement bank account yet.", "error");
-    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
+    
+    // Strict Adblocker Detection
+    if (!window.PaystackPop || typeof window.PaystackPop.setup !== 'function') {
+      return showToast("Adblocker Detected", "Your browser is blocking the secure payment window. Please disable your adblocker to pay this invoice.", "error");
+    }
     
     const safeAmount = Number(invoice?.amount || 0);
     if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than ₦0.", "error");
 
-    const handler = window.PaystackPop.setup({
-      key: PAYSTACK_PUBLIC_KEY,
-      email: client?.email || "customer@kudislip.com",
-      amount: safeAmount * 100,
-      currency: "NGN",
-      subaccount: vendor.paystack_subaccount_code,
-      callback: function(response) {
-        supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
-          setInvoice({ ...invoice, status: 'paid' });
-          showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-        });
-      },
-      onClose: function() {
-        console.log("Payment window closed.");
-      }
-    });
-    handler.openIframe();
+    try {
+      const handler = window.PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: client?.email || "customer@kudislip.com",
+        amount: safeAmount * 100,
+        currency: "NGN",
+        subaccount: vendor.paystack_subaccount_code,
+        callback: function(response) {
+          supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
+            setInvoice({ ...invoice, status: 'paid' });
+            showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
+          });
+        },
+        onClose: function() {
+          console.log("Payment window closed.");
+        }
+      });
+      handler.openIframe();
+    } catch(err) {
+      showToast("System Error", "Failed to launch payment engine. Check your internet connection.", "error");
+    }
   };
 
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading...</div>;
@@ -294,12 +320,12 @@ function PublicInvoice({ invoiceId, showToast }) {
         {isFreeTier && (
           <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
             <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
+            <a href="#/"><img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} /></a>
           </div>
         )}
         
         <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px", flexWrap: "wrap", gap: "16px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
               {vendor?.logo_url ? (
@@ -341,7 +367,7 @@ function PublicInvoice({ invoiceId, showToast }) {
           
           <div className="no-print">
             {invoice.status === 'pending' ? (
-              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer" }} onClick={handlePayment}>
+              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" }} onClick={handlePayment}>
                 Proceed to Payment
               </button>
             ) : (
@@ -427,7 +453,11 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 
   const handleUpgrade = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.", "error");
-    if (!window.PaystackPop) return showToast("Loading Error", "Payment engine blocked. Please wait a second or disable adblockers.", "error");
+    
+    // Strict Adblocker Detection
+    if (!window.PaystackPop || typeof window.PaystackPop.setup !== 'function') {
+      return showToast("Adblocker Detected", "Your browser is blocking the secure payment window. Please disable your adblocker to upgrade.", "error");
+    }
 
     setIsProcessing(true);
     
@@ -485,7 +515,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
             <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
             <li>Fully Independent Branding</li>
           </ul>
-          {!isPremium && <button className="btn-primary btn-premium btn-hover" style={{ width: "100%", padding: "14px" }} onClick={handleUpgrade} disabled={isProcessing}>{isProcessing ? "Loading Payment..." : "Upgrade Now"}</button>}
+          {!isPremium && <button className="btn-primary btn-premium btn-hover" style={{ padding: "14px" }} onClick={handleUpgrade} disabled={isProcessing}>{isProcessing ? "Loading Payment..." : "Upgrade Now"}</button>}
         </div>
       </div>
     </div>
@@ -575,7 +605,7 @@ function LandingPage() {
         
         {/* Navigation */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
-          <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
+          <div style={{ width: "180px", display: "flex", alignItems: "center" }}><a href="#/"><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></a></div>
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
             <a href="#/login" className="btn-secondary btn-hover">Log In</a>
             <a href="#/signup" className="btn-primary btn-hover">Get Started Free</a>
@@ -668,7 +698,7 @@ function LandingPage() {
                 <li>Instant Bank Settlements</li>
                 <li><strong style={{color: DESIGN.textMain}}>Includes KudiSlip Watermark</strong></li>
               </ul>
-              <a href="#/signup" className="btn-secondary btn-hover" style={{ width: "100%" }}>Get Started Free</a>
+              <a href="#/signup" className="btn-secondary btn-hover">Get Started Free</a>
             </div>
             <div style={{ background: DESIGN.card, border: `2px solid ${DESIGN.premium}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
               <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: DESIGN.premium }}>Premium Pro</div>
@@ -678,7 +708,7 @@ function LandingPage() {
                 <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
                 <li>Fully Independent Branding</li>
               </ul>
-              <a href="#/signup" className="btn-primary btn-premium btn-hover" style={{ width: "100%" }}>Upgrade to Premium</a>
+              <a href="#/signup" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
             </div>
           </div>
         </div>
@@ -737,7 +767,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
       <GlobalStyles />
       <a href="#/" style={{ textDecoration: "none", position: "absolute", top: "24px", left: "24px", color: "#64748B", fontWeight: "600", fontSize: "14px", padding: "8px" }} className="btn-hover">&larr; Back to Home</a>
-      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
+      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><a href="#/"><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></a></div>
       <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
         <form onSubmit={handleAuth}>
@@ -755,7 +785,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
             </div>
           )}
 
-          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
+          <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
         </form>
         <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
@@ -800,11 +830,11 @@ function ClientsManager({ user, showToast }) {
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
-        <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
+        <form onSubmit={handleAddClient} className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", alignItems: "end" }}>
           <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} required/></div>
           <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></div>
           <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Phone</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
-          <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
+          <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ gridColumn: "1 / -1" }}>{loading ? "Saving..." : "Add Client"}</button>
         </form>
       </div>
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, overflowX: "auto" }}>
@@ -899,7 +929,7 @@ function InvoiceGenerator({ user, showToast }) {
 
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+        <div className="form-grid">
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
             <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}>
@@ -911,18 +941,18 @@ function InvoiceGenerator({ user, showToast }) {
         </div>
         <div style={{ marginBottom: "24px" }}>
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
+            <div key={idx} className="item-grid">
               <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
               <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
               <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
-              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
+              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "900", padding: "10px" }}>X</button>
             </div>
           ))}
-          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
+          <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: "8px 0" }}>+ Add Line Item</button>
         </div>
-        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+          <button className="btn-primary btn-hover" onClick={handleGenerateInvoice} disabled={loading || clients.length === 0} style={{ width: "auto", padding: "14px 32px" }}>{loading ? "Generating..." : "Generate Invoice"}</button>
         </div>
       </div>
       {invoices.length > 0 && (
@@ -994,7 +1024,7 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
           <form onSubmit={handleSetupPayout}>
             <div style={{ marginBottom: "20px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label><select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required><option value="">-- Select Bank --</option>{NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}</select></div>
             <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
-            <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
+            <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
           </form>
         )}
       </div>
@@ -1007,9 +1037,8 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
-  const [view, setView] = useState("loading"); 
-  const [activeTab, setActiveTab] = useState("invoices");
   const [publicInvoiceId, setPublicInvoiceId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Custom Toast State Manager
   const [toast, setToast] = useState(null);
@@ -1018,13 +1047,13 @@ export default function App() {
     setTimeout(() => setToast(null), 5000);
   };
 
+  const [hash, setHash] = useState(window.location.hash || "#/");
+
   useEffect(() => {
     const handleHashChange = () => setHash(window.location.hash || "#/");
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
-
-  const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
     if (initializationError) return;
@@ -1050,6 +1079,11 @@ export default function App() {
       }
     });
   }, [hash]);
+
+  // Handle closing sidebar when a mobile nav link is clicked
+  const handleMobileNavClick = () => {
+    setIsSidebarOpen(false);
+  };
 
   const renderView = () => {
     if (initializationError) return (
@@ -1081,20 +1115,31 @@ export default function App() {
     return (
       <div className="dashboard-layout">
         <GlobalStyles />
-        <div className="sidebar">
+        
+        {/* Responsive Mobile Header */}
+        <div className="mobile-header">
+          <a href="#/"><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "30px", transform: "scale(1.5)", transformOrigin: "left center" }} /></a>
+          <button onClick={() => setIsSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: DESIGN.textMain }}><MenuIcon /></button>
+        </div>
+
+        {/* Off-Canvas Sidebar Overlay for Mobile */}
+        <div className={`sidebar-overlay ${isSidebarOpen ? "open" : ""}`} onClick={() => setIsSidebarOpen(false)}></div>
+
+        {/* Dynamic Sidebar */}
+        <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
           <div className="sidebar-header">
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
+            <a href="#/"><img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} /></a>
             <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
           
           <div className="sidebar-menu">
-            <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & Analytics</a>
-            <a href="#/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
-            <a href="#/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
-            <a href="#/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
-            <a href="#/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
+            <a href="#/dashboard/invoices" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & Analytics</a>
+            <a href="#/dashboard/clients" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
+            <a href="#/dashboard/payouts" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
+            <a href="#/dashboard/brand" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
+            <a href="#/dashboard/billing" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
             {user?.is_admin && (
-              <a href="#/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <a href="#/dashboard/admin" onClick={handleMobileNavClick} className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <ShieldIcon /> Admin Operations
               </a>
             )}
@@ -1105,6 +1150,8 @@ export default function App() {
             <button className="menu-btn btn-hover" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
         </div>
+
+        {/* Render Active View */}
         <div className="main-content">
           {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
