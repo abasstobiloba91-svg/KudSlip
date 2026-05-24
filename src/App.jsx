@@ -441,9 +441,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
 
     // Create a secure upload pathway to track progress
     const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    formData.append('cacheControl', '3600');
-    formData.append('', file);
 
     // Hook into the native browser progress tracker
     xhr.upload.addEventListener("progress", (event) => {
@@ -462,7 +459,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
       } else {
         try {
           const res = JSON.parse(xhr.responseText);
-          showToast("Upload Failed", res.message || "Storage error", "error");
+          showToast("Upload Failed", res.message || res.error || "Storage error", "error");
         } catch(err) {
           showToast("Upload Error", `Server returned status code ${xhr.status}`, "error");
         }
@@ -475,12 +472,18 @@ function BrandSettings({ user, onUpdate, showToast }) {
       setUploading(false);
     });
 
-    // Fire the packet directly to your Supabase project bucket
+    // Fire the RAW file directly to your Supabase project bucket
     const targetUrl = `${SUPABASE_URL}/storage/v1/object/logos/${fileName}`;
     xhr.open("POST", targetUrl, true);
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
-    xhr.send(formData);
+    
+    // Tell Supabase exactly what kind of raw image file is coming
+    xhr.setRequestHeader("Content-Type", file.type);
+    xhr.setRequestHeader("cache-control", "3600");
+    
+    // Send the raw file directly!
+    xhr.send(file);
   };
 
   const handleSave = async (e) => {
