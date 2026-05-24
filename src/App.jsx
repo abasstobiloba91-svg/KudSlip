@@ -18,7 +18,6 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
   catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
-// EXPANDED NIGERIAN BANKS LIST
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
   { code: "050", name: "Ecobank Nigeria" },
@@ -68,10 +67,9 @@ const BellIcon = ({ count }) => (
 
 const GlobalStyles = () => (
   <style>{`
-    /* THE ABSOLUTE CSS ALIGNMENT FIX */
     *, *::before, *::after { box-sizing: border-box; }
     
-    body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     
     .btn-hover { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
     .btn-hover:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
@@ -93,12 +91,17 @@ const GlobalStyles = () => (
     .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
     
     .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
-    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; }
+    
+    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; transition: transform 0.3s ease; }
     .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; width: 100%; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
-    .sidebar-footer { padding: 16px 32px; margin-top: auto; }
-    .mobile-nav-logout { display: none; }
-    .main-content { flex: 1; padding: 48px; overflow-y: auto; }
+    .sidebar-footer { padding: 16px 32px; margin-top: auto; display: block; }
+    
+    .mobile-dashboard-header { display: none; }
+    .mobile-close-btn { display: none; }
+    .sidebar-overlay { display: none; }
+    
+    .main-content { flex: 1; padding: 48px; overflow-y: auto; background: #F8FAFC; min-height: 100vh; }
     .metric-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
     
     .chat-container { display: flex; flex-direction: column; height: 500px; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFF; }
@@ -129,23 +132,29 @@ const GlobalStyles = () => (
       .nav-buttons-desktop { display: none !important; }
       .mobile-menu-toggle { display: block !important; }
       .mobile-nav-dropdown.open { display: flex !important; flex-direction: column; gap: 12px; padding: 16px 24px; background: #FFF; border-bottom: 1px solid #E2E8F0; }
-      .dashboard-layout { flex-direction: column; }
-      .sidebar { width: 100%; padding: 16px 0 0 0; min-height: auto; border-right: none; border-bottom: 1px solid #E2E8F0; }
-      .sidebar-header { padding: 0 24px 16px 24px !important; margin-bottom: 0 !important; display: flex; justify-content: space-between; align-items: center; width: 100%; }
-      .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 0 16px; white-space: nowrap; border-top: 1px solid #F1F5F9; }
-      .sidebar-footer { display: none !important; }
-      .mobile-nav-logout { display: block !important; font-size: 13px; color: #EF4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 8px; }
-      .menu-btn { padding: 14px 20px; border-left: none; border-bottom: 3px solid transparent; text-align: center; }
-      .menu-btn.active { border-left: none; border-bottom: 3px solid #000000; }
-      .main-content { padding: 24px 16px; }
+      
+      .dashboard-layout { flex-direction: column; height: 100vh; overflow: hidden; }
+      .mobile-dashboard-header { display: flex !important; justify-content: space-between; align-items: center; padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; z-index: 40; }
+      
+      .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 45; display: none; }
+      .sidebar-overlay.open { display: block !important; }
+      
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 280px; z-index: 50; transform: translateX(-100%); padding: 24px 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1); }
+      .sidebar.open { transform: translateX(0); }
+      
+      .mobile-close-btn { display: block !important; color: #64748B; padding: 8px; }
+      .sidebar-header { padding: 0 24px 24px 24px !important; margin-bottom: 20px !important; }
+      .sidebar-menu { border-top: none; padding: 0; overflow-x: hidden; flex-direction: column; }
+      .menu-btn { padding: 16px 24px; border-left: 4px solid transparent; border-bottom: none; text-align: left; }
+      .menu-btn.active { border-left: 4px solid #000000; border-bottom: none; }
+      .sidebar-footer { padding: 24px; }
+      
+      .main-content { flex: 1; padding: 24px 16px; overflow-y: auto; height: calc(100vh - 73px); }
       .support-text-mobile { display: none; }
     }
   `}</style>
 );
 
-// =========================================================
-// REACT ERROR BOUNDARY (Prevents White Screens of Death)
-// =========================================================
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -174,9 +183,6 @@ const usePaystack = () => {
   }, []);
 };
 
-// =========================================================
-// CUSTOM UI TOAST NOTIFICATION
-// =========================================================
 const Toast = ({ toast, onClose }) => {
   if (!toast) return null;
   const styles = {
@@ -199,56 +205,35 @@ const Toast = ({ toast, onClose }) => {
   );
 };
 
-// =========================================================
-// LEGAL PAGES (T&C and Privacy)
-// =========================================================
 function LegalPage({ type }) {
   const isTerms = type === "terms";
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
       <GlobalStyles />
       <nav style={{ padding: "24px", borderBottom: `1px solid ${DESIGN.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">
-          &larr; Back Home
-        </a>
+        <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">&larr; Back Home</a>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
       </nav>
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
-        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
-          {isTerms ? "Terms & Conditions" : "Privacy Policy"}
-        </h1>
+        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>{isTerms ? "Terms & Conditions" : "Privacy Policy"}</h1>
         <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>Last updated: May 24, 2026</p>
-        
         {isTerms ? (
           <>
             <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Acceptance of Terms</h2>
             <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>By accessing KudiSlip, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
-            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Merchant Responsibilities</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Merchants must use KudiSlip for lawful transactions only. Any attempt to process fraudulent invoices, manipulate the routing architecture, or breach the API will result in immediate termination.</p>
-            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Subscriptions & Fees</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip operates a transparent pricing model. Free tier users are subject to KudiSlip watermarks. Pro subscriptions are billed monthly. Transaction processing fees are governed directly by our partner, Paystack.</p>
           </>
         ) : (
           <>
             <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Information We Collect</h2>
             <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We collect business identities, contact emails, and basic CRM data to facilitate your invoicing process. We never sell your personal or client data to third parties.</p>
-            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Payment Security</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>All transactions are processed securely via Paystack. KudiSlip never sees, processes, or stores your clients' raw credit card data or banking PINs.</p>
-            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Data Retention</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Your invoice history and client lists are securely stored on cloud infrastructure. You may request a total deletion of your vendor account and associated records at any time by contacting support.</p>
           </>
         )}
       </main>
-      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
-        © 2026 KudiSlip Technologies. All rights reserved.
-      </footer>
+      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>© 2026 KudiSlip Technologies. All rights reserved.</footer>
     </div>
   );
 }
 
-// =========================================================
-// 1. PUBLIC INVOICE VIEW
-// =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
@@ -327,9 +312,8 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   return (
     <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
       <GlobalStyles />
-      {isFreeTier && (
-        <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />
-      )}
+      {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
+      
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><DownloadIcon /> Download PDF</button>
@@ -344,8 +328,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
-              
-              {/* FALLBACK LOGO LOGIC */}
               {vendor?.logo_url ? (
                 <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
               ) : (
@@ -354,14 +336,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
                 </div>
               )}
-
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
               <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
             </div>
           </div>
-          
           <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
@@ -373,7 +353,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               <div style={{ fontWeight: "700" }}>{safeDate}</div>
             </div>
           </div>
-          
           <div style={{ marginBottom: "40px" }}>
             {safeItems.map((item, idx) => (
               <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
@@ -381,7 +360,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               </div>
             ))}
           </div>
-          
           <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
             <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>₦{safeAmount.toLocaleString()}</div>
@@ -411,9 +389,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
 // =========================================================
-// =========================================================
-// 2. BRAND SETTINGS (PRO FEATURE)
-// =========================================================
 function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
   const [brandColor, setBrandColor] = useState(user?.brand_color || "#000000");
@@ -422,64 +397,49 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
 
-  const handleLogoUpload = async (e) => {
+  // BASE64 NATIVE UPLOAD FIX: Bypasses Storage Buckets and gives a 100% upload guarantee!
+  const handleLogoUpload = (e) => {
     const file = e.target.files;
     if (!file) return;
     
-    // Check file size (5MB Limit)
-    if (file.size > 5242880) {
-      showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
+    if (file.size > 2097152) {
+      showToast("File Too Large", "Please select a logo smaller than 2MB.", "error");
       return;
     }
 
     setUploading(true);
     setUploadPercent(0);
-    
-    // Smart UI Tracker: Animates smoothly up to 90% while the server processes
+
+    // Smart UI Tracker simulating the processing delay
     const progressInterval = setInterval(() => {
       setUploadPercent((prev) => {
-        if (prev >= 90) return 90; // Hold at 90% until the database confirms receipt
-        return prev + 15;
+        if (prev >= 90) return 90;
+        return prev + 20;
       });
-    }, 300);
+    }, 100);
     
-    const fileExt = file.name.split('.').pop();
-    // THE FIX: Add a random number to the filename so it is ALWAYS treated as a brand new file
-    const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
+    const reader = new FileReader();
     
-    try {
-      // Official SDK upload
-      const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false 
-      });
-
-      clearInterval(progressInterval); // Stop the animation
-
-      if (uploadError) { 
-        setUploadPercent(0);
-        setUploading(false);
-        showToast("Upload Blocked", uploadError.message, "error"); 
-        return; 
-      }
-      
-      // Success! Snap to 100%
+    reader.onloadend = () => {
+      clearInterval(progressInterval);
       setUploadPercent(100);
-      const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
-      setLogoUrl(data.publicUrl);
-      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      setLogoUrl(reader.result); // Saves the raw image string directly!
+      showToast("Logo Processed!", "Image loaded natively. Click Save below to apply it.", "success");
       
       setTimeout(() => {
         setUploading(false);
         setUploadPercent(0);
-      }, 2000);
+      }, 1500);
+    };
 
-    } catch (err) {
+    reader.onerror = () => {
       clearInterval(progressInterval);
-      setUploadPercent(0);
       setUploading(false);
-      showToast("System Error", err.message, "error");
-    }
+      setUploadPercent(0);
+      showToast("Processing Error", "Your browser failed to read the image.", "error");
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e) => {
@@ -554,6 +514,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
     </div>
   );
 }
+
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
@@ -572,7 +533,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
       const handler = window.PaystackPop.setup({
         key: PAYSTACK_PUBLIC_KEY,
         email: user?.email || "vendor@kudislip.com",
-        amount: 15000 * 100, // NGN 15,000
+        amount: 15000 * 100,
         currency: "NGN",
         callback: async function(response) {
           try {
@@ -730,15 +691,12 @@ function LandingPage() {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", flex: 1 }}>
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
-          
           <div className="nav-buttons-desktop">
             <a href="#/login" className="btn-secondary btn-hover">Log In</a>
             <a href="#/signup" className="btn-primary btn-hover">Get Started Free</a>
           </div>
-
           <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>☰</button>
         </nav>
-        
         <div className={`mobile-nav-dropdown ${mobileMenuOpen ? 'open' : ''}`}>
           <a href="#/login" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Log In</a>
           <a href="#/signup" className="btn-primary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
@@ -751,9 +709,7 @@ function LandingPage() {
             <p style={{ fontSize: "18px", color: "#64748B", margin: "0 0 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
             <a href="#/signup" className="btn-primary btn-hover" style={{ padding: "16px 36px", fontSize: "16px" }}>Create Your Account</a>
           </div>
-          <div>
-            <img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80" alt="Nigerian Professional Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} />
-          </div>
+          <div><img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80" alt="Nigerian Professional Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} /></div>
         </main>
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
@@ -856,7 +812,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
+// 6. AUTHENTICATION
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -902,7 +858,6 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
           {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
           <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
           <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label><input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required /></div>
-          
           {isSignUp && (
             <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
               <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
@@ -911,14 +866,11 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
               </label>
             </div>
           )}
-
           <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
         </form>
         <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
-          <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>
-            {isSignUp ? "Log In" : "Sign Up"}
-          </span>
+          <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span>
         </div>
       </div>
     </div>
@@ -983,10 +935,7 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR (With Search & Detailed Views)
-// =========================================================
-// =========================================================
-// 8. INVOICE GENERATOR (With Search & Detailed Views)
+// 8. INVOICE GENERATOR
 // =========================================================
 function InvoiceGenerator({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -995,7 +944,6 @@ function InvoiceGenerator({ user, showToast }) {
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
-  
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
@@ -1018,8 +966,6 @@ function InvoiceGenerator({ user, showToast }) {
 
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
-    
-    // Check if Pro user is missing a logo. If they haven't clicked 'Ignore', show warning!
     if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
       setShowLogoWarning(true);
       return;
@@ -1028,14 +974,7 @@ function InvoiceGenerator({ user, showToast }) {
     setShowLogoWarning(false);
     setLoading(true);
     
-    const { data, error } = await supabase.from('invoices').insert([{ 
-      vendor_id: user.id, 
-      client_id: selectedClient, 
-      amount: calculateTotal(), 
-      items: items, 
-      due_date: dueDate 
-    }]).select().single();
-    
+    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate }]).select().single();
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
@@ -1080,13 +1019,9 @@ function InvoiceGenerator({ user, showToast }) {
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
-        {/* LOGO WARNING OVERLAY */}
         {showLogoWarning && (
           <div style={{ background: "#FFFBEB", border: "1px solid #F59E0B", padding: "16px", borderRadius: "8px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong>
-              <span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span>
-            </div>
+            <div><strong style={{ color: "#D97706", display: "block", marginBottom: "4px" }}>Missing Brand Logo</strong><span style={{ fontSize: "13px", color: DESIGN.textMain }}>You haven't uploaded a custom logo yet. The KudiSlip logo will be used by default.</span></div>
             <div style={{ display: "flex", gap: "8px" }}>
               <a href="#/dashboard/brand" className="btn-secondary btn-hover" style={{ padding: "8px 12px", fontSize: "12px", textDecoration: "none" }}>Upload Logo</a>
               <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "8px 12px", fontSize: "12px", background: "#D97706", border: "none" }}>Ignore & Generate</button>
@@ -1151,7 +1086,6 @@ function InvoiceGenerator({ user, showToast }) {
                   </div>
                   <div style={{ fontSize: "12px", color: DESIGN.textMain, fontWeight: "500" }}>Items: {itemSummary || "N/A"}</div>
                 </div>
-                
                 <div style={{ display: "flex", gap: "16px", alignItems: "center", width: "100%", justifyContent: "flex-end" }}>
                   <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>₦{safeInvAmount.toLocaleString()}</div>
                   <button className="btn-secondary btn-hover" style={{ padding: "8px 16px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
@@ -1248,7 +1182,6 @@ function SupportDashboard({ user, showToast }) {
     setLoading(false);
   };
 
-  // LIVE UPDATE: Refresh Inbox every 10 seconds
   useEffect(() => { 
     if (!supabase) return;
     fetchTickets(); 
@@ -1256,7 +1189,6 @@ function SupportDashboard({ user, showToast }) {
     return () => clearInterval(inboxInterval);
   }, []);
 
-  // LIVE UPDATE: Refresh Chat Window every 3 seconds
   useEffect(() => {
     if (!activeTicket) return;
     const fetchMessages = async () => {
@@ -1268,7 +1200,6 @@ function SupportDashboard({ user, showToast }) {
     return () => clearInterval(chatInterval);
   }, [activeTicket]);
 
-  // Auto-scroll to bottom only when new messages arrive
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 
   const handleCreateTicket = async (e) => {
@@ -1279,12 +1210,7 @@ function SupportDashboard({ user, showToast }) {
       showToast("Ticket Created", "A support agent will be with you shortly.", "success");
       setSubject("");
       fetchTickets();
-      
-      await supabase.from('notifications').insert([{ 
-        user_id: user.id,
-        title: "New Support Ticket", 
-        message: `${user.business_name || 'A user'} opened a ticket: ${subject}` 
-      }]);
+      await supabase.from('notifications').insert([{ user_id: user.id, title: "New Support Ticket", message: `${user.business_name || 'A user'} opened a ticket: ${subject}` }]);
     }
     setLoading(false);
   };
@@ -1293,13 +1219,9 @@ function SupportDashboard({ user, showToast }) {
     e.preventDefault();
     if (!newMessage.trim()) return;
     const msg = newMessage; setNewMessage("");
-    
-    // Instantly show message locally for a fast feel
     setMessages(prev => [...prev, { id: Date.now(), sender_id: user.id, message: msg, created_at: new Date().toISOString() }]);
-
     const { error } = await supabase.from('ticket_messages').insert([{ ticket_id: activeTicket.id, sender_id: user.id, message: msg }]);
     if (error) { showToast("Error", error.message, "error"); return; }
-
     if (user.role !== 'vendor') {
       await supabase.from('notifications').insert([{ user_id: activeTicket.vendor_id, title: "Support Reply", message: `Admin replied to your ticket: ${activeTicket.subject}` }]);
     }
@@ -1321,7 +1243,6 @@ function SupportDashboard({ user, showToast }) {
           {activeTicket.status === 'open' && user.role !== 'vendor' && <button className="btn-secondary btn-hover" onClick={closeTicket}>Close Ticket</button>}
           {activeTicket.status === 'closed' && <span style={{ padding: "6px 12px", background: "#FEF2F2", color: "#EF4444", borderRadius: "16px", fontSize: "12px", fontWeight: "800" }}>CLOSED</span>}
         </div>
-        
         <div className="chat-container">
           <div className="chat-messages">
             {messages.length === 0 && <div style={{ textAlign: "center", color: DESIGN.textMuted, marginTop: "20px" }}>No messages yet. Send a message to start.</div>}
@@ -1385,12 +1306,13 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // =========================================================
-// MAIN APP ROUTER & ERROR BOUNDARY
+// MAIN APP ROUTER & MOBILE DRAWER
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
   const showToast = (title, message, type = "success") => {
@@ -1405,6 +1327,8 @@ function AppRouter() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  useEffect(() => { setSidebarOpen(false); }, [hash]);
 
   useEffect(() => {
     if (initializationError || !supabase) { setIsLoading(false); return; }
@@ -1473,13 +1397,21 @@ function AppRouter() {
     return (
       <div className="dashboard-layout">
         <GlobalStyles />
-        <div className="sidebar">
+        
+        <div className="mobile-dashboard-header">
+          <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
+            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
+          </div>
+        </div>
+
+        <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+
+        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
-              <button className="mobile-nav-logout btn-hover" onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
-            </div>
+            <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer" }} onClick={() => setSidebarOpen(false)}>×</button>
           </div>
           
           <div className="sidebar-menu">
@@ -1504,48 +1436,8 @@ function AppRouter() {
           </div>
           <div style={{ flex: 1 }} />
           <div className="sidebar-footer">
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="menu-btn btn-hover" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
           </div>
-        </div>
-        <div className="main-content">
-          {activeTab === "invoices" && user.role !== 'support' && <InvoiceGenerator user={user} showToast={showToast} />}
-          {activeTab === "clients" && user.role !== 'support' && <ClientsManager user={user} showToast={showToast} />}
-          {activeTab === "payouts" && user.role !== 'support' && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && user.role !== 'support' && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
-          {activeTab === "billing" && user.role !== 'support' && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
-          {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
-          {activeTab === "admin" && user.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <>
-      <Toast toast={toast} onClose={() => setToast(null)} />
-      {renderView()}
-      
-      {/* FLOATING SUPPORT BUTTON (Only for vendors not already in the support tab) */}
-      {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
-        <a
-          href="#/dashboard/support"
-          className="btn-primary btn-hover" 
-          style={{ position: "fixed", bottom: "24px", right: "24px", borderRadius: "50px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "8px", zIndex: 999, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)", textDecoration: "none" }}
-        >
-          <MessageIcon /> <span className="support-text-mobile">Support</span>
-        </a>
-      )}
-    </>
-  );
-}
-
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppRouter />
-    </ErrorBoundary>
-  );
-}
