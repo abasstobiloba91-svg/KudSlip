@@ -419,7 +419,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
       <GlobalStyles />
       <button onClick={onBack} style={{ position: "absolute", top: "24px", left: "24px", background: "none", border: "none", color: "#64748B", cursor: "pointer", fontWeight: "600", fontSize: "14px", padding: "8px" }}>&larr; Back to Home</button>
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
-      <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+      <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
         <form onSubmit={handleAuth}>
           {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
@@ -516,9 +516,20 @@ function InvoiceGenerator({ user }) {
   const handleGenerateInvoice = async () => {
     if (!selectedClient || !dueDate) return alert("Select a client and due date.");
     setLoading(true);
-    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items, due_date: dueDate }]).select().single();
-    if (error) alert("Error generating invoice.");
-    else {
+    
+    // Attempt to save the invoice
+    const { data, error } = await supabase.from('invoices').insert([{ 
+      vendor_id: user.id, 
+      client_id: selectedClient, 
+      amount: calculateTotal(), 
+      items: items, 
+      due_date: dueDate 
+    }]).select().single();
+    
+    // If it fails, print exactly what Supabase says is wrong!
+    if (error) {
+      alert("Database Error: " + error.message + "\nDetails: " + (error.details || "None"));
+    } else {
       alert("Invoice Generated! Link created.");
       setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
       fetchRecentInvoices();
@@ -541,16 +552,16 @@ function InvoiceGenerator({ user }) {
       {/* VENDOR ANALYTICS DASHBOARD */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
         <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
         </div>
         <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.success }}>₦{totalPaid.toLocaleString()}</div>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div>
         </div>
         <div className="metric-card" style={{ padding: "20px" }}>
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
-          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.error }}>₦{totalPending.toLocaleString()}</div>
+          <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div>
         </div>
       </div>
 
