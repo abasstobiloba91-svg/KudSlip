@@ -392,7 +392,7 @@ function LandingPage({ onNavigate }) {
           <div style={{ display: "flex", gap: "24px" }}>
             <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Terms & Conditions will go here.")}>Terms & Conditions</span>
             <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Privacy Policy will go here.")}>Privacy Policy</span>
-            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
+            <span style={{ pointer: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
           </div>
         </div>
       </footer>
