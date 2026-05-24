@@ -417,51 +417,73 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [customThankYou, setCustomThankYou] = useState(user?.custom_thank_you || "");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files;
     if (!file) return;
     
-    // Strict 2MB limit for instant Base64 string conversion
-    if (file.size > 2097152) {
-      showToast("File Too Large", "Please select a logo smaller than 2MB for instant processing.", "error");
+    // Check file size (5MB Limit)
+    if (file.size > 5242880) {
+      showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
       return;
     }
 
     setUploading(true);
+    setUploadPercent(0);
     
-    // THE ULTIMATE BYPASS: Read image natively in browser and convert to Base64 String!
-    const reader = new FileReader();
+    // Smart UI Tracker: Animates smoothly up to 90% while the server processes
+    const progressInterval = setInterval(() => {
+      setUploadPercent((prev) => {
+        if (prev >= 90) return 90; // Hold at 90% until the database confirms receipt
+        return prev + 15;
+      });
+    }, 300);
     
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      setLogoUrl(base64String); // Sets the preview instantly
-      showToast("Logo Processed!", "Image loaded natively. Click Save below to apply it.", "success");
-      setUploading(false);
-    };
+    const fileExt = file.name.split('.').pop();
+    // THE FIX: Add a random number to the filename so it is ALWAYS treated as a brand new file (bypassing the overwrite block)
+    const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
+    
+    try {
+      const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false // We don't need upsert anymore because the filename is always 100% unique!
+      });
 
-    reader.onerror = () => {
-      showToast("Processing Error", "Your browser failed to read the image.", "error");
-      setUploading(false);
-    };
+      clearInterval(progressInterval); // Stop the animation
 
-    reader.readAsDataURL(file); // Fire the local conversion
+      if (uploadError) { 
+        setUploadPercent(0);
+        setUploading(false);
+        showToast("Upload Blocked", uploadError.message, "error"); 
+        return; 
+      }
+      
+      // Success! Snap to 100%
+      setUploadPercent(100);
+      const { data } = supabase.storage.from('logos').getPublicUrl(fileName);
+      setLogoUrl(data.publicUrl);
+      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      
+      setTimeout(() => {
+        setUploading(false);
+        setUploadPercent(0);
+      }, 2000);
+
+    } catch (err) {
+      clearInterval(progressInterval);
+      setUploadPercent(0);
+      setUploading(false);
+      showToast("System Error", err.message, "error");
+    }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Saves the direct Base64 string directly into the vendors table. No Storage buckets needed!
-    const { error } = await supabase.from('vendors').update({ 
-      logo_url: logoUrl, 
-      brand_color: brandColor, 
-      custom_thank_you: customThankYou 
-    }).eq('id', user.id);
-    
-    if (error) { 
-      showToast("Database Error", error.message, "error"); 
-    } else {
+    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou }).eq('id', user.id);
+    if (error) { showToast("Database Error", error.message, "error"); }
+    else {
       showToast("Brand Updated", "Your custom brand settings have been saved successfully.", "success");
       onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou });
     }
@@ -501,9 +523,10 @@ function BrandSettings({ user, onUpdate, showToast }) {
               <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} style={{ fontSize: "13px" }} />
             </div>
             
+            {/* The Percentage Tracker UI */}
             {uploading && (
               <div style={{ fontSize: "13px", color: DESIGN.premium, marginTop: "8px", fontWeight: "700" }}>
-                Processing image natively...
+                Uploading: {uploadPercent}% {uploadPercent === 100 ? " (Complete!)" : ""}
               </div>
             )}
           </div>
@@ -528,7 +551,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
     </div>
   );
 }
-
 
 // =========================================================
 // 3. SUBSCRIPTION / BILLING DASHBOARD
