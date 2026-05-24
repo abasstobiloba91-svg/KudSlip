@@ -36,9 +36,11 @@ const DownloadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" h
 const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>);
 const AlertIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
 const InfoIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>);
-const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
+const ShieldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>);
 const PaintIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"></path><path d="M12 18h.01"></path></svg>);
 const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
+const MapPinIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>);
+const TagIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>);
 
 const GlobalStyles = () => (
   <style>{`
@@ -71,6 +73,7 @@ const GlobalStyles = () => (
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -133,7 +136,8 @@ const Toast = ({ toast, onClose }) => {
 // =========================================================
 // LEGAL PAGES (T&C and Privacy)
 // =========================================================
-function LegalPage({ title, onBack }) {
+function LegalPage({ type, onBack }) {
+  const isTerms = type === "terms";
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
       <GlobalStyles />
@@ -144,20 +148,30 @@ function LegalPage({ title, onBack }) {
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
       </nav>
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
-        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>{title}</h1>
+        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
+          {isTerms ? "Terms & Conditions" : "Privacy Policy"}
+        </h1>
         <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>Last updated: May 24, 2026</p>
         
-        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Introduction</h2>
-        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Welcome to KudiSlip. By accessing our platform, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
-        
-        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Data & Privacy</h2>
-        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We value your privacy. We process customer names, emails, and transaction logs solely for the purpose of facilitating your business. Payments are securely routed and processed via Paystack, meaning KudiSlip never directly stores your customer's raw credit card details.</p>
-
-        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Acceptable Use</h2>
-        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Merchants must use KudiSlip for lawful transactions only. Any attempt to process fraudulent invoices, manipulate the routing architecture, or breach the API will result in immediate termination of the vendor account and reporting to financial authorities.</p>
-
-        <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>4. Liability</h2>
-        <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip operates as a structural intermediary. We are not responsible for disputes between vendors and clients regarding the quality of goods or services rendered via invoices paid through our platform.</p>
+        {isTerms ? (
+          <>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Acceptance of Terms</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>By accessing KudiSlip, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Merchant Responsibilities</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Merchants must use KudiSlip for lawful transactions only. Any attempt to process fraudulent invoices, manipulate the routing architecture, or breach the API will result in immediate termination.</p>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Subscriptions & Fees</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip operates a transparent pricing model. Free tier users are subject to KudiSlip watermarks. Pro subscriptions are billed monthly. Transaction processing fees are governed directly by our partner, Paystack.</p>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Information We Collect</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We collect business identities, contact emails, and basic CRM data to facilitate your invoicing process. We never sell your personal or client data to third parties.</p>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Payment Security</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>All transactions are processed securely via Paystack. KudiSlip never sees, processes, or stores your clients' raw credit card data or banking PINs.</p>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Data Retention</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>Your invoice history and client lists are securely stored on cloud infrastructure. You may request a total deletion of your vendor account and associated records at any time by contacting support.</p>
+          </>
+        )}
       </main>
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
         © 2026 KudiSlip Technologies. All rights reserved.
@@ -400,28 +414,33 @@ function BrandSettings({ user, onUpdate, showToast, onGoToBilling }) {
 // =========================================================
 function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
   usePaystack();
+  const [isProcessing, setIsProcessing] = useState(false);
   const isPremium = user?.subscription_tier === 'premium';
 
   const handleUpgrade = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in Vercel.", "error");
     if (!window.PaystackPop) return showToast("Loading Error", "Payment engine blocked. Please wait a second or disable adblockers.", "error");
 
+    setIsProcessing(true);
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: user?.email || "vendor@kudislip.com",
-      amount: 15000 * 100,
+      amount: 15000 * 100, // NGN 15,000
       currency: "NGN",
       callback: async function(response) {
-        const { error } = await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
-        if (error) {
-          showToast("Upgrade Error", error.message, "error");
-        } else {
+        try {
+          const { error } = await supabase.from('vendors').update({ subscription_tier: 'premium' }).eq('id', user.id);
+          if (error) throw error;
           onUpgradeSuccess();
           showToast("Upgraded successfully!", "Welcome to Premium! Watermarks have been removed from your invoices.", "success");
+        } catch (err) {
+          showToast("Upgrade Error", err.message, "error");
         }
+        setIsProcessing(false);
       },
       onClose: function() {
-        showToast("Cancelled", "Upgrade transaction cancelled.", "info");
+        setIsProcessing(false);
+        showToast("Cancelled", "Upgrade transaction closed.", "info");
       }
     });
     handler.openIframe();
@@ -452,7 +471,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
             <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
             <li>Fully Independent Branding</li>
           </ul>
-          {!isPremium && <button className="btn-primary btn-premium" style={{ width: "100%", padding: "14px" }} onClick={handleUpgrade}>Upgrade Now</button>}
+          {!isPremium && <button className="btn-primary btn-premium" style={{ width: "100%", padding: "14px" }} onClick={handleUpgrade} disabled={isProcessing}>{isProcessing ? "Loading Payment..." : "Upgrade Now"}</button>}
         </div>
       </div>
     </div>
@@ -534,7 +553,7 @@ function SuperAdminDashboard() {
 // =========================================================
 // 5. LANDING PAGE 
 // =========================================================
-function LandingPage({ onNavigate }) {
+function LandingPage({ onNavigate, showToast }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
@@ -549,7 +568,7 @@ function LandingPage({ onNavigate }) {
           </div>
         </nav>
         
-        {/* Hero Section with Custom Image Layout */}
+        {/* Authentic African Professional Hero Section */}
         <main className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center", padding: "80px 0 60px" }}>
           <div className="hero-text-container" style={{ paddingRight: "40px" }}>
             <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
@@ -558,26 +577,48 @@ function LandingPage({ onNavigate }) {
             <button className="btn-primary" style={{ padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
           </div>
           <div>
-            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Dashboard Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} />
+            <img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80" alt="Nigerian Professional Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} />
           </div>
         </main>
         
         {/* Features Section */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=150&q=80" alt="Invoicing" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=150&q=80" alt="Invoicing Terminals" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
             <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3>
             <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p>
           </div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1580519542036-ed47f3e42214?auto=format&fit=crop&w=150&q=80" alt="Payments" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <img src="https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?auto=format&fit=crop&w=150&q=80" alt="Digital Payments" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
             <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3>
             <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p>
           </div>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
-            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=150&q=80" alt="CRM" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
+            <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=150&q=80" alt="Customer Teams" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
             <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3>
             <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p>
+          </div>
+        </div>
+
+        {/* Brand New "Why Us" Section */}
+        <div style={{ background: "#F1F5F9", padding: "80px 24px", margin: "0 -24px", textAlign: "center", borderRadius: "24px", marginBottom: "80px" }}>
+          <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Why Nigerian Businesses Choose KudiSlip</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "32px", maxWidth: "1000px", margin: "0 auto" }}>
+            <div style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+               <div style={{ color: DESIGN.premium, marginBottom: "12px" }}><MapPinIcon /></div>
+               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Built for the Local Market</h4>
+               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>We understand the landscape. Receive instant Naira settlements directly to any of your local bank accounts via our secure Paystack integration.</p>
+            </div>
+            <div style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+               <div style={{ color: DESIGN.success, marginBottom: "12px" }}><TagIcon /></div>
+               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Zero Hidden Fees</h4>
+               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Start for free. No setup fees, no monthly minimums. We only make money when you voluntarily upgrade to Premium for custom branding.</p>
+            </div>
+            <div style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+               <div style={{ color: DESIGN.textMain, marginBottom: "12px" }}><ShieldIcon /></div>
+               <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Bank-Grade Security</h4>
+               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Your data and your customers' money are protected by enterprise-level encryption. We never touch raw credit card numbers.</p>
+            </div>
           </div>
         </div>
 
@@ -612,7 +653,6 @@ function LandingPage({ onNavigate }) {
         </div>
       </div>
       
-      {/* Footer */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
@@ -628,20 +668,22 @@ function LandingPage({ onNavigate }) {
 }
 
 // =========================================================
-// 6. AUTHENTICATION
+// 6. AUTHENTICATION (With Mandatory Legal Checkbox)
 // =========================================================
-function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack, showToast }) {
+function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack, showToast, onNavigateToTerms }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault(); setLoading(true); setError("");
     try {
       if (isSignUp) {
+        if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
         const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
         if (authError) throw authError;
         if (authData.user) {
@@ -670,7 +712,17 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack, showToast }) {
           {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
           {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
           <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-          <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label><input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+          <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label><input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+          
+          {isSignUp && (
+            <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+              <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
+              <label htmlFor="terms" style={{ fontSize: "12px", color: DESIGN.textMuted, lineHeight: "1.5" }}>
+                I agree to the <span style={{ color: DESIGN.primary, fontWeight: "800", cursor: "pointer" }} onClick={(e) => { e.preventDefault(); onNavigateToTerms("terms"); }}>Terms & Conditions</span> and <span style={{ color: DESIGN.primary, fontWeight: "800", cursor: "pointer" }} onClick={(e) => { e.preventDefault(); onNavigateToTerms("privacy"); }}>Privacy Policy</span>.
+              </label>
+            </div>
+          )}
+
           <button className="btn-primary" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Processing..." : (isSignUp ? "Sign Up" : "Log In")}</button>
         </form>
         <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>{isSignUp ? "Already have an account? " : "Don't have an account? "}<span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span></div>
@@ -967,13 +1019,13 @@ export default function App() {
       </div>
     );
     
-    if (view === "terms") return <LegalPage title="Terms & Conditions" onBack={() => setView("landing")} />;
-    if (view === "privacy") return <LegalPage title="Privacy Policy" onBack={() => setView("landing")} />;
+    if (view === "terms") return <LegalPage type="terms" onBack={() => setView("landing")} />;
+    if (view === "privacy") return <LegalPage type="privacy" onBack={() => setView("landing")} />;
     
     if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
     if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} showToast={showToast} />;
     if (view === "landing") return <LandingPage onNavigate={(v) => setView(v)} showToast={showToast} />;
-    if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} showToast={showToast} />;
+    if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} showToast={showToast} onNavigateToTerms={(v) => setView(v)} />;
 
     return (
       <div className="dashboard-layout">
