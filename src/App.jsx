@@ -81,6 +81,7 @@ const GlobalStyles = () => (
     }
     .toast-container { animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+    /* SYSTEM PRINT INSTRUCTIONS - Forces backgrounds to print for the full-page watermark */
     @media print {
       body { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
@@ -640,14 +641,14 @@ function LandingPage() {
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Meet The Team</h2>
           <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap" }}>
             <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="/founder.jpg" alt="Tobiloba Abass" style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
+              <img src="/founder.jpg" alt="Tobiloba Abass" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
               <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Tobiloba Abass</h3>
               <p style={{ color: DESIGN.premium, fontSize: "14px", fontWeight: "700", margin: 0 }}>Founder & CEO</p>
             </div>
             <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=250&q=80" alt="Gemini AI" style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
-              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Gemini</h3>
-              <p style={{ color: DESIGN.success, fontSize: "14px", fontWeight: "700", margin: 0 }}>AI Product Manager</p>
+              <img src="/marvelous.jpg" alt="Marvelous Fawole" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
+              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Marvelous Fawole</h3>
+              <p style={{ color: DESIGN.success, fontSize: "14px", fontWeight: "700", margin: 0 }}>Product Manager</p>
             </div>
           </div>
         </div>
@@ -886,11 +887,11 @@ function InvoiceGenerator({ user, showToast }) {
           <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
         </div>
-        <div className="metric-card">
+        <div className="metric-card" style={{ padding: "20px" }}>
           <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div>
         </div>
-        <div className="metric-card">
+        <div className="metric-card" style={{ padding: "20px" }}>
           <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div>
         </div>
@@ -951,13 +952,66 @@ function InvoiceGenerator({ user, showToast }) {
 }
 
 // =========================================================
-// ROUTING ENGINE & APP WRAPPER
+// 9. PAYOUT CONFIGURATION 
+// =========================================================
+function PayoutSettings({ user, onSubaccountLinked, showToast }) {
+  const [bankCode, setBankCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSetupPayout = async (e) => {
+    e.preventDefault();
+    if (accountNumber.length !== 10) return showToast("Invalid Input", "Account number must be exactly 10 digits.", "error");
+    setLoading(true);
+    
+    const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
+
+    try {
+      const res = await fetch("/api/create-subaccount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business_name: safeBusinessName, bank_code: bankCode, account_number: accountNumber }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      
+      await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
+      onSubaccountLinked(result.subaccount_code);
+      showToast("Bank Linked", "Your bank account has been connected securely.", "success");
+    } catch (error) { 
+      showToast("Error Linking Bank", error.message, "error"); 
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ maxWidth: "550px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Configuration</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Connect your bank account to receive settlements.</div>
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px" }}>
+        {user?.paystack_subaccount_code ? (
+          <div style={{ padding: "20px", background: "#ECFDF5", border: `1px solid #10B981`, borderRadius: "8px", textAlign: "center" }}><div style={{ color: "#10B981", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><CheckIcon /> Settlements Active</div><div style={{ color: "#0F172A", fontSize: "13px", fontWeight: "600", marginTop: "4px" }}>Paystack ID: {user.paystack_subaccount_code}</div></div>
+        ) : (
+          <form onSubmit={handleSetupPayout}>
+            <div style={{ marginBottom: "20px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank</label><select className="form-input" value={bankCode} onChange={e=>setBankCode(e.target.value)} required><option value="">-- Select Bank --</option>{NIGERIAN_BANKS.map(b=><option key={b.code} value={b.code}>{b.name}</option>)}</select></div>
+            <div style={{ marginBottom: "28px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label><input className="form-input" maxLength={10} value={accountNumber} onChange={e=>setAccountNumber(e.target.value.replace(/\D/g,""))} required /></div>
+            <button className="btn-primary btn-hover" type="submit" style={{ width: "100%" }} disabled={loading}>{loading ? "Verifying..." : "Securely Link Bank Account"}</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// MAIN APP ROUTER 
 // =========================================================
 export default function App() {
   const [user, setUser] = useState(null);
-  const [hash, setHash] = useState(window.location.hash || "#/"); 
+  const [view, setView] = useState("loading"); 
+  const [activeTab, setActiveTab] = useState("invoices");
   const [publicInvoiceId, setPublicInvoiceId] = useState(null);
   
+  // Custom Toast State Manager
   const [toast, setToast] = useState(null);
   const showToast = (title, message, type = "success") => {
     setToast({ title, message, type });
@@ -969,6 +1023,8 @@ export default function App() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
     if (initializationError) return;
@@ -1053,7 +1109,7 @@ export default function App() {
           {activeTab === "invoices" && <InvoiceGenerator user={user} showToast={showToast} />}
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser(prev => ({ ...prev, paystack_subaccount_code: code }))} showToast={showToast} />}
-          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} />}
+          {activeTab === "brand" && <BrandSettings user={user} onUpdate={(updatedUser) => setUser(updatedUser)} showToast={showToast} onGoToBilling={() => window.location.hash = "#/dashboard/billing"} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "admin" && user?.is_admin && <SuperAdminDashboard />}
         </div>
