@@ -6,7 +6,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ""; 
 
-// Diagnostic Safety Initialization
 let supabase = null;
 let initializationError = null;
 
@@ -15,11 +14,8 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
 } else if (!SUPABASE_ANON_KEY) {
   initializationError = "Missing VITE_SUPABASE_ANON_KEY environment variable on Vercel.";
 } else {
-  try {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch (err) {
-    initializationError = "Supabase initialization failed: " + err.message;
-  }
+  try { supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } 
+  catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
 }
 
 const NIGERIAN_BANKS = [
@@ -38,11 +34,11 @@ const DESIGN = {
 const GlobalStyles = () => (
   <style>{`
     body { margin: 0; padding: 0; background: #F8FAFC; color: #0F172A; font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-    .btn-primary { padding: 14px 28px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; }
+    .btn-primary { padding: 14px 28px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-block; text-align: center; }
     .btn-primary:hover:not(:disabled) { background: #333333; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     .btn-premium { background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); color: white; border: none; }
-    .btn-secondary { padding: 12px 24px; background: transparent; color: #000000; border: 2px solid #000000; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
+    .btn-secondary { padding: 12px 24px; background: transparent; color: #000000; border: 2px solid #000000; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-block; text-align: center; }
     .btn-secondary:hover { background: #F1F5F9; transform: translateY(-2px); }
     .form-input { width: 100%; padding: 14px 16px; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px; color: #0F172A; font-size: 14px; outline: none; box-sizing: border-box; transition: border-color 0.2s ease; }
     .form-input:focus { border-color: #000000; }
@@ -80,7 +76,7 @@ const usePaystack = () => {
 };
 
 // =========================================================
-// 1. PUBLIC INVOICE VIEW (FOR THE CUSTOMER)
+// 1. PUBLIC INVOICE VIEW 
 // =========================================================
 function PublicInvoice({ invoiceId }) {
   usePaystack();
@@ -105,7 +101,7 @@ function PublicInvoice({ invoiceId }) {
   }, [invoiceId]);
 
   const handlePayment = () => {
-    if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
+    if (!window.PaystackPop) return alert("Payment engine loading, please try again.");
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
@@ -179,7 +175,7 @@ function PublicInvoice({ invoiceId }) {
 }
 
 // =========================================================
-// 2. SUBSCRIPTION / BILLING DASHBOARD (FOR THE VENDOR)
+// 2. SUBSCRIPTION / BILLING DASHBOARD
 // =========================================================
 function SubscriptionManager({ user, onUpgradeSuccess }) {
   usePaystack();
@@ -234,7 +230,7 @@ function SubscriptionManager({ user, onUpgradeSuccess }) {
 }
 
 // =========================================================
-// 3. SUPER ADMIN OPERATIONS DASHBOARD (FOR THE PLATFORM OWNER)
+// 3. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
 function SuperAdminDashboard() {
   const [globalVendors, setGlobalVendors] = useState([]);
@@ -283,36 +279,18 @@ function SuperAdminDashboard() {
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Businesses</div>
         </div>
       </div>
-      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Merchant Registry</h3>
-      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "600px" }}>
-          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
-            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>System Account ID</th><th style={{ padding: "16px 24px" }}>Subscription Tier</th><th style={{ padding: "16px 24px" }}>Paystack Node Reference</th></tr>
-          </thead>
-          <tbody>
-            {globalVendors.map(vendor => (
-              <tr key={vendor.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
-                <td style={{ padding: "16px 24px", fontWeight: "700" }}>{vendor.business_name}</td>
-                <td style={{ padding: "16px 24px", color: DESIGN.textMuted, fontSize: "13px" }}>{vendor.id}</td>
-                <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.subscription_tier === 'premium' ? "#F5F3FF" : "#F1F5F9", color: vendor.subscription_tier === 'premium' ? DESIGN.premium : DESIGN.textMuted }}>{vendor.subscription_tier.toUpperCase()}</span></td>
-                <td style={{ padding: "16px 24px", fontSize: "13px", color: DESIGN.textMuted }}>{vendor.paystack_subaccount_code || "— Not Configured"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
 
 // =========================================================
-// 4. LANDING PAGE
+// 4. LANDING PAGE (UPDATED WITH PRICING & FOOTER)
 // =========================================================
 function LandingPage({ onNavigate }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", boxSizing: "border-box", flex: 1 }}>
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons" style={{ display: "flex", gap: "12px" }}>
@@ -328,12 +306,56 @@ function LandingPage({ onNavigate }) {
             <button className="btn-primary" style={{ padding: "16px 36px", fontSize: "16px" }} onClick={() => onNavigate("auth", true)}>Create Your Account</button>
           </div>
         </main>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "100px" }}>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p></div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p></div>
-          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p></div>
+        
+        {/* Features Section */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Professional Invoicing</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Generate clean, branded invoices and receipts for your clients in seconds.</p></div>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Instant Settlements</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Link your Nigerian bank account and receive payments directly via Paystack.</p></div>
+          <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}><h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Customer CRM</h3><p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Track client history, outstanding payments, and contact details seamlessly.</p></div>
+        </div>
+
+        {/* Pricing Section */}
+        <div style={{ paddingBottom: "100px" }}>
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
+            <p style={{ color: "#64748B", fontSize: "16px" }}>Start for free, upgrade when you need to remove our branding.</p>
+          </div>
+          <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", justifyContent: "center" }}>
+            <div style={{ background: DESIGN.card, border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px" }}>
+              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Free Tier</div>
+              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦0<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
+              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
+                <li>Unlimited Invoices & Clients</li>
+                <li>Instant Bank Settlements</li>
+                <li><strong style={{color: DESIGN.textMain}}>Includes KudiSlip Watermark</strong></li>
+              </ul>
+              <button className="btn-secondary" style={{ width: "100%" }} onClick={() => onNavigate("auth", true)}>Get Started Free</button>
+            </div>
+            <div style={{ background: DESIGN.card, border: `2px solid ${DESIGN.premium}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
+              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: DESIGN.premium }}>Premium Pro</div>
+              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦15,000<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
+              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
+                <li>Everything in Free</li>
+                <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
+                <li>Fully Independent Branding</li>
+              </ul>
+              <button className="btn-primary btn-premium" style={{ width: "100%" }} onClick={() => onNavigate("auth", true)}>Upgrade to Premium</button>
+            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+          <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
+          <div style={{ display: "flex", gap: "24px" }}>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Terms & Conditions will go here.")}>Terms & Conditions</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Privacy Policy will go here.")}>Privacy Policy</span>
+            <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => alert("Contact Support at support@kudislip.com")}>Contact Us</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -408,7 +430,8 @@ function ClientsManager({ user }) {
   const handleAddClient = async (e) => {
     e.preventDefault(); setLoading(true);
     const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
-    if (!error && data) { setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); }
+    if (!error && data) { setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); alert("Client added successfully!"); }
+    else if (error) { alert("Failed to add client. Make sure you ran the updated SQL Security script!"); }
     setLoading(false);
   };
 
@@ -442,7 +465,7 @@ function ClientsManager({ user }) {
 }
 
 // =========================================================
-// 7. INVOICE GENERATOR
+// 7. INVOICE GENERATOR & VENDOR ANALYTICS (FEATURES 2 & 4)
 // =========================================================
 function InvoiceGenerator({ user }) {
   const [clients, setClients] = useState([]);
@@ -459,7 +482,7 @@ function InvoiceGenerator({ user }) {
   }, []);
 
   const fetchRecentInvoices = async () => {
-    const { data } = await supabase.from('invoices').select('*, clients(name)').eq('vendor_id', user.id).order('created_at', { ascending: false }).limit(5);
+    const { data } = await supabase.from('invoices').select('*, clients(name)').eq('vendor_id', user.id).order('created_at', { ascending: false });
     if(data) setInvoices(data);
   };
 
@@ -481,13 +504,36 @@ function InvoiceGenerator({ user }) {
     setLoading(false);
   };
 
+  // Vendor Analytics Calculations
+  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount), 0);
+  const totalPending = totalBilled - totalPaid;
+
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px" }}><div style={{ color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}>Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <strong>Payout Settings</strong> first.</div></div>;
 
   return (
-    <div style={{ maxWidth: "800px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Create Invoice</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and get paid instantly.</div>
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
+
+      {/* VENDOR ANALYTICS DASHBOARD */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <div className="metric-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div>
+        </div>
+        <div className="metric-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.success }}>₦{totalPaid.toLocaleString()}</div>
+        </div>
+        <div className="metric-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div>
+          <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.error }}>₦{totalPending.toLocaleString()}</div>
+        </div>
+      </div>
+
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
@@ -518,11 +564,18 @@ function InvoiceGenerator({ user }) {
         <div>
           <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Recent Invoices</h3>
           {invoices.map(inv => (
-            <div key={inv.id} style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div key={inv.id} style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "12px" }}>
               <div><div style={{ fontWeight: "700" }}>{inv.clients?.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>₦{inv.amount.toLocaleString()}</div></div>
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                 <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open(`/pay/${inv.id}`, '_blank')}>View Link</button>
+                
+                {/* WHATSAPP ONE-CLICK CHASER (FEATURE 2) */}
+                {inv.status === 'pending' && (
+                  <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${inv.amount.toLocaleString()} from ${user.business_name} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
+                    Send Reminder
+                  </a>
+                )}
               </div>
             </div>
           ))}
@@ -555,7 +608,9 @@ function PayoutSettings({ user, onSubaccountLinked }) {
       await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
       onSubaccountLinked(result.subaccount_code);
       alert("Bank linked successfully!");
-    } catch (error) { alert(error.message); } finally { setLoading(false); }
+    } catch (error) { 
+      alert("Failed to link bank. Ensure your Vercel /api/create-subaccount function and PAYSTACK_SECRET_KEY are set up! Error: " + error.message); 
+    } finally { setLoading(false); }
   };
 
   return (
@@ -587,22 +642,14 @@ export default function App() {
   const [publicInvoiceId, setPublicInvoiceId] = useState(null);
 
   useEffect(() => {
-    if (initializationError) {
-      setView("diagnostic_error");
-      return;
-    }
-
+    if (initializationError) { setView("diagnostic_error"); return; }
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
       setPublicInvoiceId(currentPath.split('/pay/'));
       setView("public_invoice");
       return;
     }
-    
-    if (!supabase) {
-      setView("landing");
-      return;
-    }
+    if (!supabase) { setView("landing"); return; }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -614,18 +661,15 @@ export default function App() {
     });
   }, []);
 
-  if (view === "diagnostic_error") {
-    return (
-      <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
-        <GlobalStyles />
-        <div style={{ color: DESIGN.error, fontSize: "22px", fontWeight: "900", marginBottom: "12px" }}>🚨 Configuration Warning</div>
-        <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
-        <div style={{ fontSize: "13px", color: DESIGN.textMuted }}>Double check your Vercel Project Settings ➔ Environment Variables, hit save, and trigger a fresh redeploy.</div>
-      </div>
-    );
-  }
+  if (view === "diagnostic_error") return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
+      <GlobalStyles />
+      <div style={{ color: DESIGN.error, fontSize: "22px", fontWeight: "900", marginBottom: "12px" }}>🚨 Configuration Warning</div>
+      <div style={{ color: DESIGN.textMain, maxWidth: "500px", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>{initializationError}</div>
+    </div>
+  );
 
-  if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace Infrastructure...</div>;
+  if (view === "loading") return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
   if (view === "public_invoice") return <PublicInvoice invoiceId={publicInvoiceId} />;
   if (view === "landing") return <LandingPage onNavigate={(v) => setView("auth")} />;
   if (view === "auth") return <KudiSlipAuth initialIsSignUp={false} onBack={() => setView("landing")} onLoginSuccess={(u) => { setUser(u); setView("dashboard"); }} />;
@@ -636,7 +680,7 @@ export default function App() {
       <div className="sidebar">
         <div className="sidebar-logo-container" style={{ padding: "0 32px", marginBottom: "40px" }}><img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} /></div>
         <div className="sidebar-menu">
-          <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Billing</button>
+          <button className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`} onClick={() => setActiveTab("invoices")}>Invoices & Analytics</button>
           <button className={`menu-btn ${activeTab === "clients" ? "active" : ""}`} onClick={() => setActiveTab("clients")}>Client Directory</button>
           <button className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`} onClick={() => setActiveTab("payouts")}>Payout Settings</button>
           <button className={`menu-btn ${activeTab === "billing" ? "active" : ""}`} onClick={() => setActiveTab("billing")}>Billing & Plan</button>
