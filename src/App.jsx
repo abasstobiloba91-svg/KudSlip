@@ -6,6 +6,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ""; 
 
+// Diagnostic Safety Initialization
 let supabase = null;
 let initializationError = null;
 
@@ -14,8 +15,11 @@ if (!SUPABASE_URL || SUPABASE_URL.includes("your-project")) {
 } else if (!SUPABASE_ANON_KEY) {
   initializationError = "Missing VITE_SUPABASE_ANON_KEY environment variable on Vercel.";
 } else {
-  try { supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } 
-  catch (err) { initializationError = "Supabase initialization failed: " + err.message; }
+  try { 
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+  } catch (err) { 
+    initializationError = "Supabase initialization failed: " + err.message; 
+  }
 }
 
 const NIGERIAN_BANKS = [
@@ -101,7 +105,7 @@ function PublicInvoice({ invoiceId }) {
   }, [invoiceId]);
 
   const handlePayment = () => {
-    if (!window.PaystackPop) return alert("Payment engine loading, please try again.");
+    if (!window.PaystackPop) return alert("Payment engine loading, please try again in a second.");
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: client?.email || "customer@kudislip.com",
@@ -134,7 +138,7 @@ function PublicInvoice({ invoiceId }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed By</div>
-              <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name}</div>
+              <div style={{ fontSize: "20px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
@@ -279,12 +283,30 @@ function SuperAdminDashboard() {
           <div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Businesses</div>
         </div>
       </div>
+      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Merchant Registry</h3>
+      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "600px" }}>
+          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
+            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>System Account ID</th><th style={{ padding: "16px 24px" }}>Subscription Tier</th><th style={{ padding: "16px 24px" }}>Paystack Node Reference</th></tr>
+          </thead>
+          <tbody>
+            {globalVendors.map(vendor => (
+              <tr key={vendor.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
+                <td style={{ padding: "16px 24px", fontWeight: "700" }}>{vendor.business_name}</td>
+                <td style={{ padding: "16px 24px", color: DESIGN.textMuted, fontSize: "13px" }}>{vendor.id}</td>
+                <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.subscription_tier === 'premium' ? "#F5F3FF" : "#F1F5F9", color: vendor.subscription_tier === 'premium' ? DESIGN.premium : DESIGN.textMuted }}>{vendor.subscription_tier.toUpperCase()}</span></td>
+                <td style={{ padding: "16px 24px", fontSize: "13px", color: DESIGN.textMuted }}>{vendor.paystack_subaccount_code || "— Not Configured"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 // =========================================================
-// 4. LANDING PAGE (UPDATED WITH PRICING & FOOTER)
+// 4. LANDING PAGE 
 // =========================================================
 function LandingPage({ onNavigate }) {
   return (
@@ -397,7 +419,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, onBack }) {
       <GlobalStyles />
       <button onClick={onBack} style={{ position: "absolute", top: "24px", left: "24px", background: "none", border: "none", color: "#64748B", cursor: "pointer", fontWeight: "600", fontSize: "14px", padding: "8px" }}>&larr; Back to Home</button>
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
-      <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+      <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
         <form onSubmit={handleAuth}>
           {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
@@ -431,7 +453,7 @@ function ClientsManager({ user }) {
     e.preventDefault(); setLoading(true);
     const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
     if (!error && data) { setClients([data, ...clients]); setName(""); setEmail(""); setPhone(""); alert("Client added successfully!"); }
-    else if (error) { alert("Failed to add client. Make sure you ran the updated SQL Security script!"); }
+    else if (error) { alert("Failed to add client. Check database permissions."); }
     setLoading(false);
   };
 
@@ -465,7 +487,7 @@ function ClientsManager({ user }) {
 }
 
 // =========================================================
-// 7. INVOICE GENERATOR & VENDOR ANALYTICS (FEATURES 2 & 4)
+// 7. INVOICE GENERATOR & VENDOR ANALYTICS
 // =========================================================
 function InvoiceGenerator({ user }) {
   const [clients, setClients] = useState([]);
@@ -570,9 +592,9 @@ function InvoiceGenerator({ user }) {
                 <span style={{ fontSize: "12px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981" }}>{inv.status.toUpperCase()}</span>
                 <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => window.open(`/pay/${inv.id}`, '_blank')}>View Link</button>
                 
-                {/* WHATSAPP ONE-CLICK CHASER (FEATURE 2) */}
+                {/* WHATSAPP ONE-CLICK CHASER */}
                 {inv.status === 'pending' && (
-                  <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${inv.amount.toLocaleString()} from ${user.business_name} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ₦${inv.amount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: "8px 16px", fontSize: "14px" }}>
                     Send Reminder
                   </a>
                 )}
@@ -586,7 +608,7 @@ function InvoiceGenerator({ user }) {
 }
 
 // =========================================================
-// 8. PAYOUT CONFIGURATION
+// 8. PAYOUT CONFIGURATION (WITH PAYSTACK FAILSAFE)
 // =========================================================
 function PayoutSettings({ user, onSubaccountLinked }) {
   const [bankCode, setBankCode] = useState("");
@@ -597,19 +619,28 @@ function PayoutSettings({ user, onSubaccountLinked }) {
     e.preventDefault();
     if (accountNumber.length !== 10) return alert("Account number must be 10 digits.");
     setLoading(true);
+    
+    // THE FAILSAFE: If the database is lagging, force a name through so Paystack accepts it.
+    const safeBusinessName = user?.business_name || user?.email || "KudiSlip Verified Merchant";
+
     try {
       const res = await fetch("/api/create-subaccount", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ business_name: user?.business_name, bank_code: bankCode, account_number: accountNumber }),
+        body: JSON.stringify({ 
+          business_name: safeBusinessName, 
+          bank_code: bankCode, 
+          account_number: accountNumber 
+        }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
+      
       await supabase.from("vendors").update({ paystack_subaccount_code: result.subaccount_code }).eq("id", user.id);
       onSubaccountLinked(result.subaccount_code);
       alert("Bank linked successfully!");
     } catch (error) { 
-      alert("Failed to link bank. Ensure your Vercel /api/create-subaccount function and PAYSTACK_SECRET_KEY are set up! Error: " + error.message); 
+      alert("Failed to link bank. Error: " + error.message); 
     } finally { setLoading(false); }
   };
 
@@ -643,21 +674,26 @@ export default function App() {
 
   useEffect(() => {
     if (initializationError) { setView("diagnostic_error"); return; }
+    
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/pay/')) {
       setPublicInvoiceId(currentPath.split('/pay/'));
       setView("public_invoice");
       return;
     }
+    
     if (!supabase) { setView("landing"); return; }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          // Merge auth user data and vendor profile data
           setUser({ ...session.user, ...data });
           setView("dashboard");
         });
-      } else setView("landing");
+      } else {
+        setView("landing");
+      }
     });
   }, []);
 
@@ -690,7 +726,7 @@ export default function App() {
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ padding: "16px 32px", marginTop: "auto" }}>
-          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name}</div>
+          <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "12px" }}>{user?.business_name || user?.email}</div>
           <button className="menu-btn" style={{ padding: "0", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => setView("landing"))}>Log Out</button>
         </div>
       </div>
