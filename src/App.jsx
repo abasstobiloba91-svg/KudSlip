@@ -1755,10 +1755,9 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 }
 
 // =========================================================
-// 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER)
+// 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER & REALTIME)
 // =========================================================
 function SupportDashboard({ user, showToast }) {
-  // If the user is staff, route them to the Master Inbox. Otherwise, show regular chat.
   if (user?.role === 'admin' || user?.role === 'support') {
     return <AdminSupportInbox user={user} showToast={showToast} />;
   }
@@ -1766,7 +1765,7 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13A. VENDOR CHAT (REALTIME UPGRADE)
+// 13A. VENDOR CHAT (REALTIME UPGRADE + INSTANT DELIVERY)
 // ---------------------------------------------------------
 function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
@@ -1777,14 +1776,18 @@ function VendorChat({ user, showToast }) {
   useEffect(() => {
     fetchMessages();
     
-    // THE UPGRADE: Open a live Realtime tunnel to Supabase
     const channel = supabase.channel('vendor_realtime_chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user.id}` }, (payload) => {
-        setHistory(prev => [...prev, payload.new]); // Instantly push new message to screen
+        setHistory(prev => {
+          // Prevent showing duplicates if we already fetched it instantly
+          const exists = prev.find(msg => msg.id === payload.new.id);
+          if (exists) return prev;
+          return [...prev, payload.new];
+        });
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel); // Clean up tunnel when leaving page
+    return () => supabase.removeChannel(channel);
   }, []);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [history]);
@@ -1799,9 +1802,15 @@ function VendorChat({ user, showToast }) {
   const handleSend = async () => {
     if (!message.trim()) return;
     const tempMessage = message;
-    setMessage(""); 
+    setMessage(""); // Instantly clear input
+    
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
-    if (error) { showToast("Security Error", "Message blocked by database.", "error"); setMessage(tempMessage); } 
+    if (error) { 
+      showToast("Security Error", "Message blocked by database.", "error"); 
+      setMessage(tempMessage); 
+    } else {
+      fetchMessages(); // INSTANT DELIVERY FORCE-SYNC
+    }
   };
 
   return (
@@ -1835,7 +1844,7 @@ function VendorChat({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13B. MASTER INBOX (REALTIME UPGRADE)
+// 13B. MASTER INBOX (REALTIME UPGRADE + INSTANT DELIVERY)
 // ---------------------------------------------------------
 function AdminSupportInbox({ user, showToast }) {
   const [messages, setMessages] = useState([]);
@@ -1847,10 +1856,9 @@ function AdminSupportInbox({ user, showToast }) {
   useEffect(() => {
     fetchData();
     
-    // THE UPGRADE: Admins listen to EVERY change in the table instantly
     const channel = supabase.channel('admin_realtime_chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, () => {
-        fetchData(); // Refresh inbox silently
+        fetchData();
       })
       .subscribe();
 
@@ -1875,10 +1883,15 @@ function AdminSupportInbox({ user, showToast }) {
   const handleReply = async () => {
     if (!reply.trim() || !activeVendorId) return;
     const temp = reply;
-    setReply("");
+    setReply(""); // Instantly clear input
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
-    if (error) { showToast("Security Error", "Reply failed to send.", "error"); setReply(temp); } 
+    if (error) { 
+      showToast("Security Error", "Reply failed to send.", "error"); 
+      setReply(temp); 
+    } else {
+      fetchData(); // INSTANT DELIVERY FORCE-SYNC
+    }
   };
 
   const conversations = {};
