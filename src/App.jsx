@@ -250,8 +250,8 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-// VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
- const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
+  // VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
+  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
@@ -267,7 +267,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
         setVendor(venData); setClient(cliData);
       } else { setDebugError("Invoice row empty."); }
-      setLoading(false);
+      loading === true && setLoading(false);
     }
     fetchData();
   }, [invoiceId]);
@@ -298,8 +298,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         onClose: function() { console.log("Payment window closed."); }
       };
 
+      // 🎯 MODIFIED PAYLOAD WITH ACCURATE FEES PASSED TO CUSTOMER 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
+        paystackPayload.bearer = "subaccount"; // Forces customer to pay gateway processing charges over the top
       }
 
       const handler = window.PaystackPop.setup(paystackPayload);
@@ -435,7 +437,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-            {/* NO MORE DOT ERROR: Look at this clear line using the new word variable! */}
             <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
               {starsArray.map(star => (
                 <StarIcon 
