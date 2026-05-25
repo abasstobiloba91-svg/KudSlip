@@ -274,20 +274,44 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   const triggerPDFCompilation = () => window.print();
 
-  const handlePayment = () => {
+const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
-    const safeAmount = Number(invoice?.amount || 0);
+    const baseAmount = Number(invoice?.amount || 0);
     const invoiceCurrency = invoice?.currency || "NGN";
     
-    if (safeAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
+    if (baseAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
 
     try {
+      // Calculate Paystack fees to pass to customer over the top (1.5% + 100 NGN)
+      // If amount is under 2,500 NGN, the flat 100 NGN fee is waived by Paystack
+      let finalAmount = baseAmount;
+      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
+        if (baseAmount < 2500) {
+          // Fee calculation formula when vendor gets exact amount: baseAmount / (1 - 0.015)
+          finalAmount = baseAmount / 0.985;
+        } else {
+          // Fee calculation formula with flat fee included: (baseAmount + 100) / (1 - 0.015)
+          // Maximum cap rule: Paystack caps local fees at 2,000 NGN max
+          const calculatedWithFees = (baseAmount + 100) / 0.985;
+          const totalFeeCharged = calculatedWithFees - baseAmount;
+          
+          if (totalFeeCharged > 2000) {
+            finalAmount = baseAmount + 2000;
+          } else {
+            finalAmount = calculatedWithFees;
+          }
+        }
+      }
+
+      // Convert final calculated amount with customer fees into Kobo units
+      const safeAmountInKobo = Math.round(finalAmount * 100);
+
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
-        amount: safeAmount * 100, 
+        amount: safeAmountInKobo, 
         currency: invoiceCurrency,
         callback: function(response) {
           supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
@@ -298,10 +322,9 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         onClose: function() { console.log("Payment window closed."); }
       };
 
-      // 🎯 MODIFIED PAYLOAD WITH ACCURATE FEES PASSED TO CUSTOMER 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
-        paystackPayload.bearer = "subaccount"; // Forces customer to pay gateway processing charges over the top
+        paystackPayload.bearer = "subaccount"; // Passes the charge allocation directly to the subaccount layer
       }
 
       const handler = window.PaystackPop.setup(paystackPayload);
