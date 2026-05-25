@@ -1755,26 +1755,186 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
 }
 
 // =========================================================
-// 13. SUPPORT DASHBOARD
+// 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER)
 // =========================================================
 function SupportDashboard({ user, showToast }) {
+  // If the user is staff, route them to the Master Inbox. Otherwise, show regular chat.
+  if (user?.role === 'admin' || user?.role === 'support') {
+    return <AdminSupportInbox user={user} showToast={showToast} />;
+  }
+  return <VendorChat user={user} showToast={showToast} />;
+}
+
+// ---------------------------------------------------------
+// 13A. VENDOR CHAT (WHAT YOUR USERS SEE)
+// ---------------------------------------------------------
+function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
-  
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [history]);
+
+  const fetchMessages = async () => {
+    if (!supabase) return;
+    const { data } = await supabase.from('support_messages').select('*').eq('vendor_id', user.id).order('created_at', { ascending: true });
+    if (data) setHistory(data);
+    setLoading(false);
+  };
+
+  const handleSend = async () => {
+    if (!message.trim()) return;
+    const tempMessage = message;
+    setMessage(""); 
+    const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
+    if (error) { showToast("Error", "Message failed to send.", "error"); setMessage(tempMessage); } 
+    else fetchMessages(); 
+  };
+
   return (
     <div style={{ maxWidth: "800px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? We are online and ready.</div>
       
-      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "500px" }}>
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "550px" }}>
          <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
-              Hello {user?.business_name}! How can our support team assist you today?
+              Hello {user?.business_name || "there"}! How can our support team assist you today?
             </div>
+            {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading chat history...</div>}
+            {history.map((msg) => {
+              const isMe = msg.sender === 'user';
+              return (
+                <div key={msg.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "#2563EB" : "#E2E8F0", color: isMe ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isMe ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5" }}>
+                  {msg.message}
+                </div>
+              );
+            })}
+            <div ref={chatEndRef} />
          </div>
-         <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
-            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e=>setMessage(e.target.value)} />
-            <button className="btn-primary btn-hover" onClick={() => { showToast("Sent", "Message sent to support.", "success"); setMessage(""); }}>Send Message</button>
+         <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px", background: "#FFFFFF", borderRadius: "0 0 12px 12px" }}>
+            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+            <button className="btn-primary btn-hover" onClick={handleSend}>Send</button>
          </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------
+// 13B. MASTER INBOX (WHAT ADMIN & SUPPORT STAFF SEE)
+// ---------------------------------------------------------
+function AdminSupportInbox({ user, showToast }) {
+  const [messages, setMessages] = useState([]);
+  const [vendors, setVendors] = useState({});
+  const [activeVendorId, setActiveVendorId] = useState(null);
+  const [reply, setReply] = useState("");
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 3000); // Poll for new tickets
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchData = async () => {
+    if (!supabase) return;
+    const [msgRes, venRes] = await Promise.all([
+      supabase.from('support_messages').select('*').order('created_at', { ascending: true }),
+      supabase.from('vendors').select('id, business_name, email')
+    ]);
+    
+    if (msgRes.data) setMessages(msgRes.data);
+    if (venRes.data) {
+      const vMap = {};
+      venRes.data.forEach(v => vMap[v.id] = v);
+      setVendors(vMap);
+    }
+  };
+
+  const handleReply = async () => {
+    if (!reply.trim() || !activeVendorId) return;
+    const temp = reply;
+    setReply("");
+    
+    const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
+    if (error) { showToast("Error", "Reply failed to send.", "error"); setReply(temp); } 
+    else fetchData();
+  };
+
+  // Group messages by the vendor who sent them
+  const conversations = {};
+  messages.forEach(m => {
+    if (!conversations[m.vendor_id]) conversations[m.vendor_id] = [];
+    conversations[m.vendor_id].push(m);
+  });
+
+  const uniqueVendorIds = Object.keys(conversations);
+  const activeChat = activeVendorId ? conversations[activeVendorId] : [];
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat]);
+
+  return (
+    <div style={{ maxWidth: "1000px", height: "calc(100vh - 120px)", display: "flex", flexDirection: "column" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Support Inbox</div>
+      <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Manage and reply to all active vendor tickets.</div>
+      
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flex: 1, overflow: "hidden" }}>
+         
+         {/* LEFT SIDEBAR: ACTIVE TICKETS */}
+         <div style={{ width: "280px", borderRight: "1px solid #E2E8F0", background: "#F8FAFC", overflowY: "auto" }}>
+            {uniqueVendorIds.length === 0 && <div style={{ padding: "30px", color: "#64748B", fontSize: "13px", textAlign: "center" }}>No active tickets right now.</div>}
+            {uniqueVendorIds.map(vid => {
+              const v = vendors[vid] || {};
+              const isActive = activeVendorId === vid;
+              return (
+                <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent" }}>
+                  <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px" }}>{v.business_name || v.email || "Unknown Vendor"}</div>
+                  <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages logged</div>
+                </div>
+              );
+            })}
+         </div>
+
+         {/* RIGHT PANEL: LIVE CHAT WINDOW */}
+         <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
+            {activeVendorId ? (
+              <>
+                <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", background: "#F1F5F9", fontWeight: "800", color: "#0F172A" }}>
+                  Chatting with: {vendors[activeVendorId]?.business_name || vendors[activeVendorId]?.email || "Vendor"}
+                </div>
+                <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {activeChat.map((msg) => {
+                    const isSupport = msg.sender === 'support';
+                    return (
+                      <div key={msg.id} style={{ alignSelf: isSupport ? "flex-end" : "flex-start", background: isSupport ? "#2563EB" : "#F1F5F9", color: isSupport ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isSupport ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5" }}>
+                        {msg.message}
+                      </div>
+                    );
+                  })}
+                  <div ref={chatEndRef} />
+                </div>
+                <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
+                  <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your reply to this vendor..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
+                  <button className="btn-primary btn-hover" onClick={handleReply}>Send Reply</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748B", fontSize: "14px" }}>
+                Select a user ticket from the left to start replying.
+              </div>
+            )}
+         </div>
+
       </div>
     </div>
   );
