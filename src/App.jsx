@@ -2107,10 +2107,12 @@ function AppRouter() {
       <div className="dashboard-layout">
         <GlobalStyles />
         
-        <div className="mobile-dashboard-header">
-          <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
+        <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}>
+          <a href="#/dashboard/invoices" style={{ display: "block", textDecoration: "none" }}>
+            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
+          </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div onClick={clearNotifications}><BellIcon count={unreadCount} /></div>
+            <div onClick={clearNotifications} style={{ cursor: "pointer" }}><BellIcon count={unreadCount} /></div>
             <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
           </div>
         </div>
