@@ -1766,7 +1766,7 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13A. VENDOR CHAT (WHAT YOUR USERS SEE)
+// 13A. VENDOR CHAT (REALTIME UPGRADE)
 // ---------------------------------------------------------
 function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
@@ -1776,13 +1776,18 @@ function VendorChat({ user, showToast }) {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+    
+    // THE UPGRADE: Open a live Realtime tunnel to Supabase
+    const channel = supabase.channel('vendor_realtime_chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user.id}` }, (payload) => {
+        setHistory(prev => [...prev, payload.new]); // Instantly push new message to screen
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel); // Clean up tunnel when leaving page
   }, []);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [history]);
 
   const fetchMessages = async () => {
     if (!supabase) return;
@@ -1796,8 +1801,7 @@ function VendorChat({ user, showToast }) {
     const tempMessage = message;
     setMessage(""); 
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
-    if (error) { showToast("Error", "Message failed to send.", "error"); setMessage(tempMessage); } 
-    else fetchMessages(); 
+    if (error) { showToast("Security Error", "Message blocked by database.", "error"); setMessage(tempMessage); } 
   };
 
   return (
@@ -1810,7 +1814,7 @@ function VendorChat({ user, showToast }) {
             <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
               Hello {user?.business_name || "there"}! How can our support team assist you today?
             </div>
-            {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading chat history...</div>}
+            {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading secure chat...</div>}
             {history.map((msg) => {
               const isMe = msg.sender === 'user';
               return (
@@ -1822,7 +1826,7 @@ function VendorChat({ user, showToast }) {
             <div ref={chatEndRef} />
          </div>
          <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px", background: "#FFFFFF", borderRadius: "0 0 12px 12px" }}>
-            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
             <button className="btn-primary btn-hover" onClick={handleSend}>Send</button>
          </div>
       </div>
@@ -1831,7 +1835,7 @@ function VendorChat({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13B. MASTER INBOX (WHAT ADMIN & SUPPORT STAFF SEE)
+// 13B. MASTER INBOX (REALTIME UPGRADE)
 // ---------------------------------------------------------
 function AdminSupportInbox({ user, showToast }) {
   const [messages, setMessages] = useState([]);
@@ -1842,8 +1846,15 @@ function AdminSupportInbox({ user, showToast }) {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 3000); // Poll for new tickets
-    return () => clearInterval(interval);
+    
+    // THE UPGRADE: Admins listen to EVERY change in the table instantly
+    const channel = supabase.channel('admin_realtime_chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, () => {
+        fetchData(); // Refresh inbox silently
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
   const fetchData = async () => {
@@ -1867,11 +1878,9 @@ function AdminSupportInbox({ user, showToast }) {
     setReply("");
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
-    if (error) { showToast("Error", "Reply failed to send.", "error"); setReply(temp); } 
-    else fetchData();
+    if (error) { showToast("Security Error", "Reply failed to send.", "error"); setReply(temp); } 
   };
 
-  // Group messages by the vendor who sent them
   const conversations = {};
   messages.forEach(m => {
     if (!conversations[m.vendor_id]) conversations[m.vendor_id] = [];
@@ -1889,8 +1898,6 @@ function AdminSupportInbox({ user, showToast }) {
       <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Manage and reply to all active vendor tickets.</div>
       
       <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flex: 1, overflow: "hidden" }}>
-         
-         {/* LEFT SIDEBAR: ACTIVE TICKETS */}
          <div style={{ width: "280px", borderRight: "1px solid #E2E8F0", background: "#F8FAFC", overflowY: "auto" }}>
             {uniqueVendorIds.length === 0 && <div style={{ padding: "30px", color: "#64748B", fontSize: "13px", textAlign: "center" }}>No active tickets right now.</div>}
             {uniqueVendorIds.map(vid => {
@@ -1899,13 +1906,12 @@ function AdminSupportInbox({ user, showToast }) {
               return (
                 <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent" }}>
                   <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px" }}>{v.business_name || v.email || "Unknown Vendor"}</div>
-                  <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages logged</div>
+                  <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages</div>
                 </div>
               );
             })}
          </div>
 
-         {/* RIGHT PANEL: LIVE CHAT WINDOW */}
          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
             {activeVendorId ? (
               <>
@@ -1924,8 +1930,8 @@ function AdminSupportInbox({ user, showToast }) {
                   <div ref={chatEndRef} />
                 </div>
                 <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
-                  <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your reply to this vendor..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
-                  <button className="btn-primary btn-hover" onClick={handleReply}>Send Reply</button>
+                  <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
+                  <button className="btn-primary btn-hover" onClick={handleReply}>Send</button>
                 </div>
               </>
             ) : (
@@ -1934,7 +1940,6 @@ function AdminSupportInbox({ user, showToast }) {
               </div>
             )}
          </div>
-
       </div>
     </div>
   );
