@@ -1840,11 +1840,10 @@ function PayoutSettings({ user, showToast }) {
       showToast("Bank Linked", "Your settlement account has been updated securely.", "success");
       setAccountNumber("");
       setBankCode("");
-    } else {
-      showToast("Error", "Could not link bank. Try again.", "error");
+   } else {
+      showToast("Database Error", error.message || error.details, "error");
+      console.error("SUPABASE ERROR:", error);
     }
-    setLoading(false);
-  };
 
   return (
     <div style={{ maxWidth: "600px" }}>
