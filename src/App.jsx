@@ -1452,7 +1452,51 @@ function ClientsManager({ user, showToast }) {
     </div>
   );
 }
+// =========================================================
+// 7.5. NATIVE REVENUE CHART COMPONENT
+// =========================================================
+function RevenueChart({ invoices }) {
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    months.push({ label: d.toLocaleString('default', { month: 'short' }), month: d.getMonth(), year: d.getFullYear(), total: 0 });
+  }
 
+  invoices.forEach(inv => {
+    if (inv.status === 'paid') {
+      const date = new Date(inv.created_at);
+      const match = months.find(m => m.month === date.getMonth() && m.year === date.getFullYear());
+      if (match) match.total += Number(inv.amount || 0);
+    }
+  });
+
+  const maxTotal = Math.max(...months.map(m => m.total), 1); 
+
+  return (
+    <div className="card-hover" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "16px", padding: "32px", marginBottom: "40px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+      <h3 style={{ fontSize: "16px", fontWeight: "900", marginBottom: "32px", color: "#0F172A", textTransform: "uppercase", letterSpacing: "0.05em" }}>6-Month Revenue Trend</h3>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "180px", paddingBottom: "12px", borderBottom: "1px dashed #E2E8F0" }}>
+        {months.map((m, i) => {
+          const heightPct = (m.total / maxTotal) * 100;
+          return (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: "8px", height: "100%" }}>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#10B981", opacity: m.total > 0 ? 1 : 0 }}>
+                {m.total > 1000 ? `₦${(m.total/1000).toFixed(1)}k` : `₦${m.total}`}
+              </div>
+              <div style={{ width: "100%", maxWidth: "48px", background: m.total > 0 ? "#10B981" : "#F1F5F9", height: `${Math.max(heightPct, 4)}%`, borderRadius: "6px 6px 0 0", transition: "height 0.8s ease" }}></div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: "16px", paddingTop: "16px" }}>
+        {months.map((m, i) => (
+          <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "12px", fontWeight: "800", color: "#64748B" }}>{m.label}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
 // =========================================================
 // 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS)
 // =========================================================
