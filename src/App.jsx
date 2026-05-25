@@ -1605,25 +1605,26 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   return (
     <div style={{ maxWidth: "900px" }}>
       
-  {/* PREMIUM LOGO MODAL (FLEXBOX CENTERED) */}
+{/* PREMIUM LOGO MODAL (BULLETPROOF CENTERING) */}
       {showLogoWarning && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }}>
           <div className="toast-container" style={{ 
             background: "#FFFFFF", 
-            padding: "32px", 
+            padding: "24px", 
             borderRadius: "20px", 
-            maxWidth: "450px", 
+            maxWidth: "400px", 
             width: "100%", 
             boxSizing: "border-box", 
-            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" 
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+            margin: "0 auto"
           }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "16px" }}>⚠️</div>
-            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "10px", color: "#0F172A" }}>Missing Brand Logo</h3>
-            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
-            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px", textDecoration: "none" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
-              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "16px", border: "none", background: "#F1F5F9" }}>Ignore & Generate Invoice</button>
-              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: "#64748B", fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 16px auto" }}>⚠️</div>
+            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "10px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
+              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "14px", textDecoration: "none" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "14px", border: "none", background: "#F1F5F9" }}>Ignore & Generate</button>
+              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: "#64748B", fontWeight: "700", marginTop: "4px", cursor: "pointer", padding: "10px" }}>Cancel</button>
             </div>
           </div>
         </div>
