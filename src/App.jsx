@@ -1784,12 +1784,18 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 10. PAYOUT SETTINGS (MEGA NIGERIAN BANK LIST)
+// 10. PAYOUT SETTINGS (AUTO-REFRESH FIX)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // THE FIX 1: Auto-fill the form if the user already has a bank linked!
+  useEffect(() => {
+    if (user?.bank_code) setBankCode(user.bank_code);
+    if (user?.account_number) setAccountNumber(user.account_number);
+  }, [user]);
 
   // Official Paystack Bank Codes for Nigeria (Mega List)
   const NIGERIAN_BANKS = [
@@ -1822,7 +1828,7 @@ function PayoutSettings({ user, showToast }) {
     { name: "Zenith Bank", code: "057" }
   ];
 
- const handleLinkBank = async (e) => {
+  const handleLinkBank = async (e) => {
     e.preventDefault();
     if (accountNumber.length !== 10) {
       showToast("Invalid Account", "Please enter a valid 10-digit account number.", "error");
@@ -1830,16 +1836,19 @@ function PayoutSettings({ user, showToast }) {
     }
     
     setLoading(true);
-    // Send the correct code and account number to your database
     const { error } = await supabase
       .from('vendors')
       .update({ bank_code: bankCode, account_number: accountNumber })
       .eq('id', user.id);
 
     if (!error) {
-      showToast("Bank Linked", "Your settlement account has been updated securely.", "success");
-      setAccountNumber("");
-      setBankCode("");
+      showToast("Bank Linked", "Account updated successfully! Refreshing app...", "success");
+      
+      // THE FIX 2: Force the entire app to reload so the Invoice Page gets unlocked!
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
     } else {
       showToast("Database Error", error.message || error.details, "error");
       console.error("SUPABASE ERROR:", error);
@@ -1855,7 +1864,6 @@ function PayoutSettings({ user, showToast }) {
       <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
         <form onSubmit={handleLinkBank} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
-          {/* THE FIXED BANK DROPDOWN */}
           <div>
             <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank Name</label>
             <select className="form-input" value={bankCode} onChange={e => setBankCode(e.target.value)} required style={{ width: "100%", margin: 0, padding: "14px", cursor: "pointer" }}>
@@ -1865,7 +1873,6 @@ function PayoutSettings({ user, showToast }) {
             </select>
           </div>
           
-          {/* SECURE ACCOUNT NUMBER INPUT */}
           <div>
             <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label>
             <input 
@@ -1879,7 +1886,6 @@ function PayoutSettings({ user, showToast }) {
             />
           </div>
           
-          {/* SMART SUBMIT BUTTON */}
           <button 
             className="btn-primary btn-hover" 
             type="submit" 
