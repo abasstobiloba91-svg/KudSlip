@@ -1605,19 +1605,15 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   return (
     <div style={{ maxWidth: "900px" }}>
       
-      {/* PREMIUM LOGO MODAL (CENTERED & MOBILE-FRIENDLY) */}
+  {/* PREMIUM LOGO MODAL (FLEXBOX CENTERED) */}
       {showLogoWarning && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000 }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div className="toast-container" style={{ 
-            position: 'absolute', 
-            top: '50%', 
-            left: '50%', 
-            transform: 'translate(-50%, -50%)', 
             background: "#FFFFFF", 
             padding: "32px", 
             borderRadius: "20px", 
             maxWidth: "450px", 
-            width: "calc(100% - 32px)", 
+            width: "100%", 
             boxSizing: "border-box", 
             boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" 
           }}>
