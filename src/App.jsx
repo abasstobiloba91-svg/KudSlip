@@ -1784,22 +1784,64 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 10. PAYOUT SETTINGS
+// 10. PAYOUT SETTINGS (MEGA NIGERIAN BANK LIST)
 // =========================================================
-function PayoutSettings({ user, onSubaccountLinked, showToast }) {
+function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLink = async (e) => {
+  // Official Paystack Bank Codes for Nigeria (Mega List)
+  const NIGERIAN_BANKS = [
+    { name: "-- Select your bank --", code: "" },
+    { name: "Access Bank", code: "044" },
+    { name: "Ecobank Nigeria", code: "050" },
+    { name: "Fidelity Bank", code: "070" },
+    { name: "First Bank of Nigeria", code: "011" },
+    { name: "First City Monument Bank (FCMB)", code: "214" },
+    { name: "Globus Bank", code: "00103" },
+    { name: "Guaranty Trust Bank (GTB)", code: "058" },
+    { name: "Heritage Bank", code: "030" },
+    { name: "Keystone Bank", code: "082" },
+    { name: "Kuda Bank", code: "090267" },
+    { name: "Moniepoint MFB", code: "090405" },
+    { name: "OPay Digital Services", code: "999992" },
+    { name: "PalmPay", code: "999991" },
+    { name: "Polaris Bank", code: "076" },
+    { name: "Providus Bank", code: "101" },
+    { name: "Rubies MFB", code: "090175" },
+    { name: "Stanbic IBTC Bank", code: "221" },
+    { name: "Standard Chartered Bank", code: "068" },
+    { name: "Sterling Bank", code: "232" },
+    { name: "Taj Bank", code: "000302" },
+    { name: "Union Bank of Nigeria", code: "032" },
+    { name: "United Bank for Africa (UBA)", code: "033" },
+    { name: "Unity Bank", code: "215" },
+    { name: "VFD Microfinance Bank", code: "090110" },
+    { name: "Wema Bank", code: "035" },
+    { name: "Zenith Bank", code: "057" }
+  ];
+
+  const handleLinkBank = async (e) => {
     e.preventDefault();
+    if (accountNumber.length !== 10) {
+      showToast("Invalid Account", "Please enter a valid 10-digit account number.", "error");
+      return;
+    }
+    
     setLoading(true);
-    const mockSubaccountCode = `SUB_${Math.random().toString(36).substring(7).toUpperCase()}`;
-    const { error } = await supabase.from('vendors').update({ paystack_subaccount_code: mockSubaccountCode, bank_code: bankCode, account_number: accountNumber }).eq('id', user.id);
-    if(error) showToast("Error", error.message, "error");
-    else {
-      showToast("Bank Linked", "Your payouts will now be routed automatically.", "success");
-      onSubaccountLinked(mockSubaccountCode);
+    // Send the correct code and account number to your database
+    const { error } = await supabase
+      .from('vendors')
+      .update({ bank_code: bankCode, account_number: accountNumber })
+      .eq('id', user.id);
+
+    if (!error) {
+      showToast("Bank Linked", "Your settlement account has been updated securely.", "success");
+      setAccountNumber("");
+      setBankCode("");
+    } else {
+      showToast("Error", "Could not link bank. Try again.", "error");
     }
     setLoading(false);
   };
@@ -1809,18 +1851,44 @@ function PayoutSettings({ user, onSubaccountLinked, showToast }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Link your bank account to receive automated settlements.</div>
       
-      <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
-        {user?.paystack_subaccount_code ? (
-          <div style={{ padding: "16px", background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#10B981", borderRadius: "8px", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px" }}>
-            ✓ Bank Account Successfully Linked
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+        <form onSubmit={handleLinkBank} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          {/* THE FIXED BANK DROPDOWN */}
+          <div>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank Name</label>
+            <select className="form-input" value={bankCode} onChange={e => setBankCode(e.target.value)} required style={{ width: "100%", margin: 0, padding: "14px", cursor: "pointer" }}>
+              {NIGERIAN_BANKS.map((b) => (
+                <option key={b.name} value={b.code} disabled={b.code === ""}>{b.name}</option>
+              ))}
+            </select>
           </div>
-        ) : (
-          <form onSubmit={handleLink}>
-            <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Bank Name / Code</label><input className="form-input" required value={bankCode} onChange={e=>setBankCode(e.target.value)} placeholder="e.g. GTBank" /></div>
-            <div style={{ marginBottom: "24px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Account Number</label><input className="form-input" required value={accountNumber} onChange={e=>setAccountNumber(e.target.value)} placeholder="10 digit account number" /></div>
-            <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Linking..." : "Securely Link Bank Account"}</button>
-          </form>
-        )}
+          
+          {/* SECURE ACCOUNT NUMBER INPUT */}
+          <div>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label>
+            <input 
+              type="number"
+              className="form-input" 
+              value={accountNumber} 
+              onChange={e => setAccountNumber(e.target.value)} 
+              required 
+              placeholder="e.g. 0123456789" 
+              style={{ width: "100%", margin: 0, padding: "14px", boxSizing: "border-box" }} 
+            />
+          </div>
+          
+          {/* SMART SUBMIT BUTTON */}
+          <button 
+            className="btn-primary btn-hover" 
+            type="submit" 
+            disabled={loading || !bankCode || accountNumber.length !== 10} 
+            style={{ padding: "16px", marginTop: "8px", opacity: (!bankCode || accountNumber.length !== 10) ? 0.5 : 1 }}
+          >
+            {loading ? "Verifying..." : "Securely Link Bank Account"}
+          </button>
+
+        </form>
       </div>
     </div>
   );
