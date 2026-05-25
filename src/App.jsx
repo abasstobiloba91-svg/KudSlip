@@ -1397,7 +1397,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   );
 }
 // =========================================================
-// 7. CLIENTS CRM
+// 7. CLIENTS CRM (FRICTIONLESS UPGRADE)
 // =========================================================
 function ClientsManager({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -1422,7 +1422,7 @@ function ClientsManager({ user, showToast }) {
     setLoading(false);
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Client CRM.</div>;
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Client CRM.</div>;
 
   return (
     <div>
@@ -1432,7 +1432,7 @@ function ClientsManager({ user, showToast }) {
         <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
         <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
           <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} required/></div>
-          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></div>
+          <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Email (Optional)</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} /></div>
           <div><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Phone</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
           <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
         </form>
@@ -1444,7 +1444,7 @@ function ClientsManager({ user, showToast }) {
               <tr><th style={{ padding: "16px 24px" }}>Name</th><th style={{ padding: "16px 24px" }}>Email</th><th style={{ padding: "16px 24px" }}>Phone</th></tr>
             </thead>
             <tbody>
-              {clients.map(c => <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}><td style={{ padding: "16px 24px", fontWeight: "600" }}>{c.name}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.email}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.phone || "—"}</td></tr>)}
+              {clients.map(c => <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}><td style={{ padding: "16px 24px", fontWeight: "600" }}>{c.name}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.email || "—"}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.phone || "—"}</td></tr>)}
             </tbody>
           </table>
         )}
@@ -1452,6 +1452,7 @@ function ClientsManager({ user, showToast }) {
     </div>
   );
 }
+
 // =========================================================
 // 7.5. NATIVE REVENUE CHART COMPONENT
 // =========================================================
@@ -1836,7 +1837,7 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13A. VENDOR CHAT (REALTIME UPGRADE + INSTANT DELIVERY)
+// 13A. VENDOR CHAT (SMART FAQ + REALTIME)
 // ---------------------------------------------------------
 function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
@@ -1844,13 +1845,19 @@ function VendorChat({ user, showToast }) {
   const [loading, setLoading] = useState(true);
   const chatEndRef = useRef(null);
 
+  // Smart FAQs
+  const SMART_FAQS = [
+    { q: "How do I withdraw my money?", a: "Your funds are automatically settled to the bank account you linked in 'Payout Settings' within 24 hours of payment." },
+    { q: "How do I change my logo?", a: "Go to the 'Brand Settings' tab to upload your custom logo. You must be on the Premium plan." },
+    { q: "Can I bill foreign clients?", a: "Yes! Use the 'Calculate Foreign Currency' tool when creating an invoice to get live USD/GBP to NGN rates." }
+  ];
+
   useEffect(() => {
     fetchMessages();
     
     const channel = supabase.channel('vendor_realtime_chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user.id}` }, (payload) => {
         setHistory(prev => {
-          // Prevent showing duplicates if we already fetched it instantly
           const exists = prev.find(msg => msg.id === payload.new.id);
           if (exists) return prev;
           return [...prev, payload.new];
@@ -1870,30 +1877,58 @@ function VendorChat({ user, showToast }) {
     setLoading(false);
   };
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
-    const tempMessage = message;
-    setMessage(""); // Instantly clear input
+  const handleSend = async (customMessage = null) => {
+    const textToSend = customMessage || message;
+    if (!textToSend.trim()) return;
+    
+    const tempMessage = textToSend;
+    if (!customMessage) setMessage(""); 
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
     if (error) { 
       showToast("Security Error", "Message blocked by database.", "error"); 
-      setMessage(tempMessage); 
+      if (!customMessage) setMessage(tempMessage); 
     } else {
-      fetchMessages(); // INSTANT DELIVERY FORCE-SYNC
+      fetchMessages(); 
     }
+  };
+
+  const handleFAQClick = async (faq) => {
+    // 1. Send the user's question to the DB
+    await handleSend(faq.q);
+    
+    // 2. Immediately insert the AI bot's answer locally (simulated instant response)
+    // Note: In a full enterprise app, this would be a trigger/edge function.
+    // For this beta, we insert it directly to feel instant.
+    setTimeout(async () => {
+        await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'support', message: faq.a }]);
+        fetchMessages();
+    }, 500); // slight delay for realism
   };
 
   return (
     <div style={{ maxWidth: "800px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? We are online and ready.</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? Our Smart Assistant is online.</div>
       
       <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "550px" }}>
          <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
-              Hello {user?.business_name || "there"}! How can our support team assist you today?
+              Hello {user?.business_name || "there"}! I am the KudiSlip Smart Assistant. How can I help you today?
             </div>
+            
+            {/* INJECT SMART FAQS IF HISTORY IS EMPTY */}
+            {history.length === 0 && !loading && (
+                <div style={{ alignSelf: "flex-start", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "80%" }}>
+                    <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", marginLeft: "4px" }}>Frequently Asked Questions:</div>
+                    {SMART_FAQS.map((faq, idx) => (
+                        <button key={idx} onClick={() => handleFAQClick(faq)} style={{ textAlign: "left", padding: "10px 14px", background: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "12px", fontSize: "13px", color: "#2563EB", cursor: "pointer", transition: "all 0.2s" }} className="card-hover">
+                            {faq.q}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading secure chat...</div>}
             {history.map((msg) => {
               const isMe = msg.sender === 'user';
@@ -1906,8 +1941,8 @@ function VendorChat({ user, showToast }) {
             <div ref={chatEndRef} />
          </div>
          <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px", background: "#FFFFFF", borderRadius: "0 0 12px 12px" }}>
-            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
-            <button className="btn-primary btn-hover" onClick={handleSend}>Send</button>
+            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+            <button className="btn-primary btn-hover" onClick={() => handleSend()}>Send</button>
          </div>
       </div>
     </div>
@@ -1954,14 +1989,14 @@ function AdminSupportInbox({ user, showToast }) {
   const handleReply = async () => {
     if (!reply.trim() || !activeVendorId) return;
     const temp = reply;
-    setReply(""); // Instantly clear input
+    setReply(""); 
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
     if (error) { 
       showToast("Security Error", "Reply failed to send.", "error"); 
       setReply(temp); 
     } else {
-      fetchData(); // INSTANT DELIVERY FORCE-SYNC
+      fetchData(); 
     }
   };
 
