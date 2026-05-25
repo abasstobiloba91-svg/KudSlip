@@ -1785,14 +1785,14 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 10. PAYOUT SETTINGS (AUTO-REFRESH FIX)
+// 10. PAYOUT SETTINGS (WITH SVG UI POLISH)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // THE FIX 1: Auto-fill the form if the user already has a bank linked!
+  // Auto-fill the form if the user already has a bank linked
   useEffect(() => {
     if (user?.bank_code) setBankCode(user.bank_code);
     if (user?.account_number) setAccountNumber(user.account_number);
@@ -1845,7 +1845,7 @@ function PayoutSettings({ user, showToast }) {
     if (!error) {
       showToast("Bank Linked", "Account updated successfully! Refreshing app...", "success");
       
-      // THE FIX 2: Force the entire app to reload so the Invoice Page gets unlocked!
+      // Force the app to reload to grab the fresh user data
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -1857,12 +1857,26 @@ function PayoutSettings({ user, showToast }) {
     setLoading(false);
   };
 
+  // Check if the current inputs exactly match the database
+  const isSaved = user?.bank_code === bankCode && user?.account_number === accountNumber && bankCode !== "";
+
   return (
     <div style={{ maxWidth: "600px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Link your bank account to receive automated settlements.</div>
       
       <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+        
+        {/* SUCCESS BANNER WITH REAL SVG */}
+        {user?.bank_code && (
+          <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46", padding: "12px 16px", borderRadius: "8px", marginBottom: "24px", fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "20px", height: "20px", flexShrink: 0 }}>
+              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+            </svg>
+            Settlement Account Successfully Linked
+          </div>
+        )}
+
         <form onSubmit={handleLinkBank} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
           <div>
@@ -1887,13 +1901,30 @@ function PayoutSettings({ user, showToast }) {
             />
           </div>
           
+          {/* SMART BUTTON WITH REAL SVG AND FLEX ALIGNMENT */}
           <button 
             className="btn-primary btn-hover" 
             type="submit" 
-            disabled={loading || !bankCode || accountNumber.length !== 10} 
-            style={{ padding: "16px", marginTop: "8px", opacity: (!bankCode || accountNumber.length !== 10) ? 0.5 : 1 }}
+            disabled={loading || !bankCode || accountNumber.length !== 10 || isSaved} 
+            style={{ 
+              padding: "16px", 
+              marginTop: "8px", 
+              background: isSaved ? "#10B981" : "", 
+              borderColor: isSaved ? "#10B981" : "",
+              opacity: (!bankCode || accountNumber.length !== 10) ? 0.5 : 1,
+              cursor: isSaved ? "default" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px"
+            }}
           >
-            {loading ? "Verifying..." : "Securely Link Bank Account"}
+            {isSaved && (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: "18px", height: "18px", flexShrink: 0 }}>
+                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+              </svg>
+            )}
+            {loading ? "Verifying..." : isSaved ? "Active Settlement Account" : (user?.bank_code ? "Update Bank Details" : "Securely Link Bank Account")}
           </button>
 
         </form>
