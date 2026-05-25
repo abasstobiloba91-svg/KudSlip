@@ -1872,7 +1872,8 @@ function PayoutSettings({ user, showToast }) {
           account_number: accountNumber,
           bank_code: bankCode,
           business_name: user.business_name || "KudiSlip Vendor",
-          vendor_id: user.id
+          vendor_id: user.id,
+          percentage_charge: 0 // 🎯 FORCE PLATFORM FEE TO 0% FOR 100% VENDOR SPLIT
         })
       });
 
