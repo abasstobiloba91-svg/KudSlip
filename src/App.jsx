@@ -1822,7 +1822,7 @@ function PayoutSettings({ user, showToast }) {
     { name: "Zenith Bank", code: "057" }
   ];
 
-  const handleLinkBank = async (e) => {
+ const handleLinkBank = async (e) => {
     e.preventDefault();
     if (accountNumber.length !== 10) {
       showToast("Invalid Account", "Please enter a valid 10-digit account number.", "error");
@@ -1840,10 +1840,12 @@ function PayoutSettings({ user, showToast }) {
       showToast("Bank Linked", "Your settlement account has been updated securely.", "success");
       setAccountNumber("");
       setBankCode("");
-   } else {
+    } else {
       showToast("Database Error", error.message || error.details, "error");
       console.error("SUPABASE ERROR:", error);
     }
+    setLoading(false);
+  };
 
   return (
     <div style={{ maxWidth: "600px" }}>
