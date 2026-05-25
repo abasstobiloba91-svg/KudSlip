@@ -1454,7 +1454,7 @@ function ClientsManager({ user, showToast }) {
 }
 
 // =========================================================
-// 8. KUDISLIP UNIQUE INVOICE ENGINE (BYPASSES DUPLICATES)
+// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS)
 // =========================================================
 function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -1466,12 +1466,14 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
+  
+  // Feature 2 Prep: Recurring Invoice UI State
+  const [invoiceType, setInvoiceType] = useState("one-time");
 
   // Live Forex Calculator State
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
 
-  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -1521,17 +1523,21 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     setShowLogoWarning(false);
     setLoading(true);
     
-    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: 'NGN' }]).select().single();
+    const finalItems = invoiceType !== "one-time" 
+      ? items.map(i => ({ ...i, description: `[${invoiceType.toUpperCase()}] ${i.description}` })) 
+      : items;
+    
+    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: finalItems, due_date: dueDate, currency: 'NGN' }]).select().single();
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
+      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time");
       fetchRecentInvoices();
     }
     setLoading(false);
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Invoices.</div>;
 
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
@@ -1550,22 +1556,34 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     return 0;
   });
 
-  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
       
-      {/* PREMIUM LOGO MODAL */}
+      {/* PREMIUM LOGO MODAL (CENTERED & MOBILE-FRIENDLY) */}
       {showLogoWarning && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="toast-container" style={{ background: "#FFFFFF", padding: "40px", borderRadius: "20px", maxWidth: "450px", width: "90%", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "20px" }}><PaintIcon /></div>
-            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "12px", color: DESIGN.textMain }}>Missing Brand Logo</h3>
-            <p style={{ color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000 }}>
+          <div className="toast-container" style={{ 
+            position: 'absolute', 
+            top: '50%', 
+            left: '50%', 
+            transform: 'translate(-50%, -50%)', 
+            background: "#FFFFFF", 
+            padding: "32px", 
+            borderRadius: "20px", 
+            maxWidth: "450px", 
+            width: "calc(100% - 32px)", 
+            boxSizing: "border-box", 
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" 
+          }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "16px" }}>⚠️</div>
+            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "10px", color: "#0F172A" }}>Missing Brand Logo</h3>
+            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
             <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px", textDecoration: "none" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
               <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "16px", border: "none", background: "#F1F5F9" }}>Ignore & Generate Invoice</button>
-              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: DESIGN.textMuted, fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: "#64748B", fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -1574,12 +1592,16 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+      {/* METRICS ROW */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div></div>
       </div>
 
+      {invoices.length > 0 && <RevenueChart invoices={invoices} />}
+
+      {/* INVOICE GENERATOR */}
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
@@ -1622,13 +1644,23 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </button>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
             <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+          
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#D97706", display: "block", marginBottom: "8px" }}>Billing Frequency (Premium)</label>
+            <select className="form-input" value={invoiceType} onChange={e => setInvoiceType(e.target.value)} disabled={user?.subscription_tier !== 'premium'} style={{ border: user?.subscription_tier === 'premium' ? "1px solid #FCD34D" : "1px solid #E2E8F0" }}>
+              <option value="one-time">One-time Invoice</option>
+              <option value="monthly">Monthly Recurring</option>
+              <option value="weekly">Weekly Recurring</option>
+            </select>
+          </div>
         </div>
+
         <div style={{ marginBottom: "24px" }}>
           {items.map((item, idx) => (
             <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
@@ -1675,8 +1707,8 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{ wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "900", fontSize: "18px", color: DESIGN.textMain, marginBottom: "4px" }}>{inv.clients?.name}</div>
-                    <div style={{ fontSize: "13px", color: DESIGN.textMuted, lineHeight: "1.4" }}>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px" }}>{inv.clients?.name}</div>
+                    <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>
                       <div>{inv.clients?.email}</div>
                       {inv.clients?.phone && <div>{inv.clients.phone}</div>}
                     </div>
@@ -1686,12 +1718,12 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                   </span>
                 </div>
 
-                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: DESIGN.textMain, fontWeight: "500", border: "1px solid #F1F5F9" }}>
-                  <span style={{ color: DESIGN.textMuted, fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
+                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: "#0F172A", fontWeight: "500", border: "1px solid #F1F5F9" }}>
+                  <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
-                  <div style={{ fontSize: "24px", fontWeight: "900", color: DESIGN.textMain }}>
+                  <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A" }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -1705,7 +1737,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
               </div>
             );
           })}
-          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No invoices found matching your search.</div>}
         </div>
       )}
     </div>
