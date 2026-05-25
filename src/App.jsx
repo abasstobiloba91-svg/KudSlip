@@ -1711,7 +1711,74 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     </div>
   );
 }
+// =========================================================
+// 10. PAYOUT SETTINGS
+// =========================================================
+function PayoutSettings({ user, onSubaccountLinked, showToast }) {
+  const [bankCode, setBankCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const handleLink = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const mockSubaccountCode = `SUB_${Math.random().toString(36).substring(7).toUpperCase()}`;
+    const { error } = await supabase.from('vendors').update({ paystack_subaccount_code: mockSubaccountCode, bank_code: bankCode, account_number: accountNumber }).eq('id', user.id);
+    if(error) showToast("Error", error.message, "error");
+    else {
+      showToast("Bank Linked", "Your payouts will now be routed automatically.", "success");
+      onSubaccountLinked(mockSubaccountCode);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Link your bank account to receive automated settlements.</div>
+      
+      <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        {user?.paystack_subaccount_code ? (
+          <div style={{ padding: "16px", background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#10B981", borderRadius: "8px", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px" }}>
+            ✓ Bank Account Successfully Linked
+          </div>
+        ) : (
+          <form onSubmit={handleLink}>
+            <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Bank Name / Code</label><input className="form-input" required value={bankCode} onChange={e=>setBankCode(e.target.value)} placeholder="e.g. GTBank" /></div>
+            <div style={{ marginBottom: "24px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Account Number</label><input className="form-input" required value={accountNumber} onChange={e=>setAccountNumber(e.target.value)} placeholder="10 digit account number" /></div>
+            <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Linking..." : "Securely Link Bank Account"}</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 13. SUPPORT DASHBOARD
+// =========================================================
+function SupportDashboard({ user, showToast }) {
+  const [message, setMessage] = useState("");
+  
+  return (
+    <div style={{ maxWidth: "800px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? We are online and ready.</div>
+      
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "500px" }}>
+         <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
+              Hello {user?.business_name}! How can our support team assist you today?
+            </div>
+         </div>
+         <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
+            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e=>setMessage(e.target.value)} />
+            <button className="btn-primary btn-hover" onClick={() => { showToast("Sent", "Message sent to support.", "success"); setMessage(""); }}>Send Message</button>
+         </div>
+      </div>
+    </div>
+  );
+}
 // =========================================================
 // DRAGGABLE SUPPORT BUTTON COMPONENT
 // =========================================================
