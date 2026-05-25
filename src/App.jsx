@@ -1711,7 +1711,197 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     </div>
   );
 }
+// =========================================================
+// 9. CLIENT DIRECTORY
+// =========================================================
+function ClientsManager({ user, showToast }) {
+  const [clients, setClients] = useState([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if(supabase) supabase.from('clients').select('*').eq('vendor_id', user.id).then(({data}) => setClients(data || []));
+  }, []);
+
+  const handleAddClient = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { data, error } = await supabase.from('clients').insert([{ vendor_id: user.id, name, email, phone }]).select().single();
+    if(error) showToast("Error", error.message, "error");
+    else {
+      setClients([...clients, data]);
+      setName(""); setEmail(""); setPhone("");
+      showToast("Success", "Client added successfully.", "success");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ maxWidth: "800px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customers and billing contacts.</div>
+      
+      <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "12px", border: "1px solid #E2E8F0", marginBottom: "32px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Add New Client</h3>
+        <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px", alignItems: "end" }}>
+          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Name</label><input className="form-input" required value={name} onChange={e=>setName(e.target.value)} /></div>
+          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Email</label><input className="form-input" type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></div>
+          <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Phone (Optional)</label><input className="form-input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
+          <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
+        </form>
+      </div>
+
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+        {clients.length === 0 && <div style={{ padding: "32px", textAlign: "center", color: "#64748B" }}>No clients added yet.</div>}
+        {clients.map((c, i) => (
+          <div key={c.id} style={{ padding: "16px 24px", borderBottom: i === clients.length - 1 ? "none" : "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div><div style={{ fontWeight: "800", color: "#0F172A", marginBottom: "4px" }}>{c.name}</div><div style={{ fontSize: "13px", color: "#64748B" }}>{c.email} {c.phone && `• ${c.phone}`}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 10. PAYOUT SETTINGS
+// =========================================================
+function PayoutSettings({ user, onSubaccountLinked, showToast }) {
+  const [bankCode, setBankCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLink = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const mockSubaccountCode = `SUB_${Math.random().toString(36).substring(7).toUpperCase()}`;
+    const { error } = await supabase.from('vendors').update({ paystack_subaccount_code: mockSubaccountCode, bank_code: bankCode, account_number: accountNumber }).eq('id', user.id);
+    if(error) showToast("Error", error.message, "error");
+    else {
+      showToast("Bank Linked", "Your payouts will now be routed automatically.", "success");
+      onSubaccountLinked(mockSubaccountCode);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Link your bank account to receive automated settlements.</div>
+      
+      <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        {user?.paystack_subaccount_code ? (
+          <div style={{ padding: "16px", background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#10B981", borderRadius: "8px", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px" }}>
+            ✓ Bank Account Successfully Linked
+          </div>
+        ) : (
+          <form onSubmit={handleLink}>
+            <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Bank Name / Code</label><input className="form-input" required value={bankCode} onChange={e=>setBankCode(e.target.value)} placeholder="e.g. GTBank" /></div>
+            <div style={{ marginBottom: "24px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Account Number</label><input className="form-input" required value={accountNumber} onChange={e=>setAccountNumber(e.target.value)} placeholder="10 digit account number" /></div>
+            <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Linking..." : "Securely Link Bank Account"}</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 11. BRAND SETTINGS
+// =========================================================
+function BrandSettings({ user, onUpdate, showToast }) {
+  const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
+  const [brandColor, setBrandColor] = useState(user?.brand_color || "#2563EB");
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor }).eq('id', user.id);
+    if(error) showToast("Error", error.message, "error");
+    else {
+      showToast("Saved", "Brand settings updated successfully.", "success");
+      onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Brand Identity</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Customize how your invoices appear to clients.</div>
+      
+      <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+         <form onSubmit={handleSave}>
+            <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Logo Image URL (Premium)</label><input className="form-input" value={logoUrl} onChange={e=>setLogoUrl(e.target.value)} placeholder="https://yourwebsite.com/logo.png" disabled={user?.subscription_tier !== 'premium'} />
+            {user?.subscription_tier !== 'premium' && <div style={{ fontSize: "11px", color: "#D97706", marginTop: "6px", fontWeight: "600" }}>Upgrade to Premium to unlock custom logos.</div>}
+            </div>
+            <div style={{ marginBottom: "24px" }}><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Brand Color</label><input type="color" value={brandColor} onChange={e=>setBrandColor(e.target.value)} style={{ width: "100%", height: "45px", cursor: "pointer", border: "none", padding: 0, borderRadius: "8px" }} /></div>
+            <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit" disabled={loading}>{loading ? "Saving..." : "Save Brand Settings"}</button>
+         </form>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 12. SUBSCRIPTION MANAGER
+// =========================================================
+function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
+  const isPremium = user?.subscription_tier === 'premium';
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Billing & Plan</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your KudiSlip platform subscription.</div>
+      
+      <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+         <div style={{ fontSize: "14px", fontWeight: "700", color: "#64748B", marginBottom: "8px", textTransform: "uppercase" }}>Current Plan</div>
+         <div style={{ fontSize: "32px", fontWeight: "900", color: isPremium ? "#D97706" : "#0F172A", marginBottom: "24px" }}>{isPremium ? "Premium Tier" : "Free Tier"}</div>
+         
+         {!isPremium ? (
+           <div>
+             <ul style={{ paddingLeft: "20px", color: "#64748B", fontSize: "14px", lineHeight: "1.8", marginBottom: "24px" }}>
+               <li>Custom Brand Logos on Invoices</li>
+               <li>Priority Helpdesk Support</li>
+               <li>Zero KudiSlip Watermarks</li>
+             </ul>
+             <button className="btn-primary btn-hover" onClick={() => { onUpgradeSuccess(); showToast("Upgraded", "Welcome to Premium!", "success"); }} style={{ width: "100%", background: "#D97706", padding: "16px", fontSize: "15px", border: "none" }}>Upgrade to Premium (₦15,000/mo)</button>
+           </div>
+         ) : (
+           <div style={{ color: "#10B981", fontWeight: "700", background: "#ECFDF5", padding: "16px", borderRadius: "8px", textAlign: "center" }}>You have unlocked all features.</div>
+         )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// 13. SUPPORT DASHBOARD
+// =========================================================
+function SupportDashboard({ user, showToast }) {
+  const [message, setMessage] = useState("");
+  
+  return (
+    <div style={{ maxWidth: "800px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? We are online and ready.</div>
+      
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "500px" }}>
+         <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
+              Hello {user?.business_name}! How can our support team assist you today?
+            </div>
+         </div>
+         <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
+            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e=>setMessage(e.target.value)} />
+            <button className="btn-primary btn-hover" onClick={() => { showToast("Sent", "Message sent to support.", "success"); setMessage(""); }}>Send Message</button>
+         </div>
+      </div>
+    </div>
+  );
+}
 // =========================================================
 // DRAGGABLE SUPPORT BUTTON COMPONENT
 // =========================================================
