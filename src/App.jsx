@@ -1785,7 +1785,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 10. PAYOUT SETTINGS (WITH SVG UI POLISH)
+// 10. PAYOUT SETTINGS (WITH PAYSTACK API & SVGS)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
@@ -1829,7 +1829,7 @@ function PayoutSettings({ user, showToast }) {
     { name: "Zenith Bank", code: "057" }
   ];
 
- const handleLinkBank = async (e) => {
+  const handleLinkBank = async (e) => {
     e.preventDefault();
     if (accountNumber.length !== 10) {
       showToast("Invalid Account", "Please enter a valid 10-digit account number.", "error");
@@ -1840,7 +1840,6 @@ function PayoutSettings({ user, showToast }) {
     
     try {
       // 1. Send details to your secure backend to talk to Paystack
-      // (This assumes you have an API route set up for Paystack)
       const response = await fetch('/api/create-subaccount', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1851,6 +1850,11 @@ function PayoutSettings({ user, showToast }) {
           vendor_id: user.id
         })
       });
+
+      // Catch HTML error pages if the API route doesn't exist
+      if (!response.headers.get("content-type")?.includes("application/json")) {
+         throw new Error("Backend API route not found. We need to create the Vercel API function!");
+      }
 
       const data = await response.json();
 
@@ -1867,7 +1871,7 @@ function PayoutSettings({ user, showToast }) {
         .update({ 
           bank_code: bankCode, 
           account_number: accountNumber,
-          paystack_subaccount_code: subaccountCode // Saving the actual subaccount!
+          paystack_subaccount_code: subaccountCode 
         })
         .eq('id', user.id);
 
@@ -1887,6 +1891,81 @@ function PayoutSettings({ user, showToast }) {
     }
   };
 
+  // Check if the current inputs exactly match the database
+  const isSaved = user?.bank_code === bankCode && user?.account_number === accountNumber && bankCode !== "";
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Link your bank account to receive automated settlements.</div>
+      
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+        
+        {/* SUCCESS BANNER WITH REAL SVG */}
+        {user?.bank_code && (
+          <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46", padding: "12px 16px", borderRadius: "8px", marginBottom: "24px", fontSize: "14px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "20px", height: "20px", flexShrink: 0 }}>
+              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+            </svg>
+            Settlement Account Successfully Linked
+          </div>
+        )}
+
+        <form onSubmit={handleLinkBank} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          <div>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank Name</label>
+            <select className="form-input" value={bankCode} onChange={e => setBankCode(e.target.value)} required style={{ width: "100%", margin: 0, padding: "14px", cursor: "pointer" }}>
+              {NIGERIAN_BANKS.map((b) => (
+                <option key={b.name} value={b.code} disabled={b.code === ""}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label>
+            <input 
+              type="number"
+              className="form-input" 
+              value={accountNumber} 
+              onChange={e => setAccountNumber(e.target.value)} 
+              required 
+              placeholder="e.g. 0123456789" 
+              style={{ width: "100%", margin: 0, padding: "14px", boxSizing: "border-box" }} 
+            />
+          </div>
+          
+          {/* SMART BUTTON WITH REAL SVG AND FLEX ALIGNMENT */}
+          <button 
+            className="btn-primary btn-hover" 
+            type="submit" 
+            disabled={loading || !bankCode || accountNumber.length !== 10 || isSaved} 
+            style={{ 
+              padding: "16px", 
+              marginTop: "8px", 
+              background: isSaved ? "#10B981" : "", 
+              borderColor: isSaved ? "#10B981" : "",
+              opacity: (!bankCode || accountNumber.length !== 10) ? 0.5 : 1,
+              cursor: isSaved ? "default" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px"
+            }}
+          >
+            {isSaved && (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: "18px", height: "18px", flexShrink: 0 }}>
+                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+              </svg>
+            )}
+            {loading ? "Verifying..." : isSaved ? "Active Settlement Account" : (user?.bank_code ? "Update Bank Details" : "Securely Link Bank Account")}
+          </button>
+
+        </form>
+      </div>
+    </div>
+  );
+}
 // =========================================================
 // 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER & REALTIME)
 // =========================================================
