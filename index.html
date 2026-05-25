@@ -10,3 +10,34 @@
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+<style>
+      /* =========================================================
+         MOBILE STABILIZER (NATIVE APP FEEL)
+         ========================================================= */
+      html, body {
+        /* Stop the pull-to-refresh bounce effect */
+        overscroll-behavior-y: none; 
+        
+        /* Lock the height to the exact screen size */
+        height: 100dvh; 
+        min-height: -webkit-fill-available; 
+        width: 100vw;
+        
+        /* Remove all browser margins */
+        margin: 0;
+        padding: 0;
+        
+        /* Freeze the main window so the URL bar doesn't trigger jumps */
+        overflow: hidden; 
+        position: fixed; 
+      }
+
+      #root {
+        /* Move the scrolling inside the React app container */
+        height: 100%;
+        width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch; 
+      }
+    </style>
