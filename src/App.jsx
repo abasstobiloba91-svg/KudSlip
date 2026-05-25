@@ -1605,18 +1605,17 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   return (
     <div style={{ maxWidth: "900px" }}>
       
-{/* PREMIUM LOGO MODAL (BULLETPROOF CENTERING) */}
+{/* PREMIUM LOGO MODAL (CLEAN & CENTERED) */}
       {showLogoWarning && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box" }}>
-          <div className="toast-container" style={{ 
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ 
             background: "#FFFFFF", 
             padding: "24px", 
             borderRadius: "20px", 
             maxWidth: "400px", 
             width: "100%", 
             boxSizing: "border-box", 
-            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-            margin: "0 auto"
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)"
           }}>
             <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 16px auto" }}>⚠️</div>
             <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "10px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
@@ -1629,7 +1628,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
       )}
-
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
