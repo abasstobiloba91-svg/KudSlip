@@ -2085,20 +2085,13 @@ function VendorChat({ user, showToast }) {
     const tempMessage = textToSend;
     if (!customMessage) setMessage(""); 
     
-    // Save the chat message
+    // Save the chat message - The Supabase SQL Trigger handles the notification automatically!
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
     
     if (error) { 
       showToast("Security Error", "Message blocked by database.", "error"); 
       if (!customMessage) setMessage(tempMessage); 
     } else {
-      // 🎯 THE FIX: INSTANTLY NOTIFY THE ADMIN OVER THE BELL
-      await supabase.from('notifications').insert([{
-        user_id: 'SYSTEM_ADMIN',
-        title: 'New Support Ticket',
-        message: `${user.business_name || 'A user'} sent a new message to support.`,
-        is_read: false
-      }]);
       fetchMessages(); 
     }
   };
@@ -2204,21 +2197,13 @@ function AdminSupportInbox({ user, showToast }) {
     const temp = reply;
     setReply(""); 
     
-    // Save the admin's reply
+    // Save the admin's reply. The Supabase SQL Trigger handles the notification automatically!
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
     
     if (error) { 
       showToast("Security Error", "Reply failed to send.", "error"); 
       setReply(temp); 
     } else {
-      // 🎯 THE FIX: INSTANTLY NOTIFY THE VENDOR
-      const targetVendor = vendors[activeVendorId];
-      await supabase.from('notifications').insert([{
-        user_id: activeVendorId,
-        title: 'Support Response',
-        message: `Hey ${targetVendor?.business_name || 'there'}, you've gotten a response from Support!`,
-        is_read: false
-      }]);
       fetchData(); 
     }
   };
