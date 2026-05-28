@@ -2037,16 +2037,6 @@ function SupportDashboard({ user, showToast }) {
   return <VendorChat user={user} showToast={showToast} />;
 }
 
-// =========================================================
-// 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER & REALTIME)
-// =========================================================
-function SupportDashboard({ user, showToast }) {
-  if (user?.role === 'admin' || user?.role === 'support') {
-    return <AdminSupportInbox user={user} showToast={showToast} />;
-  }
-  return <VendorChat user={user} showToast={showToast} />;
-}
-
 // ---------------------------------------------------------
 // 13A. VENDOR CHAT (SMART FAQ + REALTIME NOTIFICATIONS)
 // ---------------------------------------------------------
@@ -2122,11 +2112,11 @@ function VendorChat({ user, showToast }) {
   };
 
   return (
-    <div style={{ maxWidth: "800px" }}>
+    <div style={{ maxWidth: "800px", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Need help? Our Smart Assistant is online.</div>
+      <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Need help? Our Smart Assistant is online.</div>
       
-      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", height: "550px" }}>
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flex: 1, minHeight: "500px" }}>
          <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
               Hello {user?.business_name || "there"}! I am the KudiSlip Smart Assistant. How can I help you today?
@@ -2376,7 +2366,7 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER
+// MAIN APP ROUTER & MOBILE DRAWER (WITH REAL-TIME BELL)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2406,15 +2396,37 @@ function AppRouter() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
-          setUser({ ...session.user, ...data });
+          const combinedUser = { ...session.user, ...data };
+          setUser(combinedUser);
           setIsLoading(false);
-          checkNotifications({ ...session.user, ...data });
+          checkNotifications(combinedUser);
+
+          // 🎯 THE FIX: REAL-TIME NOTIFICATION BELL LISTENER
+          const notifChannel = supabase.channel('realtime_notifications')
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications'
+            }, (payload) => {
+              // If vendor: only show bell if notification is specifically for them
+              if (combinedUser.role === 'vendor' && payload.new.user_id === combinedUser.id) {
+                setUnreadCount(prev => prev + 1);
+              }
+              // If admin: show bell for system-wide support tickets
+              else if (combinedUser.role === 'admin' && payload.new.user_id === 'SYSTEM_ADMIN') {
+                setUnreadCount(prev => prev + 1);
+              }
+            }).subscribe();
+
           if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
              window.location.hash = "#/dashboard/invoices";
           }
         });
       } else { setIsLoading(false); }
     });
+
+    // Cleanup listener on unmount
+    return () => { supabase.removeAllChannels(); }
   }, []);
 
   const checkNotifications = async (userData) => {
