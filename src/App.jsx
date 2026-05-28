@@ -2037,8 +2037,18 @@ function SupportDashboard({ user, showToast }) {
   return <VendorChat user={user} showToast={showToast} />;
 }
 
+// =========================================================
+// 13. SUPPORT DASHBOARD (TRAFFIC COP ROUTER & REALTIME)
+// =========================================================
+function SupportDashboard({ user, showToast }) {
+  if (user?.role === 'admin' || user?.role === 'support') {
+    return <AdminSupportInbox user={user} showToast={showToast} />;
+  }
+  return <VendorChat user={user} showToast={showToast} />;
+}
+
 // ---------------------------------------------------------
-// 13A. VENDOR CHAT (SMART FAQ + REALTIME)
+// 13A. VENDOR CHAT (SMART FAQ + REALTIME NOTIFICATIONS)
 // ---------------------------------------------------------
 function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
@@ -2085,26 +2095,30 @@ function VendorChat({ user, showToast }) {
     const tempMessage = textToSend;
     if (!customMessage) setMessage(""); 
     
+    // Save the chat message
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
+    
     if (error) { 
       showToast("Security Error", "Message blocked by database.", "error"); 
       if (!customMessage) setMessage(tempMessage); 
     } else {
+      // 🎯 THE FIX: INSTANTLY NOTIFY THE ADMIN OVER THE BELL
+      await supabase.from('notifications').insert([{
+        user_id: 'SYSTEM_ADMIN',
+        title: 'New Support Ticket',
+        message: `${user.business_name || 'A user'} sent a new message to support.`,
+        is_read: false
+      }]);
       fetchMessages(); 
     }
   };
 
   const handleFAQClick = async (faq) => {
-    // 1. Send the user's question to the DB
     await handleSend(faq.q);
-    
-    // 2. Immediately insert the AI bot's answer locally (simulated instant response)
-    // Note: In a full enterprise app, this would be a trigger/edge function.
-    // For this beta, we insert it directly to feel instant.
     setTimeout(async () => {
         await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'support', message: faq.a }]);
         fetchMessages();
-    }, 500); // slight delay for realism
+    }, 500); 
   };
 
   return (
@@ -2118,7 +2132,6 @@ function VendorChat({ user, showToast }) {
               Hello {user?.business_name || "there"}! I am the KudiSlip Smart Assistant. How can I help you today?
             </div>
             
-            {/* INJECT SMART FAQS IF HISTORY IS EMPTY */}
             {history.length === 0 && !loading && (
                 <div style={{ alignSelf: "flex-start", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "80%" }}>
                     <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", marginLeft: "4px" }}>Frequently Asked Questions:</div>
@@ -2134,7 +2147,7 @@ function VendorChat({ user, showToast }) {
             {history.map((msg) => {
               const isMe = msg.sender === 'user';
               return (
-                <div key={msg.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "#2563EB" : "#E2E8F0", color: isMe ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isMe ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5" }}>
+                <div key={msg.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "#2563EB" : "#E2E8F0", color: isMe ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isMe ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5", wordBreak: "break-word" }}>
                   {msg.message}
                 </div>
               );
@@ -2151,7 +2164,7 @@ function VendorChat({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13B. MASTER INBOX (REALTIME UPGRADE + INSTANT DELIVERY)
+// 13B. MASTER INBOX (MOBILE-OPTIMIZED WITH INSTANT NOTIFICATIONS)
 // ---------------------------------------------------------
 function AdminSupportInbox({ user, showToast }) {
   const [messages, setMessages] = useState([]);
@@ -2159,8 +2172,14 @@ function AdminSupportInbox({ user, showToast }) {
   const [activeVendorId, setActiveVendorId] = useState(null);
   const [reply, setReply] = useState("");
   const chatEndRef = useRef(null);
+  
+  // 🎯 THE FIX: Track if the user is on a mobile device to toggle full-screen views
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    
     fetchData();
     
     const channel = supabase.channel('admin_realtime_chat')
@@ -2169,7 +2188,10 @@ function AdminSupportInbox({ user, showToast }) {
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -2192,11 +2214,21 @@ function AdminSupportInbox({ user, showToast }) {
     const temp = reply;
     setReply(""); 
     
+    // Save the admin's reply
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
+    
     if (error) { 
       showToast("Security Error", "Reply failed to send.", "error"); 
       setReply(temp); 
     } else {
+      // 🎯 THE FIX: INSTANTLY NOTIFY THE VENDOR
+      const targetVendor = vendors[activeVendorId];
+      await supabase.from('notifications').insert([{
+        user_id: activeVendorId,
+        title: 'Support Response',
+        message: `Hey ${targetVendor?.business_name || 'there'}, you've gotten a response from Support!`,
+        is_read: false
+      }]);
       fetchData(); 
     }
   };
@@ -2212,54 +2244,76 @@ function AdminSupportInbox({ user, showToast }) {
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat]);
 
+  // Determine which side of the UI to show based on device size and active selection
+  const showList = !isMobile || !activeVendorId;
+  const showChat = !isMobile || activeVendorId;
+
   return (
     <div style={{ maxWidth: "1000px", height: "calc(100vh - 120px)", display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Support Inbox</div>
-      <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Manage and reply to all active vendor tickets.</div>
+      {!activeVendorId || !isMobile ? (
+        <>
+          <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Support Inbox</div>
+          <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Manage and reply to all active vendor tickets.</div>
+        </>
+      ) : null}
       
-      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flex: 1, overflow: "hidden" }}>
-         <div style={{ width: "280px", borderRight: "1px solid #E2E8F0", background: "#F8FAFC", overflowY: "auto" }}>
-            {uniqueVendorIds.length === 0 && <div style={{ padding: "30px", color: "#64748B", fontSize: "13px", textAlign: "center" }}>No active tickets right now.</div>}
-            {uniqueVendorIds.map(vid => {
-              const v = vendors[vid] || {};
-              const isActive = activeVendorId === vid;
-              return (
-                <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent" }}>
-                  <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px" }}>{v.business_name || v.email || "Unknown Vendor"}</div>
-                  <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages</div>
-                </div>
-              );
-            })}
-         </div>
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flex: 1, overflow: "hidden", flexDirection: isMobile ? "column" : "row" }}>
+         
+         {/* MOBILE SAFE: THE TICKET LIST */}
+         {showList && (
+           <div style={{ width: isMobile ? "100%" : "280px", borderRight: isMobile ? "none" : "1px solid #E2E8F0", background: "#F8FAFC", overflowY: "auto", flex: isMobile ? 1 : "none" }}>
+              {uniqueVendorIds.length === 0 && <div style={{ padding: "30px", color: "#64748B", fontSize: "13px", textAlign: "center" }}>No active tickets right now.</div>}
+              {uniqueVendorIds.map(vid => {
+                const v = vendors[vid] || {};
+                const isActive = activeVendorId === vid;
+                return (
+                  <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent" }}>
+                    <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.business_name || v.email || "Unknown Vendor"}</div>
+                    <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages</div>
+                  </div>
+                );
+              })}
+           </div>
+         )}
 
-         <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
-            {activeVendorId ? (
-              <>
-                <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", background: "#F1F5F9", fontWeight: "800", color: "#0F172A" }}>
-                  Chatting with: {vendors[activeVendorId]?.business_name || vendors[activeVendorId]?.email || "Vendor"}
+         {/* MOBILE SAFE: THE ACTIVE CHAT UI */}
+         {showChat && (
+           <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FFFFFF", height: "100%" }}>
+              {activeVendorId ? (
+                <>
+                  <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", background: "#F1F5F9", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", gap: "12px" }}>
+                    {isMobile && (
+                      <button onClick={() => setActiveVendorId(null)} style={{ background: "none", border: "none", fontSize: "20px", fontWeight: "900", cursor: "pointer", color: "#2563EB", padding: "0 8px 0 0" }}>
+                        &larr;
+                      </button>
+                    )}
+                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                       Chat: {vendors[activeVendorId]?.business_name || vendors[activeVendorId]?.email || "Vendor"}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {activeChat.map((msg) => {
+                      const isSupport = msg.sender === 'support';
+                      return (
+                        <div key={msg.id} style={{ alignSelf: isSupport ? "flex-end" : "flex-start", background: isSupport ? "#2563EB" : "#F1F5F9", color: isSupport ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isSupport ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5", wordBreak: "break-word" }}>
+                          {msg.message}
+                        </div>
+                      );
+                    })}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
+                    <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
+                    <button className="btn-primary btn-hover" onClick={handleReply}>Send</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748B", fontSize: "14px" }}>
+                  Select a user ticket from the left to start replying.
                 </div>
-                <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {activeChat.map((msg) => {
-                    const isSupport = msg.sender === 'support';
-                    return (
-                      <div key={msg.id} style={{ alignSelf: isSupport ? "flex-end" : "flex-start", background: isSupport ? "#2563EB" : "#F1F5F9", color: isSupport ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isSupport ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5" }}>
-                        {msg.message}
-                      </div>
-                    );
-                  })}
-                  <div ref={chatEndRef} />
-                </div>
-                <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
-                  <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
-                  <button className="btn-primary btn-hover" onClick={handleReply}>Send</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748B", fontSize: "14px" }}>
-                Select a user ticket from the left to start replying.
-              </div>
-            )}
-         </div>
+              )}
+           </div>
+         )}
       </div>
     </div>
   );
