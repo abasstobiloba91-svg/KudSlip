@@ -118,11 +118,30 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🛡️ SAFE PRINT CSS RESTORED */
+    /* 🎯 THE FIX: Force mobile printers to scale up to A4 width */
     @media print {
+      @page { size: A4 portrait; margin: 0; }
       body, html, #root { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
-      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 auto !important; }
+      
+      .invoice-page-wrapper, .invoice-content-wrapper {
+        width: 800px !important;
+        min-width: 800px !important;
+        max-width: 800px !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+
+      .print-container { 
+        width: 100% !important;
+        max-width: 100% !important;
+        border: none !important; 
+        box-shadow: none !important; 
+        padding: 40px !important; 
+        margin: 0 !important; 
+      }
+      
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     
