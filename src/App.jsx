@@ -118,31 +118,37 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE FIX: SAFE, FULL-WIDTH SCALING FOR PRINTERS (No destructive display overrides) */
+    /* 🎯 THE ULTIMATE FIX: BULLETPROOF MOBILE PRINT CSS */
     @media print {
-      body, html { background: #FFFFFF !important; color: #000000 !important; }
+      html, body, #root {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        background: #FFFFFF !important;
+      }
       .no-print { display: none !important; }
       
-      /* 1. Tell the flex container to stretch the invoice instead of centering it */
-      .invoice-page-wrapper { 
-        align-items: stretch !important; 
-        padding: 0 !important; 
+      .invoice-page-wrapper {
+        display: block !important; /* Kills flexbox collapsing on mobile */
+        width: 100% !important;
         min-height: auto !important;
+        padding: 0 !important;
       }
       
-      /* 2. Break the 600px max-width limit */
-      .invoice-content-wrapper { 
-        max-width: 100% !important; 
-        width: 100% !important; 
-        margin: 0 !important; 
+      .invoice-content-wrapper {
+        display: block !important; /* Kills flexbox collapsing on mobile */
+        width: 100% !important;
+        max-width: none !important; /* Shines across full A4 */
+        margin: 0 !important;
       }
       
-      /* 3. Strip borders for a clean edge-to-edge paper look */
-      .print-container { 
-        border: none !important; 
-        box-shadow: none !important; 
-        padding: 0 !important; 
-        border-radius: 0 !important; 
+      .print-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
       }
       
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -291,10 +297,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     fetchData();
   }, [invoiceId]);
 
-  // 🎯 THE FIX: REMOVED setTimeout SO MOBILE BROWSERS DON'T BLOCK THE PRINT POPUP
+  // 🎯 THE FIX: A 500ms delay gives mobile browsers time to paint the new A4 width CSS before the print dialog locks the thread
   const triggerPDFCompilation = () => {
     window.scrollTo(0, 0);
-    window.print();
+    setTimeout(() => {
+      window.print();
+    }, 500); 
   };
 
   const handlePayment = () => {
@@ -394,12 +402,11 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   );
 
   return (
-    // 🎯 THE FIX: REMOVED overflow: "hidden" TO ALLOW MOBILE SCROLLING/PRINTING
-    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
+    <div className="invoice-page-wrapper" style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
       <GlobalStyles />
-      {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
+      {isFreeTier && <div className="no-print" style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
       
-      <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div className="invoice-content-wrapper" style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}><DownloadIcon /> Download PDF</button>
         </div>
