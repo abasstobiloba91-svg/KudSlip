@@ -272,9 +272,13 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     fetchData();
   }, [invoiceId]);
 
-  const triggerPDFCompilation = () => window.print();
+  // 🎯 THE FIX: Scrolls the page to the absolute top before taking the PDF screenshot
+  const triggerPDFCompilation = () => {
+    window.scrollTo(0, 0);
+    setTimeout(() => window.print(), 150);
+  };
 
-const handlePayment = () => {
+  const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
@@ -501,7 +505,8 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploadPercent, setUploadPercent] = useState(0);
 
   const handleLogoUpload = async (e) => {
-    const file = e.target.files;
+    // 🎯 THE FIX: target.files[0] prevents the 90% hang by sending the actual image file
+    const file = e.target.files[0];
     if (!file) return;
     
     // Check file size (5MB Limit)
@@ -1556,10 +1561,16 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     if(data) setInvoices(data);
   };
 
-  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
+// 🎯 THE FIX: Changed price to an empty string "" instead of 0 to stop leading zeros
+  const [items, setItems] = useState([{ description: "", quantity: 1, price: "" }]);
+  // ... (keep the other states)
+
+  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: "" }]);
   const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
-  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  
+  // 🎯 THE FIX: Fallback to 0 mathematically only during the final total calculation
+  const calculateTotal = () => items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
 
   const handleCalculateRate = async (e) => {
     e.preventDefault();
@@ -1726,22 +1737,28 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
 
-        <div style={{ marginBottom: "24px" }}>
+     <div style={{ marginBottom: "24px" }}>
+          {/* 🎯 THE FIX: ADDED HEADER LABELS FOR CLARITY */}
+          {items.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "8px", paddingLeft: "4px" }}>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Item Description</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Qty</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Unit Price</div>
+              <div style={{ width: "28px" }}></div>
+            </div>
+          )}
+          
           {items.map((item, idx) => (
             <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
-              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
-              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
-              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
+              {/* 🎯 THE FIX: Added placeholders and empty string fallback logic */}
+              <input className="form-input" placeholder="e.g. Web Design" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
+              <input className="form-input" type="number" min="1" placeholder="1" value={item.quantity === '' ? '' : item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input className="form-input" type="number" min="0" placeholder="e.g. 50000" value={item.price === '' ? '' : item.price} onChange={e => handleItemChange(idx, 'price', e.target.value === '' ? '' : Number(e.target.value))} />
               <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
             </div>
           ))}
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
-        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
-        </div>
-      </div>
 
       {invoices.length > 0 && (
         <div>
