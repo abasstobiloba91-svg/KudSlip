@@ -297,12 +297,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     fetchData();
   }, [invoiceId]);
 
-  // 🎯 THE FIX: A 500ms delay gives mobile browsers time to paint the new A4 width CSS before the print dialog locks the thread
+  // 🎯 THE FIX: Direct, synchronous print call. No timeouts. 
+  // The mobile browser will trust this and instantly apply the A4 CSS we wrote earlier.
   const triggerPDFCompilation = () => {
-    window.scrollTo(0, 0);
-    setTimeout(() => {
-      window.print();
-    }, 500); 
+    window.print();
   };
 
   const handlePayment = () => {
