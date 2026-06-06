@@ -947,9 +947,7 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
     </div>
   );
 }
-// =========================================================
-// 4. SUPER ADMIN OPERATIONS DASHBOARD 
-// =========================================================
+
 // =========================================================
 // 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
@@ -1071,18 +1069,23 @@ function SuperAdminDashboard({ showToast }) {
 }
 
 // =========================================================
-// 8. INVOICE GENERATOR
+// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS & PRO TOGGLES)
 // =========================================================
-function InvoiceGenerator({ user, showToast }) {
+function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
-  const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
+  
+  const [items, setItems] = useState([{ description: "", quantity: 1, price: "" }]);
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
+  
+  // PRO TOGGLES
+  const [invoiceType, setInvoiceType] = useState("one-time");
+  const [passFees, setPassFees] = useState(false); // NEW FEATURE
 
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
@@ -1100,10 +1103,11 @@ function InvoiceGenerator({ user, showToast }) {
     if(data) setInvoices(data);
   };
 
-  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: 0 }]);
+  const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: "" }]);
   const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
-  const calculateTotal = () => items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  
+  const calculateTotal = () => items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
 
   const handleCalculateRate = async (e) => {
     e.preventDefault();
@@ -1129,24 +1133,39 @@ function InvoiceGenerator({ user, showToast }) {
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
-      setShowLogoWarning(true); // Triggers Modal Now
+      setShowLogoWarning(true);
       return;
     }
     
     setShowLogoWarning(false);
     setLoading(true);
     
-    const { data, error } = await supabase.from('invoices').insert([{ vendor_id: user.id, client_id: selectedClient, amount: calculateTotal(), items: items, due_date: dueDate, currency: 'NGN' }]).select().single();
+    const finalItems = invoiceType !== "one-time" 
+      ? items.map(i => ({ ...i, description: `[${invoiceType.toUpperCase()}] ${i.description}` })) 
+      : items;
+    
+    const { data, error } = await supabase.from('invoices').insert([{ 
+      vendor_id: user.id, 
+      client_id: selectedClient, 
+      amount: calculateTotal(), 
+      items: finalItems, 
+      due_date: dueDate, 
+      currency: 'NGN',
+      fee_passed_on: passFees, // PRO FEATURE INJECTED
+      is_recurring: invoiceType !== "one-time", 
+      recurring_frequency: invoiceType !== "one-time" ? invoiceType : null
+    }]).select().single();
+    
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate("");
+      setItems([{ description: "", quantity: 1, price: "" }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time"); setPassFees(false);
       fetchRecentInvoices();
     }
     setLoading(false);
   };
 
-  if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Invoices.</div>;
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Invoices.</div>;
 
   const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
@@ -1165,22 +1184,21 @@ function InvoiceGenerator({ user, showToast }) {
     return 0;
   });
 
-  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><AlertIcon /> Action Required</div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
       
-      {/* NEW: PREMIUM LOGO MODAL */}
       {showLogoWarning && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="toast-container" style={{ background: "#FFFFFF", padding: "40px", borderRadius: "20px", maxWidth: "450px", width: "90%", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "20px" }}><PaintIcon /></div>
-            <h3 style={{ fontSize: "24px", fontWeight: "900", marginBottom: "12px", color: DESIGN.textMain }}>Missing Brand Logo</h3>
-            <p style={{ color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
-            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "16px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
-              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "16px", border: "none", background: "#F1F5F9" }}>Ignore & Generate Invoice</button>
-              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: DESIGN.textMuted, fontWeight: "700", marginTop: "8px", cursor: "pointer" }}>Cancel</button>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 16px auto" }}>⚠️</div>
+            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "10px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
+              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "14px", textDecoration: "none" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "14px", border: "none", background: "#F1F5F9" }}>Ignore & Generate</button>
+              <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: "#64748B", fontWeight: "700", marginTop: "4px", cursor: "pointer", padding: "10px" }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -1189,11 +1207,13 @@ function InvoiceGenerator({ user, showToast }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Pending Debt</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#EF4444" }}>₦{totalPending.toLocaleString()}</div></div>
       </div>
+
+      {invoices.length > 0 && <RevenueChart invoices={invoices} />}
 
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
@@ -1237,24 +1257,52 @@ function InvoiceGenerator({ user, showToast }) {
           </button>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
             <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+          
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: "700", color: "#D97706", display: "block", marginBottom: "8px" }}>Billing Frequency (Premium)</label>
+            <select className="form-input" value={invoiceType} onChange={e => setInvoiceType(e.target.value)} disabled={user?.subscription_tier !== 'premium'} style={{ border: user?.subscription_tier === 'premium' ? "1px solid #FCD34D" : "1px solid #E2E8F0" }}>
+              <option value="one-time">One-time Invoice</option>
+              <option value="monthly">Monthly Recurring</option>
+              <option value="weekly">Weekly Recurring</option>
+            </select>
+          </div>
         </div>
+
+        {/* PRO FEES TOGGLE ADDED HERE */}
         <div style={{ marginBottom: "24px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "12px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
+            <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={user?.subscription_tier !== 'premium'} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+            Pass Paystack Transaction Fees to Client <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px"}}>PRO</span>
+          </label>
+        </div>
+
+        <div style={{ marginBottom: "24px" }}>
+          {items.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "8px", paddingLeft: "4px" }}>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Item Description</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Qty</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Unit Price</div>
+              <div style={{ width: "28px" }}></div>
+            </div>
+          )}
+          
           {items.map((item, idx) => (
             <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
-              <input className="form-input" placeholder="Item description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
-              <input className="form-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} />
-              <input className="form-input" type="number" min="0" value={item.price} onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} />
+              <input className="form-input" placeholder="e.g. Web Design" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
+              <input className="form-input" type="number" min="1" placeholder="1" value={item.quantity === '' ? '' : item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value === '' ? '' : Number(e.target.value))} />
+              <input className="form-input" type="number" min="0" placeholder="e.g. 50000" value={item.price === '' ? '' : item.price} onChange={e => handleItemChange(idx, 'price', e.target.value === '' ? '' : Number(e.target.value))} />
               <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
             </div>
           ))}
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
+
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
           <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
@@ -1290,8 +1338,8 @@ function InvoiceGenerator({ user, showToast }) {
                 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{ wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "900", fontSize: "18px", color: DESIGN.textMain, marginBottom: "4px" }}>{inv.clients?.name}</div>
-                    <div style={{ fontSize: "13px", color: DESIGN.textMuted, lineHeight: "1.4" }}>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px" }}>{inv.clients?.name}</div>
+                    <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>
                       <div>{inv.clients?.email}</div>
                       {inv.clients?.phone && <div>{inv.clients.phone}</div>}
                     </div>
@@ -1301,12 +1349,12 @@ function InvoiceGenerator({ user, showToast }) {
                   </span>
                 </div>
 
-                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: DESIGN.textMain, fontWeight: "500", border: "1px solid #F1F5F9" }}>
-                  <span style={{ color: DESIGN.textMuted, fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
+                <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: "#0F172A", fontWeight: "500", border: "1px solid #F1F5F9" }}>
+                  <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
-                  <div style={{ fontSize: "24px", fontWeight: "900", color: DESIGN.textMain }}>
+                  <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A" }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -1320,13 +1368,12 @@ function InvoiceGenerator({ user, showToast }) {
               </div>
             );
           })}
-          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: DESIGN.textMuted }}>No invoices found matching your search.</div>}
+          {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No invoices found matching your search.</div>}
         </div>
       )}
     </div>
   );
 }
-
 // =========================================================
 // 5. LANDING PAGE 
 // =========================================================
@@ -1730,6 +1777,124 @@ function RevenueChart({ invoices }) {
         {months.map((m, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "12px", fontWeight: "800", color: "#64748B" }}>{m.label}</div>
         ))}
+      </div>
+    </div>
+  );
+}
+// =========================================================
+// 14. EXPENSES & NET PROFIT TRACKER (PRO FEATURE)
+// =========================================================
+function ExpensesManager({ user, showToast }) {
+  const [expenses, setExpenses] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (!supabase) return;
+    const [expRes, invRes] = await Promise.all([
+      supabase.from('expenses').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('invoices').select('amount, status').eq('vendor_id', user.id).eq('status', 'paid')
+    ]);
+    
+    if (expRes.data) setExpenses(expRes.data);
+    if (invRes.data) setInvoices(invRes.data);
+    setLoading(false);
+  };
+
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (user?.subscription_tier !== 'premium') {
+      return showToast("Premium Required", "Please upgrade to log expenses and track net profit.", "info");
+    }
+    if (!description || !amount) return;
+    
+    setSaving(true);
+    const { error } = await supabase.from('expenses').insert([{ vendor_id: user.id, description, amount: Number(amount) }]);
+    if (error) {
+      showToast("Error", error.message, "error");
+    } else {
+      showToast("Expense Saved", "Successfully added to your ledger.", "success");
+      setDescription(""); setAmount("");
+      fetchData();
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteExpense = async (id) => {
+    await supabase.from('expenses').delete().eq('id', id);
+    showToast("Deleted", "Expense removed.", "info");
+    fetchData();
+  };
+
+  const totalGross = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+  const netProfit = totalGross - totalExpenses;
+
+  if (loading) return <div style={{ color: "#64748B", fontWeight: "600" }}>Loading Ledger...</div>;
+
+  return (
+    <div style={{ maxWidth: "900px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}>Profit Analytics <span style={{fontSize: "12px", background: "#FEF08A", color: "#854D0E", padding: "4px 8px", borderRadius: "6px", verticalAlign: "middle"}}>PRO</span></div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Track your actual business margins.</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "40px" }}>
+        <div className="metric-card">
+          <div style={{ fontSize: "12px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Gross Revenue</div>
+          <div style={{ fontSize: "28px", fontWeight: "900", color: "#0F172A", marginTop: "8px" }}>₦{totalGross.toLocaleString()}</div>
+        </div>
+        <div className="metric-card">
+          <div style={{ fontSize: "12px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Total Expenses</div>
+          <div style={{ fontSize: "28px", fontWeight: "900", color: "#EF4444", marginTop: "8px" }}>- ₦{totalExpenses.toLocaleString()}</div>
+        </div>
+        <div className="metric-card" style={{ background: "#10B981", color: "#FFFFFF", borderColor: "#059669" }}>
+          <div style={{ fontSize: "12px", fontWeight: "800", color: "#ECFDF5", textTransform: "uppercase" }}>Actual Net Profit</div>
+          <div style={{ fontSize: "28px", fontWeight: "900", marginTop: "8px" }}>₦{netProfit.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: "800" }}>Log Business Expense</h3>
+        <form onSubmit={handleAddExpense} style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: 2, minWidth: "200px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Description</label>
+            <input className="form-input" placeholder="e.g. Server Hosting, Office Rent" value={description} onChange={e=>setDescription(e.target.value)} required />
+          </div>
+          <div style={{ flex: 1, minWidth: "120px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Amount (₦)</label>
+            <input className="form-input" type="number" min="0" value={amount} onChange={e=>setAmount(e.target.value)} required />
+          </div>
+          <button className="btn-primary btn-hover" type="submit" disabled={saving || user?.subscription_tier !== 'premium'}>{saving ? "Saving..." : "Add to Ledger"}</button>
+        </form>
+      </div>
+
+      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Expense History</h3>
+      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, overflowX: "auto" }}>
+        {expenses.length === 0 ? <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No expenses logged yet.</div> : (
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "500px" }}>
+            <thead style={{ background: "#F1F5F9", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>
+              <tr><th style={{ padding: "16px 24px" }}>Date</th><th style={{ padding: "16px 24px" }}>Description</th><th style={{ padding: "16px 24px", textAlign: "right" }}>Amount</th><th style={{ padding: "16px 24px", width: "50px" }}></th></tr>
+            </thead>
+            <tbody>
+              {expenses.map(exp => (
+                <tr key={exp.id} style={{ borderTop: `1px solid #E2E8F0` }}>
+                  <td style={{ padding: "16px 24px", color: "#64748B", fontSize: "13px" }}>{new Date(exp.created_at).toLocaleDateString()}</td>
+                  <td style={{ padding: "16px 24px", fontWeight: "600" }}>{exp.description}</td>
+                  <td style={{ padding: "16px 24px", fontWeight: "900", color: "#EF4444", textAlign: "right" }}>-₦{Number(exp.amount).toLocaleString()}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <button onClick={() => handleDeleteExpense(exp.id)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontWeight: "800" }}>X</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -2616,7 +2781,7 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH NOTIF MENU)
+// MAIN APP ROUTER & MOBILE DRAWER (WITH PROFIT ANALYTICS)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2734,7 +2899,7 @@ function AppRouter() {
     }
 
     if (hash === "#/terms") return <LegalPage type="terms" />;
-    if (hash === "#/privacy") return <LegalPage type="privacy" />;
+    if (hash === "#/privacy" return <LegalPage type="privacy" />;
 
     if (!user) {
       if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
@@ -2786,7 +2951,11 @@ function AppRouter() {
           <div className="sidebar-menu">
             {user.role !== 'support' && (
               <>
-                <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & Analytics</a>
+                <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
+                {/* 🎯 THE PRO MENUBUTTON WIRED IN */}
+                <a href="#/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  Profit Analytics <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px", fontWeight: "800"}}>PRO</span>
+                </a>
                 <a href="#/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
                 <a href="#/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
                 <a href="#/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
@@ -2836,8 +3005,10 @@ function AppRouter() {
           </div>
         </div>
 
+        {/* MAIN VIEW CONTROLLER PANEL */}
         <div className="main-content" onClick={() => { if(showNotifMenu) setShowNotifMenu(false) }}>
           {activeTab === "invoices" && <KudiSlipInvoiceEngine user={user} showToast={showToast} />}
+          {activeTab === "expenses" && <ExpensesManager user={user} showToast={showToast} />} 
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
