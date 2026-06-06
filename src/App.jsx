@@ -118,13 +118,51 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE FIX: BULLETPROOF MOBILE PDF PRINTING RULES */
+    /* 🎯 THE FIX: FORCE FULL-WIDTH SCALING FOR A4 PAPER PRINTERS */
+    @page { size: A4 portrait; margin: 15mm; }
+    
     @media print {
-      body, html, #root { background: #FFFFFF !important; color: #000000 !important; height: auto !important; overflow: visible !important; position: static !important; min-height: auto !important; display: block !important; }
+      body, html, #root { 
+        background: #FFFFFF !important; 
+        color: #000000 !important; 
+        width: 100% !important; 
+        display: block !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+      }
+      
       .no-print { display: none !important; }
-      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; overflow: visible !important; float: none !important; }
-      div { height: auto !important; max-height: none !important; }
+      
+      /* 1. Kill the flexbox centering that crushes the width on mobile */
+      .invoice-page-wrapper { 
+        display: block !important; 
+        width: 100% !important; 
+        padding: 0 !important; 
+        margin: 0 !important; 
+      }
+      
+      /* 2. Break the 600px max-width limit so it fills the entire A4 paper */
+      .invoice-content-wrapper { 
+        display: block !important; 
+        width: 100% !important; 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+      }
+      
+      /* 3. Strip borders and force the receipt card to expand to the edges */
+      .print-container { 
+        display: block !important;
+        width: 100% !important; 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+        border-radius: 0 !important; 
+      }
+      
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     
     @media (max-width: 768px) {
@@ -156,7 +194,6 @@ const GlobalStyles = () => (
     }
   `}</style>
 );
-
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
