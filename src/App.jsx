@@ -387,6 +387,9 @@ function LegalPage({ type }) {
 // =========================================================
 // PUBLIC INVOICE VIEW (Beautiful Desktop, Untouched Mobile)
 // =========================================================
+// =========================================================
+// PUBLIC INVOICE VIEW (Fixed Fonts, Desktop Blueprint & SVG Button)
+// =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [invoice, setInvoice] = useState(null);
   const [vendor, setVendor] = useState(null);
@@ -410,7 +413,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const handlePayment = () => {
     setPaying(true);
     const handler = window.PaystackPop.setup({
-      key: 'pk_test_a041f5e8b6271966205baea2cc2f5fcffc101c40', // Uses your standard test key
+      key: 'pk_test_a041f5e8b6271966205baea2cc2f5fcffc101c40', 
       email: invoice.client_email,
       amount: Math.round(invoice.amount * 100),
       subaccount: vendor?.paystack_subaccount_code || "",
@@ -426,12 +429,17 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     handler.openIframe();
   };
 
-  if (loading) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#64748B", fontWeight: "600" }}>Loading secure invoice...</div>;
-  if (!invoice) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#EF4444", fontWeight: "800" }}>Invoice not found or deleted.</div>;
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (loading) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#64748B", fontWeight: "600", fontFamily: "system-ui, -apple-system, sans-serif" }}>Loading secure invoice...</div>;
+  if (!invoice) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#EF4444", fontWeight: "800", fontFamily: "system-ui, -apple-system, sans-serif" }}>Invoice not found or deleted.</div>;
 
   return (
     <div className="public-invoice-wrapper">
-      {/* 🎯 THE MAGIC CSS: Forces Desktop Card, Leaves Mobile Flat */}
+      <GlobalStyles />
+      
       <style>{`
         .public-invoice-wrapper {
           min-height: 100vh;
@@ -440,11 +448,12 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           align-items: flex-start;
           justify-content: center;
           padding: 60px 20px;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
         .public-invoice-paper {
           background: #FFFFFF;
           width: 100%;
-          max-width: 650px; /* Stops the desktop stretching */
+          max-width: 650px; 
           border-radius: 16px;
           box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
           border: 1px solid #E2E8F0;
@@ -453,7 +462,40 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         .invoice-content {
           padding: 48px;
         }
-        /* MOBILE OVERRIDE: Undoes everything to keep it exactly as it was */
+        .receipt-action-btn {
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .receipt-action-btn:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+        
+        /* PRINT STYLES */
+        @media print {
+          body, html {
+            background: #FFFFFF !important;
+          }
+          .public-invoice-wrapper {
+            padding: 0 !important;
+            background: #FFFFFF !important;
+            display: block !important;
+          }
+          .public-invoice-paper {
+            border: none !important;
+            box-shadow: none !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          .invoice-content {
+            padding: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+
+        /* MOBILE OVERRIDE */
         @media (max-width: 768px) {
           .public-invoice-wrapper {
             padding: 0;
@@ -473,7 +515,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
       `}</style>
 
       <div className="public-invoice-paper">
-         {/* Dynamic Top Accent Bar based on Paid Status */}
          <div style={{ height: "8px", width: "100%", background: invoice.status === 'paid' ? "#10B981" : "#000000" }}></div>
          
          <div className="invoice-content">
@@ -530,18 +571,30 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               <div style={{ fontSize: "28px", fontWeight: "900", color: "#000000", letterSpacing: "-0.5px" }}>₦{Number(invoice.amount).toLocaleString()}</div>
             </div>
 
-            {/* Action Buttons */}
-            {invoice.status !== 'paid' && (
-              <button onClick={handlePayment} disabled={paying} className="btn-primary btn-hover" style={{ width: "100%", padding: "18px", fontSize: "16px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
-                {paying ? "Processing Secure Payment..." : `Pay ₦${Number(invoice.amount).toLocaleString()}`}
-              </button>
-            )}
-
-            {invoice.status === 'paid' && (
-              <div style={{ background: "#ECFDF5", color: "#10B981", padding: "16px", borderRadius: "12px", textAlign: "center", fontWeight: "800", fontSize: "14px", border: "1px solid #A7F3D0" }}>
-                Payment Complete. Thank you!
-              </div>
-            )}
+            {/* Action Buttons Container */}
+            <div className="no-print">
+              {invoice.status !== 'paid' ? (
+                <button onClick={handlePayment} disabled={paying} className="btn-primary btn-hover" style={{ width: "100%", padding: "18px", fontSize: "16px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", fontWeight: "800" }}>
+                  {paying ? "Processing Secure Payment..." : `Pay ₦${Number(invoice.amount).toLocaleString()}`}
+                </button>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div style={{ background: "#ECFDF5", color: "#10B981", padding: "16px", borderRadius: "12px", textAlign: "center", fontWeight: "800", fontSize: "14px", border: "1px solid #A7F3D0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Payment Complete. Thank you!
+                  </div>
+                  
+                  {/* CLEAN SVG DOWNLOAD BUTTON */}
+                  <button onClick={handlePrint} className="receipt-action-btn" style={{ width: "100%", padding: "14px", background: "#000000", color: "#FFFFFF", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "800", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 17v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
+                      <polyline points="8 12 12 16 16 12"></polyline>
+                      <line x1="12" y1="2" x2="12" y2="16"></line>
+                    </svg>
+                    Download PDF Receipt
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Footer branding */}
             <div style={{ textAlign: "center", marginTop: "32px", fontSize: "12px", color: "#94A3B8", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
