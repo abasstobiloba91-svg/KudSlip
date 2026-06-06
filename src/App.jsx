@@ -118,46 +118,12 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE SILVER BULLET: ABSOLUTE ISOLATION FOR MOBILE PRINTERS */
+    /* 🛡️ SAFE PRINT CSS RESTORED */
     @media print {
-      /* 1. Reset root elements to prevent any global clipping */
-      html, body, #root {
-        height: auto !important;
-        min-height: auto !important;
-        overflow: visible !important;
-        background: #FFFFFF !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      
-      /* 2. Make everything on the entire webpage completely invisible */
-      body * {
-        visibility: hidden !important;
-      }
-      
-      /* 3. Un-hide ONLY the invoice receipt container and all its inside content */
-      .print-container, .print-container * {
-        visibility: visible !important;
-      }
-      
-      /* 4. Tear the invoice receipt out of the layout and pin it to the top-left of the A4 paper */
-      .print-container {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 20px !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-      }
-      
-      /* 5. Destroy buttons that shouldn't show up on the PDF */
-      .no-print, .no-print * {
-        display: none !important;
-      }
+      body, html, #root { background: #FFFFFF !important; color: #000000 !important; }
+      .no-print { display: none !important; }
+      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 auto !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     
     @media (max-width: 768px) {
