@@ -118,11 +118,39 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🛡️ SAFE PRINT CSS RESTORED */
+    /* 🎯 THE ULTIMATE FIX: BULLETPROOF MOBILE PRINT CSS */
     @media print {
-      body, html, #root { background: #FFFFFF !important; color: #000000 !important; }
+      html, body, #root {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        background: #FFFFFF !important;
+      }
       .no-print { display: none !important; }
-      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 auto !important; }
+      
+      .invoice-page-wrapper {
+        display: block !important; /* Kills flexbox collapsing on mobile */
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+      }
+      
+      .invoice-content-wrapper {
+        display: block !important; /* Kills flexbox collapsing on mobile */
+        width: 100% !important;
+        max-width: none !important; /* Shines across full A4 */
+        margin: 0 !important;
+      }
+      
+      .print-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     
@@ -155,6 +183,335 @@ const GlobalStyles = () => (
     }
   `}</style>
 );
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", background: "#FFF1F2", color: "#0F172A", textAlign: "center" }}>
+          <GlobalStyles />
+          <AlertIcon />
+          <h2 style={{ color: "#EF4444", marginTop: "16px" }}>App Rendering Error</h2>
+          <p style={{ maxWidth: "500px", color: "#64748B", marginBottom: "24px" }}>{this.state.error?.toString()}</p>
+          <button className="btn-primary btn-hover" onClick={() => window.location.reload()}>Reload KudiSlip</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const usePaystack = () => {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+};
+
+const Toast = ({ toast, onClose }) => {
+  if (!toast) return null;
+  const styles = {
+    error: { bg: "#FEF2F2", border: "#FECACA", color: "#EF4444", icon: <AlertIcon /> },
+    info: { bg: "#F8FAFC", border: "#E2E8F0", color: "#3B82F6", icon: <InfoIcon /> },
+    success: { bg: "#ECFDF5", border: "#A7F3D0", color: "#10B981", icon: <CheckIcon /> }
+  }[toast.type] || { bg: "#ECFDF5", border: "#A7F3D0", color: "#10B981", icon: <CheckIcon /> };
+
+  return (
+    <div className="toast-container" style={{ position: "fixed", top: "24px", left: "50%", zIndex: 10000, background: styles.bg, border: `1px solid ${styles.border}`, padding: "16px 24px", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", display: "flex", alignItems: "flex-start", gap: "16px", minWidth: "320px", maxWidth: "90%" }}>
+      <div style={{ color: styles.color, display: "flex", marginTop: "2px" }}>{styles.icon}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: "800", fontSize: "14px", color: "#0F172A", marginBottom: "4px" }}>{toast.title}</div>
+        <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>{toast.message}</div>
+      </div>
+      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px", display: "flex", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#0F172A"} onMouseOut={(e) => e.currentTarget.style.color = "#64748B"}>
+        <CloseIcon />
+      </button>
+    </div>
+  );
+};
+
+function LegalPage({ type }) {
+  const isTerms = type === "terms";
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
+      <GlobalStyles />
+      <nav style={{ padding: "24px", borderBottom: `1px solid ${DESIGN.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">&larr; Back Home</a>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
+      </nav>
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
+        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>{isTerms ? "Terms & Conditions" : "Privacy Policy"}</h1>
+        <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>Last updated: May 24, 2026</p>
+        {isTerms ? (
+          <>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Acceptance of Terms</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>By accessing KudiSlip, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Information We Collect</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We collect business identities, contact emails, and basic CRM data to facilitate your invoicing process. We never sell your personal or client data to third parties.</p>
+          </>
+        )}
+      </main>
+      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>© 2026 KudiSlip Technologies. All rights reserved.</footer>
+    </div>
+  );
+}
+
+function PublicInvoice({ invoiceId, showToast, currentUser }) {
+  usePaystack();
+  const [invoice, setInvoice] = useState(null);
+  const [vendor, setVendor] = useState(null);
+  const [client, setClient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [debugError, setDebugError] = useState(null);
+
+  // Review System State
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
+
+  const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!supabase || !invoiceId) { setDebugError("No valid payload found."); setLoading(false); return; }
+      const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+      if (invError) { setDebugError(`Msg: ${invError.message}`); setLoading(false); return; }
+
+      if (invData) {
+        setInvoice(invData);
+        const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
+        const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
+        setVendor(venData); setClient(cliData);
+      } else { setDebugError("Invoice row empty."); }
+      loading === true && setLoading(false);
+    }
+    fetchData();
+  }, [invoiceId]);
+
+  // 🎯 THE FIX: Direct, synchronous print call. No timeouts. 
+  // The mobile browser will trust this and instantly apply the A4 CSS we wrote earlier.
+  const triggerPDFCompilation = () => {
+    window.print();
+  };
+
+  const handlePayment = () => {
+    if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
+    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
+    
+    const baseAmount = Number(invoice?.amount || 0);
+    const invoiceCurrency = invoice?.currency || "NGN";
+    
+    if (baseAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
+
+    try {
+      let finalAmount = baseAmount;
+      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
+        if (baseAmount < 2500) {
+          finalAmount = baseAmount / 0.985;
+        } else {
+          const calculatedWithFees = (baseAmount + 100) / 0.985;
+          const totalFeeCharged = calculatedWithFees - baseAmount;
+          
+          if (totalFeeCharged > 2000) {
+            finalAmount = baseAmount + 2000;
+          } else {
+            finalAmount = calculatedWithFees;
+          }
+        }
+      }
+
+      const safeAmountInKobo = Math.round(finalAmount * 100);
+
+      let paystackPayload = {
+        key: PAYSTACK_PUBLIC_KEY,
+        email: client?.email || "customer@kudislip.com",
+        amount: safeAmountInKobo, 
+        currency: invoiceCurrency,
+        callback: function(response) {
+          supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
+            setInvoice({ ...invoice, status: 'paid' });
+            showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
+          });
+        },
+        onClose: function() { console.log("Payment window closed."); }
+      };
+
+      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
+        paystackPayload.subaccount = vendor.paystack_subaccount_code;
+        paystackPayload.bearer = "subaccount";
+      }
+
+      const handler = window.PaystackPop.setup(paystackPayload);
+      handler.openIframe();
+    } catch(err) {
+      showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
+    }
+  };
+
+  const submitReview = async () => {
+    if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
+    
+    await supabase.from('reviews').insert([{
+      invoice_id: invoice.id,
+      merchant_name: vendor?.business_name || "Unknown Merchant",
+      rating,
+      comment: reviewComment
+    }]);
+    
+    setReviewSubmitted(true);
+    showToast("Feedback Sent", "Thank you! Your review helps us keep the platform safe.", "success");
+  };
+
+  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
+  if (debugError) return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
+      <GlobalStyles/>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2 style={{ margin: 0 }}>System Routing Error</h2></div>
+      <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px"}}>{debugError}</p>
+      <a href="#/" className="btn-primary btn-hover" style={{marginTop: "16px"}}>Go to Dashboard</a>
+    </div>
+  );
+  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
+
+  let safeItems = [];
+  try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
+  const safeAmount = Number(invoice.amount || 0);
+  const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
+  const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
+  const customColor = vendor?.brand_color || DESIGN.primary;
+  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor.custom_thank_you || `Thank you for your payment! ${vendor.business_name} cares.`);
+  
+  const invoiceCurrency = invoice.currency || "NGN";
+  const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
+
+  const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
+    <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>
+  );
+
+  return (
+    <div className="invoice-page-wrapper" style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
+      <GlobalStyles />
+      {isFreeTier && <div className="no-print" style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
+      
+      <div className="invoice-content-wrapper" style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}><DownloadIcon /> Download PDF</button>
+        </div>
+        
+        {isFreeTier && (
+          <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
+          </div>
+        )}
+
+        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
+              {vendor?.logo_url ? (
+                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
+                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                </div>
+              )}
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
+              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
+            </div>
+          </div>
+          
+          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
+              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
+              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
+              <div style={{ fontWeight: "700" }}>{safeDate}</div>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: "40px" }}>
+            {safeItems.map((item, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
+                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+            <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
+            <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+          </div>
+          
+          <div className="no-print">
+            {invoice.status === 'pending' ? (
+              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer" }} onClick={handlePayment}>
+                Proceed to Payment
+              </button>
+            ) : (
+              <div style={{ textAlign: "center", padding: "24px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
+                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}><CheckIcon /> Payment Successful</div>
+                <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
+              </div>
+            )}
+            
+            {currentUser?.id === vendor?.id && (
+              <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
+            )}
+          </div>
+        </div>
+
+        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
+          <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
+            <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
+            
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+              {starsArray.map(star => (
+                <StarIcon 
+                  key={star} 
+                  filled={star <= (hoverRating || rating)} 
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                />
+              ))}
+            </div>
+            
+            {rating > 0 && (
+              <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
+                <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical" }} />
+                <button className="btn-primary btn-hover" style={{ width: "100%" }} onClick={submitReview}>Submit Feedback</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
+           <a href="#/" className="btn-secondary btn-hover no-print" style={{ width: "100%", padding: "16px", background: "#FFFFFF" }}>Return to KudiSlip Home</a>
+        )}
+
+      </div>
+    </div>
+  );
+}
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
 // =========================================================
