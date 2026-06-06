@@ -1533,7 +1533,10 @@ function RevenueChart({ invoices }) {
 function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
-  const [items, setItems] = useState([{ description: "", quantity: 1, price: 0 }]);
+  
+  // 🎯 THE FIX: Initial price set to empty string to prevent leading zeros
+  const [items, setItems] = useState([{ description: "", quantity: 1, price: "" }]);
+  
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState([]);
@@ -1541,10 +1544,8 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
   
-  // Feature 2 Prep: Recurring Invoice UI State
   const [invoiceType, setInvoiceType] = useState("one-time");
 
-  // Live Forex Calculator State
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
 
@@ -1561,15 +1562,11 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     if(data) setInvoices(data);
   };
 
-// 🎯 THE FIX: Changed price to an empty string "" instead of 0 to stop leading zeros
-  const [items, setItems] = useState([{ description: "", quantity: 1, price: "" }]);
-  // ... (keep the other states)
-
   const handleAddItem = () => setItems([...items, { description: "", quantity: 1, price: "" }]);
   const handleRemoveItem = (index) => setItems(items.filter((_, i) => i !== index));
   const handleItemChange = (index, field, value) => { const newItems = [...items]; newItems[index][field] = value; setItems(newItems); };
   
-  // 🎯 THE FIX: Fallback to 0 mathematically only during the final total calculation
+  // 🎯 THE FIX: Fallback to mathematically calculate properly even with empty strings
   const calculateTotal = () => items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
 
   const handleCalculateRate = async (e) => {
@@ -1611,7 +1608,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     if (error) { showToast("Database Error", error.message, "error"); } 
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: 0 }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time");
+      setItems([{ description: "", quantity: 1, price: "" }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time");
       fetchRecentInvoices();
     }
     setLoading(false);
@@ -1632,28 +1629,18 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     if (sortOrder === "date-desc") return new Date(b.created_at) - new Date(a.created_at);
     if (sortOrder === "date-asc") return new Date(a.created_at) - new Date(b.created_at);
     if (sortOrder === "name-asc") return (a.clients?.name || "").localeCompare(b.clients?.name || "");
-    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(b.clients?.name || "");
+    if (sortOrder === "name-desc") return (b.clients?.name || "").localeCompare(a.clients?.name || "");
     return 0;
   });
 
-  // 🔴 THIS IS THE LINE THAT CHANGED (Now it checks for bank_code) 🔴
   if (!user?.bank_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
       
-{/* PREMIUM LOGO MODAL (CLEAN & CENTERED) */}
       {showLogoWarning && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <div style={{ 
-            background: "#FFFFFF", 
-            padding: "24px", 
-            borderRadius: "20px", 
-            maxWidth: "400px", 
-            width: "100%", 
-            boxSizing: "border-box", 
-            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)"
-          }}>
+          <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
             <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 16px auto" }}>⚠️</div>
             <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "10px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
             <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
@@ -1665,10 +1652,10 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
       )}
+
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
-      {/* METRICS ROW */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{totalPaid.toLocaleString()}</div></div>
@@ -1677,7 +1664,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && <RevenueChart invoices={invoices} />}
 
-      {/* INVOICE GENERATOR */}
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
@@ -1737,7 +1723,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
 
-     <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "24px" }}>
           {/* 🎯 THE FIX: ADDED HEADER LABELS FOR CLARITY */}
           {items.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "8px", paddingLeft: "4px" }}>
@@ -1759,6 +1745,12 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           ))}
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
+
+        <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
+          <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false)} disabled={loading || clients.length === 0}>{loading ? "Generating..." : "Generate Invoice"}</button>
+        </div>
+      </div>
 
       {invoices.length > 0 && (
         <div>
