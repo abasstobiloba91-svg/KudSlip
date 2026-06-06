@@ -419,8 +419,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     fetchData();
   }, [invoiceId]);
 
-  // 🎯 THE FIX: Direct, synchronous print call. No timeouts. 
-  // The mobile browser will trust this and instantly apply the A4 CSS we wrote earlier.
   const triggerPDFCompilation = () => {
     window.print();
   };
@@ -522,27 +520,70 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   );
 
   return (
-    <div className="invoice-page-wrapper" style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
+    <div className="invoice-page-wrapper">
       <GlobalStyles />
       
-      {/* 🖨️ A4 PRINT CSS: This forces the print window to strip everything away and fit the invoice perfectly on a white A4 page */}
+      {/* 🎯 THE A4 DESKTOP & PRINT CSS BLUEPRINT */}
       <style>{`
+        .invoice-page-wrapper {
+          min-height: 100vh;
+          padding: 60px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background: ${DESIGN.bg};
+          position: relative;
+        }
+        .desktop-a4-wrapper {
+          width: 100%;
+          max-width: 794px; /* Standard A4 paper width */
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          position: relative;
+          z-index: 10;
+        }
+        .print-container {
+          background: ${DESIGN.surface};
+          border-radius: 16px;
+          border: 1px solid ${DESIGN.border};
+          padding: 48px;
+          box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+          margin-bottom: 24px;
+        }
+        /* Strict CSS Grid prevents items from scattering past the edge */
+        .item-row {
+          display: grid;
+          grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1.5fr);
+          gap: 16px;
+          margin-bottom: 12px;
+          font-size: 14px;
+          font-weight: 500;
+          align-items: start;
+        }
+        .word-wrap {
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
+        @media (max-width: 768px) {
+          .invoice-page-wrapper { padding: 24px 16px; }
+          .print-container { padding: 32px 24px; border-radius: 12px; }
+          .item-row { font-size: 13px; gap: 8px; }
+        }
         @media print {
-          body, html, .invoice-page-wrapper { background: #FFFFFF !important; padding: 0 !important; min-height: auto !important; }
+          @page { size: A4 portrait; margin: 15mm; }
+          body, html, .invoice-page-wrapper { background: #FFFFFF !important; padding: 0 !important; margin: 0 !important; min-height: auto !important; display: block !important; }
           .no-print { display: none !important; }
-          .print-container { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; }
+          .print-container { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; width: 100% !important; }
+          .desktop-a4-wrapper { max-width: 100% !important; display: block !important; }
         }
       `}</style>
 
       {isFreeTier && <div className="no-print" style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
       
-      {/* THIS WRAPPER PREVENTS THE DESKTOP STRETCH (maxWidth: 600px + the parent's alignItems: center) */}
-      <div className="invoice-content-wrapper" style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        
-        {/* TOP DOWNLOAD BUTTON */}
+      <div className="desktop-a4-wrapper">
         <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
-            {/* PURE SVG REPLACING THE MISSING <DownloadIcon /> */}
+          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                <path d="M3 17v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
                <polyline points="8 12 12 16 16 12"></polyline>
@@ -559,7 +600,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           </div>
         )}
 
-        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
+        <div className="print-container card-hover">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
@@ -581,36 +622,45 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
-              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
+              <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{client?.name || "Client"}</div>
+              <div style={{ fontSize: "14px", color: DESIGN.textMuted, marginTop: "2px" }}>{client?.email || "No email"}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-              <div style={{ fontWeight: "700" }}>{safeDate}</div>
+              <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{safeDate}</div>
             </div>
           </div>
           
           <div style={{ marginBottom: "40px" }}>
+            {/* Header synced perfectly to the same item-row grid */}
+            <div className="item-row" style={{ fontSize: "11px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px", borderBottom: `1px solid ${DESIGN.border}`, paddingBottom: "12px", marginBottom: "16px" }}>
+              <span>Description</span>
+              <span style={{textAlign: "center"}}>Qty</span>
+              <span style={{textAlign: "right"}}>Amount</span>
+            </div>
+            
             {safeItems.map((item, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
-                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</span>
+              <div key={idx} className="item-row" style={{ borderBottom: "1px dashed #E2E8F0", paddingBottom: "12px" }}>
+                <span className="word-wrap" style={{ color: DESIGN.textMain, fontWeight: "600" }}>{item.description}</span>
+                <span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span>
+                <span className="word-wrap" style={{textAlign: "right", color: DESIGN.textMain, fontWeight: "800"}}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
           
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-            <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
-            <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid ${DESIGN.border}` }}>
+            <div style={{ fontSize: "14px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
+            <div className="word-wrap" style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", maxWidth: "60%" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
           </div>
           
           <div className="no-print">
             {invoice.status === 'pending' ? (
-              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer" }} onClick={handlePayment}>
-                Proceed to Payment
+              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
+                Proceed to Secure Payment
               </button>
             ) : (
-              <div style={{ textAlign: "center", padding: "24px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
-                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}><CheckIcon /> Payment Successful</div>
+              <div style={{ textAlign: "center", padding: "20px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
+                <div style={{ color: DESIGN.success, fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}><CheckIcon /> Payment Complete</div>
                 <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
               </div>
             )}
