@@ -2899,7 +2899,7 @@ function AppRouter() {
     }
 
     if (hash === "#/terms") return <LegalPage type="terms" />;
-    if (hash === "#/privacy" return <LegalPage type="privacy" />;
+    if (hash === "#/privacy") return <LegalPage type="privacy" />;
 
     if (!user) {
       if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
