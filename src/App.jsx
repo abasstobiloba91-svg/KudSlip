@@ -118,31 +118,54 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE FIX: Force mobile printers to scale up to A4 width */
+    /* 🎯 THE FIX: Natural block-flow scaling for mobile A4 printing */
     @media print {
-      @page { size: A4 portrait; margin: 0; }
-      body, html, #root { background: #FFFFFF !important; color: #000000 !important; }
+      @page { margin: 15mm; }
+      
+      html, body, #root { 
+        background: #FFFFFF !important; 
+        color: #000000 !important; 
+        display: block !important;
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+      }
+      
       .no-print { display: none !important; }
       
-      .invoice-page-wrapper, .invoice-content-wrapper {
-        width: 800px !important;
-        min-width: 800px !important;
-        max-width: 800px !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
+      /* 1. Kill the flexbox layout that centers the invoice */
+      .invoice-page-wrapper {
         display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
 
+      /* 2. Break the 600px lock and let it expand naturally to the paper's edge */
+      .invoice-content-wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+      }
+
+      /* 3. Strip borders and shadows for a clean edge-to-edge look */
       .print-container { 
+        display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         border: none !important; 
         box-shadow: none !important; 
-        padding: 40px !important; 
+        padding: 0 !important; 
         margin: 0 !important; 
       }
       
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        box-sizing: border-box !important;
+      }
     }
     
     @media (max-width: 768px) {
