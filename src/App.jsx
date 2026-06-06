@@ -118,40 +118,63 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE ULTIMATE FIX: BULLETPROOF MOBILE PRINT CSS */
+    /* 🎯 THE ULTIMATE A4 MOBILE PRINT FIX */
     @media print {
-      html, body, #root {
+      @page { margin: 10mm; size: A4 portrait; }
+      
+      /* 1. DESTROY ALL SCROLL LOCKS: This is why it was blank before! We must allow the body to expand past the phone screen size just for the printer. */
+      html, body, #root, .dashboard-layout, .main-content {
+        background: #FFFFFF !important;
+        color: #000000 !important;
         height: auto !important;
         min-height: auto !important;
         overflow: visible !important;
-        background: #FFFFFF !important;
-      }
-      .no-print { display: none !important; }
-      
-      .invoice-page-wrapper {
-        display: block !important; /* Kills flexbox collapsing on mobile */
-        width: 100% !important;
-        min-height: auto !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
         padding: 0 !important;
       }
       
+      .no-print, .sidebar, .mobile-dashboard-header, .sidebar-overlay, .draggablesupport { 
+        display: none !important; 
+      }
+      
+      /* 2. FORCE DESKTOP WIDTH: Now that overflow is visible, we force the invoice to be 800px (Desktop A4 size). The mobile printer will see this and auto-shrink it to fit perfectly on the paper! */
+      .invoice-page-wrapper {
+        display: block !important;
+        width: 800px !important;
+        min-width: 800px !important;
+        max-width: 800px !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        background: #FFFFFF !important;
+      }
+      
       .invoice-content-wrapper {
-        display: block !important; /* Kills flexbox collapsing on mobile */
+        display: block !important;
         width: 100% !important;
-        max-width: none !important; /* Shines across full A4 */
+        max-width: 100% !important;
         margin: 0 !important;
+        padding: 0 !important;
       }
       
       .print-container {
         display: block !important;
         width: 100% !important;
-        max-width: none !important;
+        max-width: 100% !important;
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
+        margin: 0 !important;
       }
       
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+      }
     }
     
     @media (max-width: 768px) {
