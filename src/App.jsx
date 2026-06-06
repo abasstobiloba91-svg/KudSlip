@@ -202,7 +202,17 @@ const GlobalStyles = () => (
       .sidebar-footer { padding: 24px; }
       
       .main-content { flex: 1; padding: 24px 16px 120px 16px; overflow-y: auto; height: calc(100dvh - 68px); }
-      .support-text-mobile { display: none; }
+      .support-text-mobile { display: none; } 
+      @keyframes kudiBounce {
+      0%, 100% { transform: scale(2.0) translateY(0); }
+      50% { transform: scale(1.9) translateY(-16px); }
+    }
+    @keyframes textPulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    .bouncing-logo { animation: kudiBounce 1s infinite cubic-bezier(0.25, 1, 0.5, 1); }
+    .pulsing-text { animation: textPulse 1s infinite ease-in-out; font-weight: 700; font-size: 14px; color: #0F172A; letter-spacing: 0.05em; text-transform: uppercase; }
     }
   `}</style>
 );
@@ -256,8 +266,12 @@ const Toast = ({ toast, onClose }) => {
   );
 };
 
+// =========================================================
+// LEGAL PAGES (T&C and Privacy Policy)
+// =========================================================
 function LegalPage({ type }) {
   const isTerms = type === "terms";
+  
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
       <GlobalStyles />
@@ -265,26 +279,111 @@ function LegalPage({ type }) {
         <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">&larr; Back Home</a>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
       </nav>
+      
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "60px 24px", color: DESIGN.textMain, lineHeight: "1.8", flex: 1 }}>
-        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>{isTerms ? "Terms & Conditions" : "Privacy Policy"}</h1>
-        <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>Last updated: May 24, 2026</p>
+        <h1 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
+          {isTerms ? "Terms & Conditions" : "Privacy Policy"}
+        </h1>
+        <p style={{ color: DESIGN.textMuted, marginBottom: "40px", fontSize: "14px", fontWeight: "600" }}>
+          Last updated: June 6, 2026
+        </p>
+
         {isTerms ? (
           <>
             <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Acceptance of Terms</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>By accessing KudiSlip, you agree to these foundational terms. We provide an invoicing and CRM software to help merchants automate their financial workflows securely.</p>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>By accessing or using KudiSlip (kudislip.com.ng), you agree to be bound by these Terms & Conditions. If you do not agree to these terms, please do not use our services.</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Description of Service</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip provides a cloud-based Customer Relationship Management (CRM) and invoicing platform designed for merchants. The service allows users to generate invoices, manage client directories, track revenue, and receive automated payments via third-party payment gateways (e.g., Paystack).</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. Account Registration & KYC</h2>
+            <p style={{ marginBottom: "12px", color: DESIGN.textMuted }}>To use KudiSlip, you must register for an account and provide accurate business information.</p>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}>You are responsible for maintaining the security of your password and account.</li>
+              <li>We reserve the right to suspend or terminate accounts that provide false information or fail our internal Know Your Customer (KYC) compliance checks.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>4. Subscriptions and Payments</h2>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}><strong>Free Tier:</strong> KudiSlip offers a free tier that includes basic invoicing, CRM tools, and a KudiSlip watermark on generated receipts.</li>
+              <li style={{ marginBottom: "8px" }}><strong>Premium Tier:</strong> Users may upgrade to a paid subscription (Premium) to unlock custom branding, remove watermarks, and access advanced features. Subscription fees are billed in advance on a recurring basis.</li>
+              <li><strong>Transaction Fees:</strong> While KudiSlip does not charge a platform fee on the Free tier, standard payment processing fees applied by our gateway partner (Paystack) will be deducted from your settlements. KudiSlip is not responsible for funds held or delayed by third-party payment processors or banks.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>5. Acceptable Use</h2>
+            <p style={{ marginBottom: "12px", color: DESIGN.textMuted }}>You agree not to use KudiSlip to:</p>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}>Invoice for illegal, fraudulent, or heavily restricted goods and services.</li>
+              <li style={{ marginBottom: "8px" }}>Upload malicious code, viruses, or attempt to breach the platform's security.</li>
+              <li>Harass, abuse, or spam your clients using our automated reminder systems.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>6. Intellectual Property</h2>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}><strong>Platform Rights:</strong> KudiSlip retains all rights, title, and interest in the platform’s code, design, and branding.</li>
+              <li><strong>Your Data:</strong> You retain full ownership of the data you input into the platform, including your client lists, custom logos, and financial records.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>7. Limitation of Liability</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>KudiSlip provides the platform on an "AS IS" and "AS AVAILABLE" basis. We do not guarantee that the service will be entirely uninterrupted or error-free. In no event shall KudiSlip be liable for any indirect, incidental, or consequential damages, including loss of profits, data, or business interruptions.</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>8. Governing Law</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>These Terms shall be governed and construed in accordance with the laws of the Federal Republic of Nigeria.</p>
           </>
         ) : (
           <>
-            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Information We Collect</h2>
-            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We collect business identities, contact emails, and basic CRM data to facilitate your invoicing process. We never sell your personal or client data to third parties.</p>
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>1. Introduction</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>At KudiSlip, we take your privacy and the privacy of your clients very seriously. This Privacy Policy explains how we collect, use, and protect your personal and business information when you use our platform at kudislip.com.ng.</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>2. Information We Collect</h2>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}><strong>Account Information:</strong> When you sign up, we collect your business name, email address, phone number, and password.</li>
+              <li style={{ marginBottom: "8px" }}><strong>Financial Information:</strong> To route your payments, we collect your bank account details. <em>Note: We do not store raw credit card numbers; all transactions are securely processed by Paystack.</em></li>
+              <li style={{ marginBottom: "8px" }}><strong>CRM & Client Data:</strong> We store the client data you input (names, emails, phone numbers) and your invoice history so you can manage your business.</li>
+              <li><strong>Usage Data:</strong> We collect basic analytics on how you use the platform (e.g., login times, features used) to help us improve the service.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>3. How We Use Your Information</h2>
+            <p style={{ marginBottom: "12px", color: DESIGN.textMuted }}>We use your data to:</p>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}>Provide, maintain, and improve the KudiSlip platform.</li>
+              <li style={{ marginBottom: "8px" }}>Process your subscription payments and route your invoice settlements.</li>
+              <li style={{ marginBottom: "8px" }}>Send you important administrative emails, support messages, and platform updates.</li>
+              <li>Facilitate the automated email and WhatsApp invoice reminders you trigger for your clients.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>4. Data Sharing and Third Parties</h2>
+            <p style={{ marginBottom: "12px", color: DESIGN.textMuted }}>We do not sell your personal or client data to anyone. We only share data with trusted third-party services strictly necessary to operate the platform:</p>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}><strong>Paystack:</strong> For securely processing payments and verifying bank subaccounts.</li>
+              <li style={{ marginBottom: "8px" }}><strong>Supabase:</strong> For secure cloud database hosting and data storage.</li>
+              <li><strong>Legal Compliance:</strong> We may disclose your information if required to do so by Nigerian law or subpoena.</li>
+            </ul>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>5. Data Security</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>We implement bank-grade security measures, including data encryption in transit and at rest, to protect your information. While we strive to use commercially acceptable means to protect your data, no method of transmission over the internet is 100% secure.</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>6. Your Data Rights (NDPR Compliance)</h2>
+            <p style={{ marginBottom: "12px", color: DESIGN.textMuted }}>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p>
+            <ul style={{ color: DESIGN.textMuted, marginBottom: "24px" }}>
+              <li style={{ marginBottom: "8px" }}>Access the personal data we hold about you.</li>
+              <li style={{ marginBottom: "8px" }}>Request corrections to inaccurate data.</li>
+              <li>Request the complete deletion of your account and all associated data ("Right to be Forgotten").</li>
+            </ul>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>To exercise any of these rights, please contact our support team.</p>
+
+            <h2 style={{ fontSize: "20px", fontWeight: "800", marginTop: "32px", marginBottom: "16px" }}>7. Contact Us</h2>
+            <p style={{ marginBottom: "24px", color: DESIGN.textMuted }}>If you have any questions about this Privacy Policy or how we handle your data, please contact us at: <strong>support@kudislip.com.ng</strong>.</p>
           </>
         )}
       </main>
-      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>© 2026 KudiSlip Technologies. All rights reserved.</footer>
+      
+      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
+        © 2026 KudiSlip Technologies. All rights reserved.
+      </footer>
     </div>
   );
 }
-
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
@@ -1345,7 +1444,7 @@ function LandingPage() {
 }
 
 // =========================================================
-// 6. AUTHENTICATION (WITH PASSWORD TOGGLE & SPLASH INTERCEPT)
+// 6. AUTHENTICATION
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -1355,8 +1454,6 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  
-  // NEW: State for password visibility toggle
   const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async (e) => {
@@ -1383,27 +1480,14 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
     } catch (err) { 
       setError(err.message); 
       showToast("Authentication Error", err.message, "error"); 
-      setLoading(false); // Drop the splash intercept screen only if authentication errors out
+      setLoading(false); 
     }
   };
 
-  // NEW: Premium splash screen intercepts the UI instantly upon clicking submit
   if (loading) return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px", width: "100vw", position: "fixed", top: 0, left: 0, zIndex: 99999 }}>
-      <style>{`
-        @keyframes kudiBounce {
-          0%, 100% { transform: scale(2.0) translateY(0); }
-          50% { transform: scale(1.9) translateY(-16px); }
-        }
-        @keyframes textPulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-        .bouncing-logo { animation: kudiBounce 1s infinite cubic-bezier(0.25, 1, 0.5, 1); }
-        .pulsing-text { animation: textPulse 1s infinite ease-in-out; font-weight: 700; font-size: 14px; color: #0F172A; letter-spacing: 0.05em; }
-      `}</style>
       <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
-      <div className="pulsing-text" style={{ marginTop: "8px" }}>Loading Your Workspace...</div>
+      <div className="pulsing-text" style={{ marginTop: "8px" }}>Authenticating...</div>
     </div>
   );
 
@@ -1419,7 +1503,6 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
           {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
           <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
           
-          {/* PASSWORD FIELD WITH INTEGRATED SVG VISIBILITY TOGGLE */}
           <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}>
             <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label>
             <div style={{ position: "relative", width: "100%" }}>
@@ -1437,10 +1520,8 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
                 style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}
               >
                 {showPassword ? (
-                  /* Eye Open icon */
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 ) : (
-                  /* Eye Closed icon */
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                 )}
               </div>
@@ -2402,11 +2483,12 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH REAL-TIME BELL)
+// MAIN APP ROUTER & MOBILE DRAWER (WITH SPLASH SCREEN)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true); // Controls the 3-second bounce
   const [unreadCount, setUnreadCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
@@ -2417,6 +2499,14 @@ function AppRouter() {
   };
 
   const [hash, setHash] = useState(window.location.hash || "#/");
+
+  // Forces the splash screen to stay visible for exactly 3 seconds
+  useEffect(() => {
+    const splashTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(splashTimer);
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => setHash(window.location.hash || "#/");
@@ -2437,18 +2527,15 @@ function AppRouter() {
           setIsLoading(false);
           checkNotifications(combinedUser);
 
-          // 🎯 THE FIX: REAL-TIME NOTIFICATION BELL LISTENER
           const notifChannel = supabase.channel('realtime_notifications')
             .on('postgres_changes', {
               event: 'INSERT',
               schema: 'public',
               table: 'notifications'
             }, (payload) => {
-              // If vendor: only show bell if notification is specifically for them
               if (combinedUser.role === 'vendor' && payload.new.user_id === combinedUser.id) {
                 setUnreadCount(prev => prev + 1);
               }
-              // If admin: show bell for system-wide support tickets
               else if (combinedUser.role === 'admin' && payload.new.user_id === 'SYSTEM_ADMIN') {
                 setUnreadCount(prev => prev + 1);
               }
@@ -2461,7 +2548,6 @@ function AppRouter() {
       } else { setIsLoading(false); }
     });
 
-    // Cleanup listener on unmount
     return () => { supabase.removeAllChannels(); }
   }, []);
 
@@ -2483,6 +2569,15 @@ function AppRouter() {
   };
 
   const renderView = () => {
+    // 🎯 THE SPLASH SCREEN INTERCEPT
+    if (showSplash || isLoading) return (
+      <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px", width: "100vw", position: "fixed", top: 0, left: 0, zIndex: 99999 }}>
+        <GlobalStyles />
+        <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
+        <div className="pulsing-text" style={{ marginTop: "8px" }}>Loading Your Workspace...</div>
+      </div>
+    );
+
     if (initializationError) return (
       <div style={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px", textAlign: "center", background: "#FFF1F2" }}>
         <GlobalStyles />
@@ -2501,8 +2596,6 @@ function AppRouter() {
 
     if (hash === "#/terms") return <LegalPage type="terms" />;
     if (hash === "#/privacy") return <LegalPage type="privacy" />;
-
-    if (isLoading) return <div style={{height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "600"}}><GlobalStyles />Loading Workspace...</div>;
 
     if (!user) {
       if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
@@ -2583,7 +2676,6 @@ function AppRouter() {
       </ErrorBoundary>
       <Toast toast={toast} onClose={() => setToast(null)} />
       
-      {/* FLOATING SUPPORT BUTTON (DRAGGABLE) */}
       {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
         <DraggableSupportButton />
       )}
