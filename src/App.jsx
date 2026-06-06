@@ -527,7 +527,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           padding: 60px 20px;
           display: flex;
           justify-content: center;
-          align-items: flex-start; /* CRITICAL: Kills vertical stretching */
+          align-items: flex-start; 
           background: ${DESIGN.bg};
           position: relative;
         }
@@ -546,17 +546,34 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           border: 1px solid ${DESIGN.border};
           padding: 40px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-          height: max-content; /* CRITICAL: Snaps tight to the bottom of the content */
+          height: max-content; 
         }
         @media (max-width: 768px) {
           .invoice-page-wrapper { padding: 24px 16px; }
           .print-card { padding: 24px; }
         }
+        
+        /* 🖨️ THE FIX: Forces perfect margins on every computer */
         @media print {
-          body, html, .invoice-page-wrapper { background: #FFFFFF !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+          @page { margin: 0; } /* Kills the browser's unpredictable cached margins */
+          body, html, .invoice-page-wrapper { 
+            background: #FFFFFF !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+            display: block !important; 
+          }
           .no-print { display: none !important; }
-          .invoice-max-width { max-width: 100% !important; gap: 0 !important; display: block !important; }
-          .print-card { border: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+          .invoice-max-width { 
+            max-width: 100% !important; 
+            gap: 0 !important; 
+            display: block !important; 
+          }
+          .print-card { 
+            border: none !important; 
+            box-shadow: none !important; 
+            padding: 15mm !important; /* Acts as the permanent 'Default' margin */
+            border-radius: 0 !important; 
+          }
         }
       `}</style>
 
