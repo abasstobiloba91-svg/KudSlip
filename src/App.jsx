@@ -118,47 +118,30 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
-    /* 🎯 THE FIX: FORCE FULL-WIDTH SCALING FOR A4 PAPER PRINTERS */
-    @page { size: A4 portrait; margin: 15mm; }
-    
+    /* 🎯 THE FIX: SAFE, FULL-WIDTH SCALING FOR PRINTERS (No destructive display overrides) */
     @media print {
-      body, html, #root { 
-        background: #FFFFFF !important; 
-        color: #000000 !important; 
-        width: 100% !important; 
-        display: block !important; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-      }
-      
+      body, html { background: #FFFFFF !important; color: #000000 !important; }
       .no-print { display: none !important; }
       
-      /* 1. Kill the flexbox centering that crushes the width on mobile */
+      /* 1. Tell the flex container to stretch the invoice instead of centering it */
       .invoice-page-wrapper { 
-        display: block !important; 
-        width: 100% !important; 
+        align-items: stretch !important; 
         padding: 0 !important; 
-        margin: 0 !important; 
+        min-height: auto !important;
       }
       
-      /* 2. Break the 600px max-width limit so it fills the entire A4 paper */
+      /* 2. Break the 600px max-width limit */
       .invoice-content-wrapper { 
-        display: block !important; 
-        width: 100% !important; 
         max-width: 100% !important; 
+        width: 100% !important; 
         margin: 0 !important; 
-        padding: 0 !important; 
       }
       
-      /* 3. Strip borders and force the receipt card to expand to the edges */
+      /* 3. Strip borders for a clean edge-to-edge paper look */
       .print-container { 
-        display: block !important;
-        width: 100% !important; 
-        max-width: 100% !important; 
-        margin: 0 !important; 
-        padding: 0 !important; 
         border: none !important; 
         box-shadow: none !important; 
+        padding: 0 !important; 
         border-radius: 0 !important; 
       }
       
