@@ -118,11 +118,13 @@ const GlobalStyles = () => (
     .mobile-menu-toggle { display: none; background: none; border: none; font-size: 28px; cursor: pointer; color: #0F172A; }
     .mobile-nav-dropdown { display: none; }
 
+    /* 🎯 THE FIX: BULLETPROOF MOBILE PDF PRINTING RULES */
     @media print {
-      body { background: #FFFFFF !important; color: #000000 !important; }
+      body, html, #root { background: #FFFFFF !important; color: #000000 !important; height: auto !important; overflow: visible !important; position: static !important; min-height: auto !important; display: block !important; }
       .no-print { display: none !important; }
-      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .print-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; overflow: visible !important; float: none !important; }
+      div { height: auto !important; max-height: none !important; }
     }
     
     @media (max-width: 768px) {
@@ -133,7 +135,6 @@ const GlobalStyles = () => (
       .mobile-menu-toggle { display: block !important; }
       .mobile-nav-dropdown.open { display: flex !important; flex-direction: column; gap: 12px; padding: 16px 24px; background: #FFF; border-bottom: 1px solid #E2E8F0; }
       
-      /* FIX: 100dvh dynamically adjusts to Safari/Chrome bottom URL bars */
       .dashboard-layout { flex-direction: column; height: 100dvh; overflow: hidden; }
       .mobile-dashboard-header { display: flex !important; justify-content: space-between; align-items: center; padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #E2E8F0; z-index: 40; height: 68px; }
       
@@ -150,7 +151,6 @@ const GlobalStyles = () => (
       .menu-btn.active { border-left: 4px solid #000000; border-bottom: none; }
       .sidebar-footer { padding: 24px; }
       
-      /* FIX: Generous bottom padding added to prevent content from hiding behind the screen edge or support button */
       .main-content { flex: 1; padding: 24px 16px 120px 16px; overflow-y: auto; height: calc(100dvh - 68px); }
       .support-text-mobile { display: none; }
     }
@@ -250,7 +250,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // VISIBLE WORD FIX: We define the 5 stars here as a clear word variable
   const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
@@ -272,10 +271,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     fetchData();
   }, [invoiceId]);
 
-  // 🎯 THE FIX: Scrolls the page to the absolute top before taking the PDF screenshot
+  // 🎯 THE FIX: REMOVED setTimeout SO MOBILE BROWSERS DON'T BLOCK THE PRINT POPUP
   const triggerPDFCompilation = () => {
     window.scrollTo(0, 0);
-    setTimeout(() => window.print(), 150);
+    window.print();
   };
 
   const handlePayment = () => {
@@ -288,16 +287,11 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     if (baseAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
 
     try {
-      // Calculate Paystack fees to pass to customer over the top (1.5% + 100 NGN)
-      // If amount is under 2,500 NGN, the flat 100 NGN fee is waived by Paystack
       let finalAmount = baseAmount;
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         if (baseAmount < 2500) {
-          // Fee calculation formula when vendor gets exact amount: baseAmount / (1 - 0.015)
           finalAmount = baseAmount / 0.985;
         } else {
-          // Fee calculation formula with flat fee included: (baseAmount + 100) / (1 - 0.015)
-          // Maximum cap rule: Paystack caps local fees at 2,000 NGN max
           const calculatedWithFees = (baseAmount + 100) / 0.985;
           const totalFeeCharged = calculatedWithFees - baseAmount;
           
@@ -309,7 +303,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         }
       }
 
-      // Convert final calculated amount with customer fees into Kobo units
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
       let paystackPayload = {
@@ -328,7 +321,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
-        paystackPayload.bearer = "subaccount"; // Passes the charge allocation directly to the subaccount layer
+        paystackPayload.bearer = "subaccount";
       }
 
       const handler = window.PaystackPop.setup(paystackPayload);
@@ -381,13 +374,14 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   );
 
   return (
-    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative", overflow: "hidden" }}>
+    // 🎯 THE FIX: REMOVED overflow: "hidden" TO ALLOW MOBILE SCROLLING/PRINTING
+    <div style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
       <GlobalStyles />
       {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
       
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><DownloadIcon /> Download PDF</button>
+        <div className="no-print" style={{ width: "100%", display: "flex", justify-content: "flex-end" }}>
+          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}><DownloadIcon /> Download PDF</button>
         </div>
         
         {isFreeTier && (
@@ -398,7 +392,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         )}
 
         <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+          <div style={{ display: "flex", justify-content: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
               {vendor?.logo_url ? (
@@ -416,7 +410,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             </div>
           </div>
           
-          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justify-content: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
               <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
@@ -436,7 +430,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             ))}
           </div>
           
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justify-content: "space-between", alignItems: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
             <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
           </div>
@@ -464,7 +458,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justify-content: "center", gap: "8px", marginBottom: "24px" }}>
               {starsArray.map(star => (
                 <StarIcon 
                   key={star} 
