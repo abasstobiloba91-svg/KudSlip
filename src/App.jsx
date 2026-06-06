@@ -875,15 +875,18 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 // =========================================================
 // 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
+// =========================================================
+// 4. SUPER ADMIN OPERATIONS DASHBOARD 
+// =========================================================
 function SuperAdminDashboard({ showToast }) {
   const [globalVendors, setGlobalVendors] = useState([]);
   const [globalInvoices, setGlobalInvoices] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [broadcastText, setBroadcastText] = useState("");
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
+  useEffect(() => { fetchAdminData(); }, []);
 
   const fetchAdminData = async () => {
     if (!supabase) return;
@@ -915,39 +918,66 @@ function SuperAdminDashboard({ showToast }) {
     }
   };
 
+  const handleSendBroadcast = async () => {
+    if (!broadcastText.trim() || globalVendors.length === 0) return;
+    setSendingBroadcast(true);
+    
+    // Send a notification to every registered vendor
+    const payloads = globalVendors.map(v => ({
+      user_id: v.id,
+      message: `📢 BROADCAST: ${broadcastText}`,
+      is_read: false
+    }));
+    
+    const { error } = await supabase.from('notifications').insert(payloads);
+    if (error) {
+      showToast("Broadcast Failed", error.message, "error");
+    } else {
+      showToast("Broadcast Sent!", "Message delivered to all merchants.", "success");
+      setBroadcastText("");
+    }
+    setSendingBroadcast(false);
+  };
+
   const totalPlatformVolume = globalInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const paidInvoices = globalInvoices.filter(inv => inv.status === 'paid');
   const accumulatedFees = paidInvoices.reduce((sum, inv) => sum + (Number(inv.amount || 0) * 0.015), 0);
-  const premiumVendorsCount = globalVendors.filter(v => v.subscription_tier === 'premium').length;
-  const estimatedSaaSMRR = premiumVendorsCount * 15000;
 
   if (loading) return <div style={{ fontSize: "15px", fontWeight: "600" }}>Querying Master Ledger Network...</div>;
 
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>SuperAdmin Mission Control</div>
-      <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight and KYC management.</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Global telemetry oversight and platform management.</div>
       
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Platform Volume (TPV)</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalPlatformVolume.toLocaleString()}</div></div>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Transaction Fees (1.5%)</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.success }}>₦{accumulatedFees.toLocaleString()}</div></div>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Estimated SaaS MRR</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: DESIGN.premium }}>₦{estimatedSaaSMRR.toLocaleString()}</div></div>
-        <div className="metric-card"><div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Total Accounts</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Users</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Platform Volume (TPV)</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalPlatformVolume.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Transaction Fees</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{accumulatedFees.toLocaleString()}</div></div>
+        <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Accounts</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>{globalVendors.length} Users</div></div>
+      </div>
+
+      {/* SYSTEM BROADCAST TOOL */}
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "24px", marginBottom: "48px" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px", color: "#0F172A" }}>Global System Broadcast</h3>
+        <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>Send an announcement directly to the notification bell of every user on KudiSlip.</p>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="e.g. System maintenance tonight at 2AM WAT..." value={broadcastText} onChange={(e) => setBroadcastText(e.target.value)} />
+          <button className="btn-primary btn-hover" onClick={handleSendBroadcast} disabled={sendingBroadcast || !broadcastText.trim()}>
+            {sendingBroadcast ? "Broadcasting..." : "Send to All Users"}
+          </button>
+        </div>
       </div>
       
       <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Global Account Registry & KYC</h3>
-      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto", marginBottom: "48px" }}>
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, overflowX: "auto", marginBottom: "48px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "900px" }}>
-          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
-            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>Portfolio / Social</th><th style={{ padding: "16px 24px" }}>KYC Status</th><th style={{ padding: "16px 24px" }}>Platform Role</th><th style={{ padding: "16px 24px" }}>Actions</th></tr>
+          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>
+            <tr><th style={{ padding: "16px 24px" }}>Business Identity</th><th style={{ padding: "16px 24px" }}>KYC Status</th><th style={{ padding: "16px 24px" }}>Platform Role</th><th style={{ padding: "16px 24px" }}>Actions</th></tr>
           </thead>
           <tbody>
             {globalVendors.map(vendor => (
-              <tr key={vendor.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
-                <td style={{ padding: "16px 24px" }}><div style={{ fontWeight: "700" }}>{vendor.business_name}</div><div style={{ fontSize: "12px", color: DESIGN.textMuted }}>{vendor.id.substring(0, 8)}...</div></td>
-                <td style={{ padding: "16px 24px", fontSize: "13px" }}>
-                  {vendor.portfolio_link ? <a href={vendor.portfolio_link.startsWith('http') ? vendor.portfolio_link : `https://${vendor.portfolio_link}`} target="_blank" rel="noopener noreferrer" style={{ color: "#3B82F6", fontWeight: "600" }}>View Profile</a> : <span style={{ color: DESIGN.textMuted }}>Not provided</span>}
-                </td>
+              <tr key={vendor.id} style={{ borderTop: "1px solid #E2E8F0" }}>
+                <td style={{ padding: "16px 24px" }}><div style={{ fontWeight: "700" }}>{vendor.business_name}</div><div style={{ fontSize: "12px", color: "#64748B" }}>{vendor.email}</div></td>
                 <td style={{ padding: "16px 24px" }}><span style={{ fontSize: "11px", fontWeight: "800", padding: "4px 8px", borderRadius: "12px", background: vendor.kyc_status === 'approved' ? "#ECFDF5" : vendor.kyc_status === 'suspended' ? "#FEF2F2" : "#FEF3C7", color: vendor.kyc_status === 'approved' ? "#10B981" : vendor.kyc_status === 'suspended' ? "#EF4444" : "#D97706" }}>{(vendor.kyc_status || 'PENDING').toUpperCase()}</span></td>
                 <td style={{ padding: "16px 24px" }}>
                   <select className="form-input" style={{ padding: "8px", fontSize: "13px", width: "120px" }} value={vendor.role || 'vendor'} onChange={(e) => handleRoleChange(vendor.id, e.target.value)}><option value="vendor">Vendor</option><option value="support">Support</option><option value="admin">Super Admin</option></select>
@@ -956,27 +986,6 @@ function SuperAdminDashboard({ showToast }) {
                   <button onClick={() => handleKYCUpdate(vendor.id, 'approved')} style={{ background: "#ECFDF5", color: "#10B981", border: "1px solid #A7F3D0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Approve</button>
                   <button onClick={() => handleKYCUpdate(vendor.id, 'suspended')} style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Suspend</button>
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* NEW: REVIEWS SYSTEM */}
-      <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Client Feedback & Platform Reviews</h3>
-      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "700px" }}>
-          <thead style={{ background: "#F1F5F9", fontSize: "12px", color: DESIGN.textMuted, textTransform: "uppercase" }}>
-            <tr><th style={{ padding: "16px 24px" }}>Date</th><th style={{ padding: "16px 24px" }}>Merchant Billed</th><th style={{ padding: "16px 24px" }}>Rating</th><th style={{ padding: "16px 24px" }}>Client Comment</th></tr>
-          </thead>
-          <tbody>
-            {reviews.length === 0 && <tr><td colSpan="4" style={{ padding: "24px", textAlign: "center", color: DESIGN.textMuted }}>No reviews collected yet.</td></tr>}
-            {reviews.map(rev => (
-              <tr key={rev.id} style={{ borderTop: `1px solid ${DESIGN.border}` }}>
-                <td style={{ padding: "16px 24px", fontSize: "13px", color: DESIGN.textMuted }}>{new Date(rev.created_at).toLocaleDateString()}</td>
-                <td style={{ padding: "16px 24px", fontWeight: "700" }}>{rev.merchant_name}</td>
-                <td style={{ padding: "16px 24px", color: "#F59E0B", fontWeight: "800", fontSize: "16px" }}>{"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}</td>
-                <td style={{ padding: "16px 24px", fontSize: "14px" }}>{rev.comment || <span style={{ color: DESIGN.textMuted, fontStyle: "italic" }}>No comment left</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -2170,7 +2179,7 @@ function SupportDashboard({ user, showToast }) {
 }
 
 // ---------------------------------------------------------
-// 13A. VENDOR CHAT (SMART FAQ + REALTIME NOTIFICATIONS)
+// 13A. VENDOR CHAT (STRICT B&W TICKET PORTAL)
 // ---------------------------------------------------------
 function VendorChat({ user, showToast }) {
   const [message, setMessage] = useState("");
@@ -2178,16 +2187,8 @@ function VendorChat({ user, showToast }) {
   const [loading, setLoading] = useState(true);
   const chatEndRef = useRef(null);
 
-  // Smart FAQs
-  const SMART_FAQS = [
-    { q: "How do I withdraw my money?", a: "Your funds are automatically settled to the bank account you linked in 'Payout Settings' within 24 hours of payment." },
-    { q: "How do I change my logo?", a: "Go to the 'Brand Settings' tab to upload your custom logo. You must be on the Premium plan." },
-    { q: "Can I bill foreign clients?", a: "Yes! Use the 'Calculate Foreign Currency' tool when creating an invoice to get live USD/GBP to NGN rates." }
-  ];
-
   useEffect(() => {
     fetchMessages();
-    
     const channel = supabase.channel('vendor_realtime_chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user.id}` }, (payload) => {
         setHistory(prev => {
@@ -2195,8 +2196,7 @@ function VendorChat({ user, showToast }) {
           if (exists) return prev;
           return [...prev, payload.new];
         });
-      })
-      .subscribe();
+      }).subscribe();
 
     return () => supabase.removeChannel(channel);
   }, []);
@@ -2210,76 +2210,85 @@ function VendorChat({ user, showToast }) {
     setLoading(false);
   };
 
-  const handleSend = async (customMessage = null) => {
-    const textToSend = customMessage || message;
-    if (!textToSend.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim()) return;
+    const tempMessage = message;
+    setMessage(""); 
     
-    const tempMessage = textToSend;
-    if (!customMessage) setMessage(""); 
+    // Notify admin that the user replied
+    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `Ticket Update: ${user.business_name} sent a new message.`, is_read: false }]);
     
-    // Save the chat message - The Supabase SQL Trigger handles the notification automatically!
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
-    
-    if (error) { 
-      showToast("Security Error", "Message blocked by database.", "error"); 
-      if (!customMessage) setMessage(tempMessage); 
-    } else {
-      fetchMessages(); 
-    }
+    if (error) { showToast("Security Error", "Message blocked by database.", "error"); setMessage(tempMessage); }
+    else { fetchMessages(); }
   };
 
-  const handleFAQClick = async (faq) => {
-    await handleSend(faq.q);
-    setTimeout(async () => {
-        await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'support', message: faq.a }]);
-        fetchMessages();
-    }, 500); 
+  const handleReopen = async () => {
+    await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'system', message: 'TICKET_REOPENED' }]);
+    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `⚠️ ${user.business_name} REOPENED their support ticket.`, is_read: false }]);
+    fetchMessages();
+    showToast("Ticket Reopened", "Support has been notified.", "info");
   };
+
+  const isClosed = history.length > 0 && history[history.length - 1].message === 'TICKET_CLOSED';
 
   return (
     <div style={{ maxWidth: "800px", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Helpdesk & Support</div>
-      <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Need help? Our Smart Assistant is online.</div>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Support Portal</div>
+      <div style={{ color: "#64748B", marginBottom: "24px", fontSize: "15px" }}>Manage your secure ticket with KudiSlip engineers.</div>
       
-      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flex: 1, minHeight: "500px" }}>
+      <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flex: 1, minHeight: "500px", overflow: "hidden" }}>
+         {/* TICKET HEADER */}
+         <div style={{ padding: "16px 24px", borderBottom: "1px solid #000000", background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: "900", fontSize: "16px", color: "#000000", textTransform: "uppercase", letterSpacing: "1px" }}>Ticket #TKT-{user.id.substring(0,6).toUpperCase()}</div>
+            <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "800", background: isClosed ? "#F1F5F9" : "#000000", color: isClosed ? "#64748B" : "#FFFFFF" }}>{isClosed ? "CLOSED" : "OPEN"}</span>
+         </div>
+
+         {/* CHAT AREA */}
          <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ alignSelf: "flex-start", background: "#E2E8F0", padding: "12px 16px", borderRadius: "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", color: "#0F172A", lineHeight: "1.5" }}>
-              Hello {user?.business_name || "there"}! I am the KudiSlip Smart Assistant. How can I help you today?
+            <div style={{ alignSelf: "flex-start", background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "16px", borderRadius: "0 16px 16px 16px", maxWidth: "80%", fontSize: "14px", color: "#000000", lineHeight: "1.6" }}>
+              <strong>KudiSlip Support</strong><br/>Hello {user?.business_name}! Please describe the issue you are facing and an engineer will review it shortly.
             </div>
             
-            {history.length === 0 && !loading && (
-                <div style={{ alignSelf: "flex-start", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "80%" }}>
-                    <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", marginLeft: "4px" }}>Frequently Asked Questions:</div>
-                    {SMART_FAQS.map((faq, idx) => (
-                        <button key={idx} onClick={() => handleFAQClick(faq)} style={{ textAlign: "left", padding: "10px 14px", background: "#FFFFFF", border: "1px solid #CBD5E1", borderRadius: "12px", fontSize: "13px", color: "#2563EB", cursor: "pointer", transition: "all 0.2s" }} className="card-hover">
-                            {faq.q}
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading secure chat...</div>}
+            {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading ticket data...</div>}
+            
             {history.map((msg) => {
+              if (msg.sender === 'system') {
+                let txt = msg.message;
+                if (txt === 'TICKET_CLOSED') txt = 'Admin has marked this ticket as CLOSED.';
+                if (txt === 'TICKET_REOPENED') txt = 'Ticket REOPENED by user.';
+                return <div key={msg.id} style={{ textAlign: "center", fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", margin: "16px 0", letterSpacing: "1px" }}>— {txt} —</div>;
+              }
+
               const isMe = msg.sender === 'user';
               return (
-                <div key={msg.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "#2563EB" : "#E2E8F0", color: isMe ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isMe ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5", wordBreak: "break-word" }}>
+                <div key={msg.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "#000000" : "#FFFFFF", border: isMe ? "none" : "1px solid #E2E8F0", color: isMe ? "#FFFFFF" : "#000000", padding: "14px 18px", borderRadius: isMe ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.6", wordBreak: "break-word" }}>
+                  {!isMe && <div style={{ fontWeight: "800", fontSize: "11px", marginBottom: "4px", color: "#64748B" }}>KudiSlip Support</div>}
                   {msg.message}
                 </div>
               );
             })}
             <div ref={chatEndRef} />
          </div>
-         <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px", background: "#FFFFFF", borderRadius: "0 0 12px 12px" }}>
-            <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type your message..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
-            <button className="btn-primary btn-hover" onClick={() => handleSend()}>Send</button>
-         </div>
+
+         {/* INPUT AREA */}
+         {isClosed ? (
+           <div style={{ padding: "24px", borderTop: "1px solid #E2E8F0", background: "#FFFFFF", textAlign: "center" }}>
+             <p style={{ fontSize: "14px", color: "#64748B", marginBottom: "12px" }}>This issue was marked as resolved. Need more help?</p>
+             <button className="btn-secondary btn-hover" onClick={handleReopen}>Reopen Ticket</button>
+           </div>
+         ) : (
+           <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px", background: "#FFFFFF" }}>
+              <input className="form-input" style={{ flex: 1, margin: 0, background: "#F1F5F9", border: "none" }} placeholder="Type your reply..." value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+              <button className="btn-primary btn-hover" onClick={() => handleSend()}>Submit</button>
+           </div>
+         )}
       </div>
     </div>
   );
 }
-
 // ---------------------------------------------------------
-// 13B. MASTER INBOX (MOBILE-OPTIMIZED WITH INSTANT NOTIFICATIONS)
+// 13B. MASTER INBOX (WITH TICKET CLOSING)
 // ---------------------------------------------------------
 function AdminSupportInbox({ user, showToast }) {
   const [messages, setMessages] = useState([]);
@@ -2287,26 +2296,16 @@ function AdminSupportInbox({ user, showToast }) {
   const [activeVendorId, setActiveVendorId] = useState(null);
   const [reply, setReply] = useState("");
   const chatEndRef = useRef(null);
-  
-  // 🎯 THE FIX: Track if the user is on a mobile device to toggle full-screen views
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
-    
     fetchData();
-    
     const channel = supabase.channel('admin_realtime_chat')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, () => { fetchData(); })
       .subscribe();
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      supabase.removeChannel(channel);
-    };
+    return () => { window.removeEventListener('resize', handleResize); supabase.removeChannel(channel); };
   }, []);
 
   const fetchData = async () => {
@@ -2315,7 +2314,6 @@ function AdminSupportInbox({ user, showToast }) {
       supabase.from('support_messages').select('*').order('created_at', { ascending: true }),
       supabase.from('vendors').select('id, business_name, email')
     ]);
-    
     if (msgRes.data) setMessages(msgRes.data);
     if (venRes.data) {
       const vMap = {};
@@ -2326,18 +2324,21 @@ function AdminSupportInbox({ user, showToast }) {
 
   const handleReply = async () => {
     if (!reply.trim() || !activeVendorId) return;
-    const temp = reply;
-    setReply(""); 
+    const temp = reply; setReply(""); 
     
-    // Save the admin's reply. The Supabase SQL Trigger handles the notification automatically!
+    // Notify the user that admin replied
+    await supabase.from('notifications').insert([{ user_id: activeVendorId, message: `Support replied to your ticket.`, is_read: false }]);
+    
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
-    
-    if (error) { 
-      showToast("Security Error", "Reply failed to send.", "error"); 
-      setReply(temp); 
-    } else {
-      fetchData(); 
-    }
+    if (error) { showToast("Error", "Reply failed to send.", "error"); setReply(temp); } else { fetchData(); }
+  };
+
+  const handleCloseTicket = async () => {
+    if (!activeVendorId) return;
+    await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'system', message: 'TICKET_CLOSED' }]);
+    await supabase.from('notifications').insert([{ user_id: activeVendorId, message: `Your support ticket has been closed by an admin.`, is_read: false }]);
+    fetchData();
+    showToast("Ticket Closed", "The conversation is locked.", "success");
   };
 
   const conversations = {};
@@ -2348,10 +2349,10 @@ function AdminSupportInbox({ user, showToast }) {
 
   const uniqueVendorIds = Object.keys(conversations);
   const activeChat = activeVendorId ? conversations[activeVendorId] : [];
+  const isClosed = activeChat.length > 0 && activeChat[activeChat.length - 1].message === 'TICKET_CLOSED';
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat]);
 
-  // Determine which side of the UI to show based on device size and active selection
   const showList = !isMobile || !activeVendorId;
   const showChat = !isMobile || activeVendorId;
 
@@ -2365,59 +2366,55 @@ function AdminSupportInbox({ user, showToast }) {
       ) : null}
       
       <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flex: 1, overflow: "hidden", flexDirection: isMobile ? "column" : "row" }}>
-         
-         {/* MOBILE SAFE: THE TICKET LIST */}
          {showList && (
            <div style={{ width: isMobile ? "100%" : "280px", borderRight: isMobile ? "none" : "1px solid #E2E8F0", background: "#F8FAFC", overflowY: "auto", flex: isMobile ? 1 : "none" }}>
-              {uniqueVendorIds.length === 0 && <div style={{ padding: "30px", color: "#64748B", fontSize: "13px", textAlign: "center" }}>No active tickets right now.</div>}
               {uniqueVendorIds.map(vid => {
                 const v = vendors[vid] || {};
                 const isActive = activeVendorId === vid;
+                const convo = conversations[vid];
+                const convoClosed = convo[convo.length - 1].message === 'TICKET_CLOSED';
                 return (
-                  <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent" }}>
-                    <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.business_name || v.email || "Unknown Vendor"}</div>
-                    <div style={{ fontSize: "12px", color: "#64748B" }}>{conversations[vid].length} messages</div>
+                  <div key={vid} onClick={() => setActiveVendorId(vid)} className="card-hover" style={{ padding: "16px", borderBottom: "1px solid #E2E8F0", cursor: "pointer", background: isActive ? "#EFF6FF" : "transparent", borderLeft: isActive ? "4px solid #2563EB" : "4px solid transparent", opacity: convoClosed ? 0.6 : 1 }}>
+                    <div style={{ fontWeight: "800", color: "#0F172A", fontSize: "14px", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.business_name || v.email || "Vendor"}</div>
+                    <div style={{ fontSize: "12px", color: "#64748B" }}>{convoClosed ? "🔒 Closed" : "Active Ticket"}</div>
                   </div>
                 );
               })}
            </div>
          )}
 
-         {/* MOBILE SAFE: THE ACTIVE CHAT UI */}
          {showChat && (
            <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FFFFFF", height: "100%" }}>
               {activeVendorId ? (
                 <>
-                  <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", background: "#F1F5F9", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", gap: "12px" }}>
-                    {isMobile && (
-                      <button onClick={() => setActiveVendorId(null)} style={{ background: "none", border: "none", fontSize: "20px", fontWeight: "900", cursor: "pointer", color: "#2563EB", padding: "0 8px 0 0" }}>
-                        &larr;
-                      </button>
-                    )}
-                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                       Chat: {vendors[activeVendorId]?.business_name || vendors[activeVendorId]?.email || "Vendor"}
-                    </span>
+                  <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", fontWeight: "800", color: "#0F172A" }}>
+                      {isMobile && <button onClick={() => setActiveVendorId(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#2563EB" }}>&larr;</button>}
+                      <span>{vendors[activeVendorId]?.business_name || "Vendor"}</span>
+                    </div>
+                    {!isClosed && <button onClick={handleCloseTicket} style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}>Close Ticket</button>}
                   </div>
                   <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
                     {activeChat.map((msg) => {
+                      if (msg.sender === 'system') return <div key={msg.id} style={{ textAlign: "center", fontSize: "11px", fontWeight: "800", color: "#64748B", margin: "16px 0" }}>— {msg.message} —</div>;
                       const isSupport = msg.sender === 'support';
                       return (
-                        <div key={msg.id} style={{ alignSelf: isSupport ? "flex-end" : "flex-start", background: isSupport ? "#2563EB" : "#F1F5F9", color: isSupport ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isSupport ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5", wordBreak: "break-word" }}>
+                        <div key={msg.id} style={{ alignSelf: isSupport ? "flex-end" : "flex-start", background: isSupport ? "#2563EB" : "#F1F5F9", color: isSupport ? "#FFFFFF" : "#0F172A", padding: "12px 16px", borderRadius: isSupport ? "16px 16px 0 16px" : "16px 16px 16px 0", maxWidth: "80%", fontSize: "14px", lineHeight: "1.5" }}>
                           {msg.message}
                         </div>
                       );
                     })}
                     <div ref={chatEndRef} />
                   </div>
-                  <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
-                    <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Securely type your reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
-                    <button className="btn-primary btn-hover" onClick={handleReply}>Send</button>
-                  </div>
+                  {!isClosed && (
+                    <div style={{ padding: "16px", borderTop: "1px solid #E2E8F0", display: "flex", gap: "12px" }}>
+                      <input className="form-input" style={{ flex: 1, margin: 0 }} placeholder="Type reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
+                      <button className="btn-primary btn-hover" onClick={handleReply}>Send</button>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748B", fontSize: "14px" }}>
-                  Select a user ticket from the left to start replying.
-                </div>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748B", fontSize: "14px" }}>Select a ticket.</div>
               )}
            </div>
          )}
@@ -2483,13 +2480,15 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH SPLASH SCREEN)
+// MAIN APP ROUTER & MOBILE DRAWER (WITH NOTIF MENU)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSplash, setShowSplash] = useState(true); // Controls the 3-second bounce
+  const [showSplash, setShowSplash] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifs, setNotifs] = useState([]);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
@@ -2500,11 +2499,8 @@ function AppRouter() {
 
   const [hash, setHash] = useState(window.location.hash || "#/");
 
-  // Forces the splash screen to stay visible for exactly 3 seconds
   useEffect(() => {
-    const splashTimer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000);
+    const splashTimer = setTimeout(() => setShowSplash(false), 3000);
     return () => clearTimeout(splashTimer);
   }, []);
 
@@ -2528,16 +2524,10 @@ function AppRouter() {
           checkNotifications(combinedUser);
 
           const notifChannel = supabase.channel('realtime_notifications')
-            .on('postgres_changes', {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'notifications'
-            }, (payload) => {
-              if (combinedUser.role === 'vendor' && payload.new.user_id === combinedUser.id) {
-                setUnreadCount(prev => prev + 1);
-              }
-              else if (combinedUser.role === 'admin' && payload.new.user_id === 'SYSTEM_ADMIN') {
-                setUnreadCount(prev => prev + 1);
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+              if ((combinedUser.role === 'vendor' && payload.new.user_id === combinedUser.id) || 
+                  (combinedUser.role === 'admin' && payload.new.user_id === 'SYSTEM_ADMIN')) {
+                checkNotifications(combinedUser);
               }
             }).subscribe();
 
@@ -2553,23 +2543,36 @@ function AppRouter() {
 
   const checkNotifications = async (userData) => {
     if (!supabase || !userData) return;
-    let query = supabase.from('notifications').select('*', { count: 'exact' }).eq('is_read', false);
+    let query = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(10);
     if (userData.role === 'vendor') query = query.eq('user_id', userData.id);
-    const { count } = await query;
-    if (count !== null) setUnreadCount(count);
+    else query = query.eq('user_id', 'SYSTEM_ADMIN');
+    
+    const { data } = await query;
+    if (data) {
+      setNotifs(data);
+      setUnreadCount(data.filter(n => !n.is_read).length);
+    }
   };
 
-  const clearNotifications = async () => {
-    if (!user || unreadCount === 0) { window.location.hash = "#/dashboard/support"; return; }
+  const markNotificationsRead = async () => {
+    if (!user || unreadCount === 0) return;
     let query = supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
     if (user.role === 'vendor') query = query.eq('user_id', user.id);
+    else query = query.eq('user_id', 'SYSTEM_ADMIN');
+    
     await query;
     setUnreadCount(0);
-    window.location.hash = "#/dashboard/support";
+    const updatedNotifs = notifs.map(n => ({ ...n, is_read: true }));
+    setNotifs(updatedNotifs);
+  };
+
+  const toggleNotifMenu = () => {
+    const isOpening = !showNotifMenu;
+    setShowNotifMenu(isOpening);
+    if (isOpening) markNotificationsRead();
   };
 
   const renderView = () => {
-    // 🎯 THE SPLASH SCREEN INTERCEPT
     if (showSplash || isLoading) return (
       <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px", width: "100vw", position: "fixed", top: 0, left: 0, zIndex: 99999 }}>
         <GlobalStyles />
@@ -2609,12 +2612,29 @@ function AppRouter() {
       <div className="dashboard-layout">
         <GlobalStyles />
         
+        {/* MOBILE HEADER */}
         <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}>
           <a href="#/dashboard/invoices" style={{ display: "block", textDecoration: "none" }}>
             <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div onClick={clearNotifications} style={{ cursor: "pointer" }}><BellIcon count={unreadCount} /></div>
+            <div style={{ position: "relative" }}>
+               <div onClick={toggleNotifMenu}><BellIcon count={unreadCount} /></div>
+               {showNotifMenu && (
+                 <div style={{ position: "absolute", top: "100%", right: "-10px", width: "300px", background: "#FFF", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 1000, overflow: "hidden", marginTop: "12px" }}>
+                   <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
+                   <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                     {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
+                      notifs.map(n => (
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>
+                          {n.message}
+                        </div>
+                      ))
+                     }
+                   </div>
+                 </div>
+               )}
+            </div>
             <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
           </div>
         </div>
@@ -2638,7 +2658,7 @@ function AppRouter() {
               </>
             )}
             <a href="#/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-               {user.role === 'vendor' ? 'Helpdesk & Chat' : 'Support Inbox'}
+               {user.role === 'vendor' ? 'Helpdesk & Ticket' : 'Support Inbox'}
             </a>
 
             {user?.role === 'admin' && (
@@ -2648,6 +2668,30 @@ function AppRouter() {
             )}
           </div>
           <div style={{ flex: 1 }} />
+          
+          {/* DESKTOP NOTIFICATION BELL */}
+          <div style={{ padding: "0 32px", marginBottom: "24px" }}>
+            <div style={{ position: "relative", display: "inline-block" }}>
+               <div onClick={toggleNotifMenu} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#64748B", fontWeight: "700", fontSize: "14px" }}>
+                 <BellIcon count={unreadCount} /> Notifications
+               </div>
+               {showNotifMenu && (
+                 <div style={{ position: "absolute", bottom: "100%", left: "0", width: "300px", background: "#FFF", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 -10px 25px -5px rgba(0,0,0,0.1)", zIndex: 1000, overflow: "hidden", marginBottom: "12px" }}>
+                   <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
+                   <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                     {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
+                      notifs.map(n => (
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>
+                          {n.message}
+                        </div>
+                      ))
+                     }
+                   </div>
+                 </div>
+               )}
+            </div>
+          </div>
+
           <div className="sidebar-footer">
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
@@ -2656,7 +2700,7 @@ function AppRouter() {
           </div>
         </div>
 
-        <div className="main-content">
+        <div className="main-content" onClick={() => { if(showNotifMenu) setShowNotifMenu(false) }}>
           {activeTab === "invoices" && <KudiSlipInvoiceEngine user={user} showToast={showToast} />}
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
