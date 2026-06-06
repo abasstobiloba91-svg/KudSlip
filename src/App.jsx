@@ -380,7 +380,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
       {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
       
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div className="no-print" style={{ width: "100%", display: "flex", justify-content: "flex-end" }}>
+        <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}><DownloadIcon /> Download PDF</button>
         </div>
         
@@ -392,7 +392,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         )}
 
         <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
-          <div style={{ display: "flex", justify-content: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
               {vendor?.logo_url ? (
@@ -410,7 +410,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             </div>
           </div>
           
-          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justify-content: "space-between" }}>
+          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
               <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
@@ -430,7 +430,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             ))}
           </div>
           
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justify-content: "space-between", alignItems: "center", marginBottom: "32px" }}>
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
             <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
             <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
           </div>
@@ -458,7 +458,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
             <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
             
-            <div style={{ display: "flex", justify-content: "center", gap: "8px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
               {starsArray.map(star => (
                 <StarIcon 
                   key={star} 
