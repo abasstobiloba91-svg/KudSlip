@@ -2345,15 +2345,22 @@ function AdminSupportInbox({ user, showToast }) {
     return () => supabase.removeChannel(typeChannel);
   }, [activeVendorId]);
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     if (!supabase) return;
     const [msgRes, venRes] = await Promise.all([
       supabase.from('support_messages').select('*').order('created_at', { ascending: true }),
       supabase.from('vendors').select('id, business_name, email')
     ]);
+    
+    // 🚨 THIS WILL POP UP THE EXACT ERROR 🚨
+    if (venRes.error) {
+       showToast("Vendor Fetch Error", venRes.error.message, "error");
+       console.error("Vendor fetch failed:", venRes.error);
+    }
+
     if (msgRes.data) {
       setMessages(msgRes.data);
-      setIsUserTyping(false); // Stop typing animation if a message arrives
+      setIsUserTyping(false); 
     }
     if (venRes.data) {
       const vMap = {};
