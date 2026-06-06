@@ -2219,7 +2219,7 @@ function VendorChat({ user, showToast }) {
     await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `Ticket Update: ${user.business_name} sent a new message.`, is_read: false }]);
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
-    if (error) { showToast("Security Error", "Message blocked by database.", "error"); setMessage(tempMessage); }
+   if (error) { showToast("Supabase Error", error.message, "error"); setMessage(tempMessage); console.error(error); }
     else { fetchMessages(); }
   };
 
@@ -2330,7 +2330,7 @@ function AdminSupportInbox({ user, showToast }) {
     await supabase.from('notifications').insert([{ user_id: activeVendorId, message: `Support replied to your ticket.`, is_read: false }]);
     
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: activeVendorId, sender: 'support', message: temp }]);
-    if (error) { showToast("Error", "Reply failed to send.", "error"); setReply(temp); } else { fetchData(); }
+  if (error) { showToast("Supabase Error", error.message, "error"); setReply(temp); console.error(error); } else { fetchData(); }
   };
 
   const handleCloseTicket = async () => {
