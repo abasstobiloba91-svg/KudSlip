@@ -385,7 +385,7 @@ function LegalPage({ type }) {
   );
 }
 // =========================================================
-// PUBLIC INVOICE VIEW (Original Layout + Center Fix + SVG)
+// PUBLIC INVOICE VIEW (True Original + Top Action Bar)
 // =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [invoice, setInvoice] = useState(null);
@@ -434,105 +434,102 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   if (!invoice) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#EF4444", fontWeight: "800" }}>Invoice not found or deleted.</div>;
 
   return (
-    <div style={{ background: "#F8FAFC", minHeight: "100vh", padding: "24px 16px" }}>
+    <div style={{ padding: "24px", maxWidth: "700px", margin: "0 auto" }}>
       
-      {/* Tiny CSS just to ensure the PDF looks clean when printing */}
+      {/* Invisible style strictly for printing the PDF cleanly */}
       <style>{`
         @media print {
-          body, html { background: #FFFFFF !important; }
           .no-print { display: none !important; }
-          .print-container { box-shadow: none !important; border: none !important; padding: 0 !important; max-width: 100% !important; }
         }
       `}</style>
       
-      {/* 🎯 THE FIX: maxWidth 600px + margin auto. Centers on desktop, normal on mobile */}
-      <div className="print-container" style={{ maxWidth: "600px", margin: "0 auto", background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)" }}>
-         
-         {/* Header Area */}
-         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
-           <div>
-             <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed By</div>
-             {vendor?.logo_url ? (
-               <img src={vendor.logo_url} alt="Business Logo" style={{ maxHeight: "40px", objectFit: "contain" }} />
-             ) : (
-               <div style={{ fontWeight: "900", fontSize: "20px", color: "#0F172A", letterSpacing: "-0.5px" }}>{vendor?.business_name || "Merchant"}</div>
-             )}
-           </div>
-           <div style={{ textAlign: "right" }}>
-             <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Status</div>
-             <div style={{ display: "inline-block", padding: "6px 14px", borderRadius: "24px", fontSize: "12px", fontWeight: "800", background: invoice.status === 'paid' ? "#ECFDF5" : "#F8FAFC", color: invoice.status === 'paid' ? "#10B981" : "#0F172A", border: invoice.status === 'paid' ? "1px solid #A7F3D0" : "1px solid #E2E8F0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-               {invoice.status}
-             </div>
-           </div>
-         </div>
+      {/* 📥 TOP ACTION BAR: Download Button Restored to the Top! */}
+      {invoice.status === 'paid' && (
+        <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px" }}>
+          <button onClick={handlePrint} style={{ padding: "10px 16px", background: "#F1F5F9", color: "#0F172A", border: "1px solid #E2E8F0", borderRadius: "8px", fontSize: "13px", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px", cursor: "pointer" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 17v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
+              <polyline points="8 12 12 16 16 12"></polyline>
+              <line x1="12" y1="2" x2="12" y2="16"></line>
+            </svg>
+            Download PDF
+          </button>
+        </div>
+      )}
 
-         {/* Billed To & Date */}
-         <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
-           <div>
-             <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed To</div>
-             <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A", marginBottom: "2px" }}>{invoice.client_name}</div>
-             <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "500" }}>{invoice.client_email}</div>
-           </div>
-           <div style={{ textAlign: "right" }}>
-             <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Due Date</div>
-             <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
-           </div>
-         </div>
+      {/* Header Area */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
+        <div>
+          <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed By</div>
+          {vendor?.logo_url ? (
+            <img src={vendor.logo_url} alt="Business Logo" style={{ maxHeight: "40px", objectFit: "contain" }} />
+          ) : (
+            <div style={{ fontWeight: "900", fontSize: "20px", color: "#0F172A", letterSpacing: "-0.5px" }}>{vendor?.business_name || "Merchant"}</div>
+          )}
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Status</div>
+          <div style={{ display: "inline-block", padding: "6px 14px", borderRadius: "24px", fontSize: "12px", fontWeight: "800", background: invoice.status === 'paid' ? "#ECFDF5" : "#F8FAFC", color: invoice.status === 'paid' ? "#10B981" : "#0F172A", border: invoice.status === 'paid' ? "1px solid #A7F3D0" : "1px solid #E2E8F0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            {invoice.status}
+          </div>
+        </div>
+      </div>
 
-         {/* Invoice Items Table */}
-         <div style={{ marginBottom: "32px" }}>
-           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid #E2E8F0" }}>
-             <div style={{ flex: 1 }}>Description</div>
-             <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
-             <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
-           </div>
-           {invoice.items?.map((item, i) => (
-             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
-               <div style={{ flex: 1, fontWeight: "700", fontSize: "14px", color: "#0F172A" }}>{item.description}</div>
-               <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
-               <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: "#0F172A" }}>₦{Number(item.price * item.quantity).toLocaleString()}</div>
-             </div>
-           ))}
-         </div>
+      {/* Billed To & Date */}
+      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
+        <div>
+          <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed To</div>
+          <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A", marginBottom: "2px" }}>{invoice.client_name}</div>
+          <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "500" }}>{invoice.client_email}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Due Date</div>
+          <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
+        </div>
+      </div>
 
-         {/* Total Section */}
-         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", padding: "24px", borderRadius: "12px", marginBottom: "32px", border: "1px solid #E2E8F0" }}>
-           <div style={{ fontSize: "13px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
-           <div style={{ fontSize: "28px", fontWeight: "900", color: "#000000", letterSpacing: "-0.5px" }}>₦{Number(invoice.amount).toLocaleString()}</div>
-         </div>
+      {/* Invoice Items Table */}
+      <div style={{ marginBottom: "32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid #E2E8F0" }}>
+          <div style={{ flex: 1 }}>Description</div>
+          <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
+          <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
+        </div>
+        {invoice.items?.map((item, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
+            <div style={{ flex: 1, fontWeight: "700", fontSize: "14px", color: "#0F172A" }}>{item.description}</div>
+            <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
+            <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: "#0F172A" }}>₦{Number(item.price * item.quantity).toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
 
-         {/* Action Buttons Container */}
-         <div className="no-print">
-           {invoice.status !== 'paid' ? (
-             <button onClick={handlePayment} disabled={paying} style={{ width: "100%", padding: "18px", fontSize: "16px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", fontWeight: "800", background: "#000000", color: "#FFFFFF", border: "none", cursor: "pointer" }}>
-               {paying ? "Processing Secure Payment..." : `Pay ₦${Number(invoice.amount).toLocaleString()}`}
-             </button>
-           ) : (
-             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-               <div style={{ background: "#ECFDF5", color: "#10B981", padding: "16px", borderRadius: "12px", textAlign: "center", fontWeight: "800", fontSize: "14px", border: "1px solid #A7F3D0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                 Payment Complete. Thank you!
-               </div>
-               
-               {/* PURE SVG DOWNLOAD BUTTON */}
-               <button onClick={handlePrint} style={{ width: "100%", padding: "14px", background: "#000000", color: "#FFFFFF", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: "800", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", textTransform: "uppercase", letterSpacing: "0.5px", cursor: "pointer" }}>
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M3 17v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
-                   <polyline points="8 12 12 16 16 12"></polyline>
-                   <line x1="12" y1="2" x2="12" y2="16"></line>
-                 </svg>
-                 Download PDF Receipt
-               </button>
-             </div>
-           )}
-         </div>
+      {/* Total Section */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", padding: "24px", borderRadius: "12px", marginBottom: "32px", border: "1px solid #E2E8F0" }}>
+        <div style={{ fontSize: "13px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
+        <div style={{ fontSize: "28px", fontWeight: "900", color: "#000000", letterSpacing: "-0.5px" }}>₦{Number(invoice.amount).toLocaleString()}</div>
+      </div>
 
-         {/* Footer branding */}
-         <div className="no-print" style={{ textAlign: "center", marginTop: "32px", fontSize: "12px", color: "#94A3B8", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-           Secured & Powered by <img src="/logo.png" alt="KudiSlip" style={{ height: "14px", opacity: 0.6 }} />
-         </div>
+      {/* Action Buttons Container */}
+      <div className="no-print">
+        {invoice.status !== 'paid' ? (
+          <button onClick={handlePayment} disabled={paying} style={{ width: "100%", padding: "18px", fontSize: "16px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", fontWeight: "800", background: "#000000", color: "#FFFFFF", border: "none", cursor: "pointer" }}>
+            {paying ? "Processing Secure Payment..." : `Pay ₦${Number(invoice.amount).toLocaleString()}`}
+          </button>
+        ) : (
+          <div style={{ background: "#ECFDF5", color: "#10B981", padding: "16px", borderRadius: "12px", textAlign: "center", fontWeight: "800", fontSize: "14px", border: "1px solid #A7F3D0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            Payment Complete. Thank you!
+          </div>
+        )}
+      </div>
+
+      {/* Footer branding */}
+      <div className="no-print" style={{ textAlign: "center", marginTop: "32px", fontSize: "12px", color: "#94A3B8", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+        Secured & Powered by <img src="/logo.png" alt="KudiSlip" style={{ height: "14px", opacity: 0.6 }} />
       </div>
     </div>
   );
+}
 }
 // =========================================================
 // 2. BRAND SETTINGS (PRO FEATURE)
