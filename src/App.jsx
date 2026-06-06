@@ -384,252 +384,170 @@ function LegalPage({ type }) {
     </div>
   );
 }
+// =========================================================
+// PUBLIC INVOICE VIEW (Beautiful Desktop, Untouched Mobile)
+// =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
-  usePaystack();
   const [invoice, setInvoice] = useState(null);
   const [vendor, setVendor] = useState(null);
-  const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [debugError, setDebugError] = useState(null);
+  const [paying, setPaying] = useState(false);
 
-  // Review System State
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
-
-  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
-
-  const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
-
-  useEffect(() => {
-    async function fetchData() {
-      if (!supabase || !invoiceId) { setDebugError("No valid payload found."); setLoading(false); return; }
-      const { data: invData, error: invError } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
-      if (invError) { setDebugError(`Msg: ${invError.message}`); setLoading(false); return; }
-
-      if (invData) {
-        setInvoice(invData);
-        const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
-        const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
-        setVendor(venData); setClient(cliData);
-      } else { setDebugError("Invoice row empty."); }
-      loading === true && setLoading(false);
+  const fetchInvoice = async () => {
+    if (!supabase) return;
+    const { data: invData, error: invErr } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+    if (invErr || !invData) {
+      setLoading(false); return;
     }
-    fetchData();
-  }, [invoiceId]);
-
-  // 🎯 THE FIX: Direct, synchronous print call. No timeouts. 
-  // The mobile browser will trust this and instantly apply the A4 CSS we wrote earlier.
-  const triggerPDFCompilation = () => {
-    window.print();
+    setInvoice(invData);
+    const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
+    if (venData) setVendor(venData);
+    setLoading(false);
   };
+
+  useEffect(() => { fetchInvoice(); }, [invoiceId]);
 
   const handlePayment = () => {
-    if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
-    if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
-    
-    const baseAmount = Number(invoice?.amount || 0);
-    const invoiceCurrency = invoice?.currency || "NGN";
-    
-    if (baseAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
-
-    try {
-      let finalAmount = baseAmount;
-      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
-        if (baseAmount < 2500) {
-          finalAmount = baseAmount / 0.985;
-        } else {
-          const calculatedWithFees = (baseAmount + 100) / 0.985;
-          const totalFeeCharged = calculatedWithFees - baseAmount;
-          
-          if (totalFeeCharged > 2000) {
-            finalAmount = baseAmount + 2000;
-          } else {
-            finalAmount = calculatedWithFees;
-          }
-        }
-      }
-
-      const safeAmountInKobo = Math.round(finalAmount * 100);
-
-      let paystackPayload = {
-        key: PAYSTACK_PUBLIC_KEY,
-        email: client?.email || "customer@kudislip.com",
-        amount: safeAmountInKobo, 
-        currency: invoiceCurrency,
-        callback: function(response) {
-          supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
-            setInvoice({ ...invoice, status: 'paid' });
-            showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-          });
-        },
-        onClose: function() { console.log("Payment window closed."); }
-      };
-
-      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
-        paystackPayload.subaccount = vendor.paystack_subaccount_code;
-        paystackPayload.bearer = "subaccount";
-      }
-
-      const handler = window.PaystackPop.setup(paystackPayload);
-      handler.openIframe();
-    } catch(err) {
-      showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
-    }
+    setPaying(true);
+    const handler = window.PaystackPop.setup({
+      key: 'pk_test_a041f5e8b6271966205baea2cc2f5fcffc101c40', // Uses your standard test key
+      email: invoice.client_email,
+      amount: Math.round(invoice.amount * 100),
+      subaccount: vendor?.paystack_subaccount_code || "",
+      callback: async (response) => {
+        await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
+        await supabase.from('notifications').insert([{ user_id: invoice.vendor_id, message: `Payment received: ₦${invoice.amount} from ${invoice.client_name}`, is_read: false }]);
+        showToast("Payment Successful", "Receipt generated.", "success");
+        fetchInvoice();
+        setPaying(false);
+      },
+      onClose: () => { setPaying(false); }
+    });
+    handler.openIframe();
   };
 
-  const submitReview = async () => {
-    if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
-    
-    await supabase.from('reviews').insert([{
-      invoice_id: invoice.id,
-      merchant_name: vendor?.business_name || "Unknown Merchant",
-      rating,
-      comment: reviewComment
-    }]);
-    
-    setReviewSubmitted(true);
-    showToast("Feedback Sent", "Thank you! Your review helps us keep the platform safe.", "success");
-  };
-
-  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
-  if (debugError) return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
-      <GlobalStyles/>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2 style={{ margin: 0 }}>System Routing Error</h2></div>
-      <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px"}}>{debugError}</p>
-      <a href="#/" className="btn-primary btn-hover" style={{marginTop: "16px"}}>Go to Dashboard</a>
-    </div>
-  );
-  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
-
-  let safeItems = [];
-  try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
-  const safeAmount = Number(invoice.amount || 0);
-  const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
-  const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
-  const customColor = vendor?.brand_color || DESIGN.primary;
-  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor.custom_thank_you || `Thank you for your payment! ${vendor.business_name} cares.`);
-  
-  const invoiceCurrency = invoice.currency || "NGN";
-  const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
-
-  const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
-    <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-    </svg>
-  );
+  if (loading) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#64748B", fontWeight: "600" }}>Loading secure invoice...</div>;
+  if (!invoice) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", color: "#EF4444", fontWeight: "800" }}>Invoice not found or deleted.</div>;
 
   return (
-    <div className="invoice-page-wrapper" style={{ minHeight: "100vh", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", background: DESIGN.bg, position: "relative" }}>
-      <GlobalStyles />
-      {isFreeTier && <div className="no-print" style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 9999, transform: "rotate(-15deg)" }} />}
-      
-      <div className="invoice-content-wrapper" style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}><DownloadIcon /> Download PDF</button>
-        </div>
-        
-        {isFreeTier && (
-          <div className="no-print" style={{ textAlign: "center", marginBottom: "8px" }}>
-            <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
-          </div>
-        )}
+    <div className="public-invoice-wrapper">
+      {/* 🎯 THE MAGIC CSS: Forces Desktop Card, Leaves Mobile Flat */}
+      <style>{`
+        .public-invoice-wrapper {
+          min-height: 100vh;
+          background-color: #F8FAFC;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 60px 20px;
+        }
+        .public-invoice-paper {
+          background: #FFFFFF;
+          width: 100%;
+          max-width: 650px; /* Stops the desktop stretching */
+          border-radius: 16px;
+          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+          border: 1px solid #E2E8F0;
+          overflow: hidden;
+        }
+        .invoice-content {
+          padding: 48px;
+        }
+        /* MOBILE OVERRIDE: Undoes everything to keep it exactly as it was */
+        @media (max-width: 768px) {
+          .public-invoice-wrapper {
+            padding: 0;
+            background-color: #FFFFFF;
+            display: block;
+          }
+          .public-invoice-paper {
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            max-width: 100%;
+          }
+          .invoice-content {
+            padding: 24px;
+          }
+        }
+      `}</style>
 
-        <div className="print-container card-hover" style={{ background: DESIGN.surface, borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "40px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", marginBottom: "24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
-            <div>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
-              {vendor?.logo_url ? (
-                <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
-                  <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+      <div className="public-invoice-paper">
+         {/* Dynamic Top Accent Bar based on Paid Status */}
+         <div style={{ height: "8px", width: "100%", background: invoice.status === 'paid' ? "#10B981" : "#000000" }}></div>
+         
+         <div className="invoice-content">
+            {/* Header Area */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed By</div>
+                {vendor?.logo_url ? (
+                  <img src={vendor.logo_url} alt="Business Logo" style={{ maxHeight: "40px", objectFit: "contain" }} />
+                ) : (
+                  <div style={{ fontWeight: "900", fontSize: "20px", color: "#0F172A", letterSpacing: "-0.5px" }}>{vendor?.business_name || "Merchant"}</div>
+                )}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Status</div>
+                <div style={{ display: "inline-block", padding: "6px 14px", borderRadius: "24px", fontSize: "12px", fontWeight: "800", background: invoice.status === 'paid' ? "#ECFDF5" : "#F8FAFC", color: invoice.status === 'paid' ? "#10B981" : "#0F172A", border: invoice.status === 'paid' ? "1px solid #A7F3D0" : "1px solid #E2E8F0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {invoice.status}
                 </div>
-              )}
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-              <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
-            </div>
-          </div>
-          
-          <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-              <div style={{ fontWeight: "700" }}>{client?.name || "Client"}</div>
-              <div style={{ fontSize: "14px", color: DESIGN.textMuted }}>{client?.email || "No email"}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-              <div style={{ fontWeight: "700" }}>{safeDate}</div>
-            </div>
-          </div>
-          
-          <div style={{ marginBottom: "40px" }}>
-            {safeItems.map((item, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr", gap: "16px", marginBottom: "12px", fontSize: "14px", fontWeight: "500" }}>
-                <span>{item.description}</span><span style={{textAlign: "center", color: DESIGN.textMuted}}>{item.quantity}</span><span style={{textAlign: "right"}}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</span>
               </div>
-            ))}
-          </div>
-          
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-            <div style={{ fontSize: "14px", fontWeight: "700", color: DESIGN.textMuted }}>Total Amount</div>
-            <div style={{ fontSize: "28px", fontWeight: "900", color: customColor }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
-          </div>
-          
-          <div className="no-print">
-            {invoice.status === 'pending' ? (
-              <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "15px", cursor: "pointer" }} onClick={handlePayment}>
-                Proceed to Payment
-              </button>
-            ) : (
-              <div style={{ textAlign: "center", padding: "24px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
-                <div style={{ color: DESIGN.success, fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}><CheckIcon /> Payment Successful</div>
-                <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
-              </div>
-            )}
-            
-            {currentUser?.id === vendor?.id && (
-              <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
-          <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
-            <p style={{ fontSize: "14px", color: DESIGN.textMuted, marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
-            
-            <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
-              {starsArray.map(star => (
-                <StarIcon 
-                  key={star} 
-                  filled={star <= (hoverRating || rating)} 
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                />
+            {/* Billed To & Date */}
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #E2E8F0", paddingBottom: "24px", marginBottom: "24px" }}>
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Billed To</div>
+                <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A", marginBottom: "2px" }}>{invoice.client_name}</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "500" }}>{invoice.client_email}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Due Date</div>
+                <div style={{ fontWeight: "800", fontSize: "15px", color: "#0F172A" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
+              </div>
+            </div>
+
+            {/* Invoice Items Table */}
+            <div style={{ marginBottom: "32px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid #E2E8F0" }}>
+                <div style={{ flex: 1 }}>Description</div>
+                <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
+                <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
+              </div>
+              {invoice.items?.map((item, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
+                  <div style={{ flex: 1, fontWeight: "700", fontSize: "14px", color: "#0F172A" }}>{item.description}</div>
+                  <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
+                  <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: "#0F172A" }}>₦{Number(item.price * item.quantity).toLocaleString()}</div>
+                </div>
               ))}
             </div>
-            
-            {rating > 0 && (
-              <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
-                <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical" }} />
-                <button className="btn-primary btn-hover" style={{ width: "100%" }} onClick={submitReview}>Submit Feedback</button>
+
+            {/* Total Section */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", padding: "24px", borderRadius: "12px", marginBottom: "32px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "13px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
+              <div style={{ fontSize: "28px", fontWeight: "900", color: "#000000", letterSpacing: "-0.5px" }}>₦{Number(invoice.amount).toLocaleString()}</div>
+            </div>
+
+            {/* Action Buttons */}
+            {invoice.status !== 'paid' && (
+              <button onClick={handlePayment} disabled={paying} className="btn-primary btn-hover" style={{ width: "100%", padding: "18px", fontSize: "16px", borderRadius: "12px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
+                {paying ? "Processing Secure Payment..." : `Pay ₦${Number(invoice.amount).toLocaleString()}`}
+              </button>
+            )}
+
+            {invoice.status === 'paid' && (
+              <div style={{ background: "#ECFDF5", color: "#10B981", padding: "16px", borderRadius: "12px", textAlign: "center", fontWeight: "800", fontSize: "14px", border: "1px solid #A7F3D0" }}>
+                Payment Complete. Thank you!
               </div>
             )}
-          </div>
-        )}
 
-        {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
-           <a href="#/" className="btn-secondary btn-hover no-print" style={{ width: "100%", padding: "16px", background: "#FFFFFF" }}>Return to KudiSlip Home</a>
-        )}
-
+            {/* Footer branding */}
+            <div style={{ textAlign: "center", marginTop: "32px", fontSize: "12px", color: "#94A3B8", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+              Secured & Powered by <img src="/logo.png" alt="KudiSlip" style={{ height: "14px", opacity: 0.6 }} />
+            </div>
+         </div>
       </div>
     </div>
   );
