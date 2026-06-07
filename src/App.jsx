@@ -757,7 +757,7 @@ function SuperAdminDashboard({ showToast }) {
 }
 
 // =========================================================
-// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS & PRO TOGGLES)
+// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS, PRO TOGGLES & EMAIL ENGINE)
 // =========================================================
 function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -773,10 +773,13 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   
   // PRO TOGGLES
   const [invoiceType, setInvoiceType] = useState("one-time");
-  const [passFees, setPassFees] = useState(false); // NEW FEATURE
+  const [passFees, setPassFees] = useState(false); 
 
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
+  
+  // EMAIL ENGINE STATE (Tracks exactly which invoice is sending)
+  const [sendingEmailId, setSendingEmailId] = useState(null);
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
@@ -839,7 +842,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       items: finalItems, 
       due_date: dueDate, 
       currency: 'NGN',
-      fee_passed_on: passFees, // PRO FEATURE INJECTED
+      fee_passed_on: passFees,
       is_recurring: invoiceType !== "one-time", 
       recurring_frequency: invoiceType !== "one-time" ? invoiceType : null
     }]).select().single();
@@ -851,6 +854,46 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       fetchRecentInvoices();
     }
     setLoading(false);
+  };
+
+  // =========================================================
+  // AUTOMATED EMAIL ENGINE LOGIC
+  // =========================================================
+  const handleSendEmail = async (inv) => {
+    if (!inv || !inv.clients?.email) {
+      showToast("Missing Info", "This client doesn't have an email address saved.", "error");
+      return;
+    }
+
+    setSendingEmailId(inv.id);
+    showToast("Sending...", "Dispatching email via Resend...", "info");
+
+    try {
+      const response = await fetch('/api/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientEmail: inv.clients.email,
+          clientName: inv.clients.name || "Valued Client",
+          invoiceAmount: inv.amount,
+          invoiceLink: `${window.location.origin}/#/pay/${inv.id}`,
+          vendorName: user.business_name || "KudiSlip Merchant"
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        showToast("Delivered!", `Invoice sent to ${inv.clients.email}`, "success");
+      } else {
+        showToast("Delivery Failed", data.error || "Could not send email.", "error");
+      }
+    } catch (error) {
+      console.error("Email Error:", error);
+      showToast("Network Error", "Something went wrong contacting the mail server.", "error");
+    } finally {
+      setSendingEmailId(null);
+    }
   };
 
   if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Invoices.</div>;
@@ -876,6 +919,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
 
   return (
     <div style={{ maxWidth: "900px" }}>
+      <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
       {showLogoWarning && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
@@ -962,7 +1006,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
 
-        {/* PRO FEES TOGGLE ADDED HERE */}
         <div style={{ marginBottom: "24px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "12px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
             <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={user?.subscription_tier !== 'premium'} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
@@ -1045,10 +1088,40 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                   <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A" }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
+                  
+                  {/* ================================================= */}
+                  {/* NEW ACTION BUTTONS ROW (WITH EMAIL BUTTON)        */}
+                  {/* ================================================= */}
                   <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
                     <button className="btn-secondary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "140px" }} onClick={() => window.open("/#/pay/" + inv.id, '_blank')}>View Link</button>
+                    
                     {inv.status === 'pending' && (
-                      <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>Send Reminder</a>
+                      <button 
+                        onClick={() => handleSendEmail(inv)} 
+                        disabled={sendingEmailId === inv.id}
+                        className="btn-secondary btn-hover"
+                        style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1 }}
+                      >
+                        {sendingEmailId === inv.id ? (
+                          <>
+                            <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+                              <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+                            </svg>
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            Email Client
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {inv.status === 'pending' && (
+                      <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/#/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp Alert</a>
                     )}
                   </div>
                 </div>
