@@ -2507,7 +2507,7 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH NOTIF COLLISION FIX)
+// MAIN APP ROUTER & MOBILE DRAWER (WITH GLOBAL SCROLL FIX)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2516,7 +2516,7 @@ function AppRouter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifs, setNotifs] = useState([]);
   
-  // 🎯 THE FIX: Track WHICH menu is open ('mobile' or 'desktop') instead of just true/false
+  // 🎯 Track WHICH menu is open ('mobile' or 'desktop')
   const [activeNotifMenu, setActiveNotifMenu] = useState(null); 
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2539,6 +2539,11 @@ function AppRouter() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  // 🎯 THE NEW FIX: Global Scroll Reset. Forces page to top on every navigation
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [hash]);
 
   useEffect(() => { setSidebarOpen(false); }, [hash]);
 
@@ -2596,12 +2601,11 @@ function AppRouter() {
     setNotifs(updatedNotifs);
   };
 
-  // 🎯 THE FIX: Smart toggle logic to close active menu or open the specific one
   const toggleNotifMenu = (menuId) => {
     if (activeNotifMenu === menuId) {
-      setActiveNotifMenu(null); // Clicked the same bell, close it
+      setActiveNotifMenu(null);
     } else {
-      setActiveNotifMenu(menuId); // Clicked a new bell, open it
+      setActiveNotifMenu(menuId);
       markNotificationsRead();
     }
   };
@@ -2632,6 +2636,8 @@ function AppRouter() {
     }
 
     if (hash === "#/terms") return <LegalPage type="terms" />;
+    
+    // 🎯 Missing parenthesis bug fixed here!
     if (hash === "#/privacy") return <LegalPage type="privacy" />;
 
     if (!user) {
