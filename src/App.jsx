@@ -1275,8 +1275,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   return (
     <>
-      <GlobalStyles />
-      <style>{`
+     <style>{`
         .invoice-page-wrapper {
           min-height: 100vh;
           padding: 60px 20px;
@@ -1302,13 +1301,14 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           padding: 40px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
           height: max-content; 
+          min-height: 80vh; /* 🎯 STRETCHES CARD ON MOBILE SCREENS */
         }
         @media (max-width: 768px) {
           .invoice-page-wrapper { padding: 24px 16px; }
           .print-card { padding: 24px; }
         }
         
-        /* 🖨️ THE FIX: Forces perfect margins on every computer */
+        /* 🖨️ THE FIX: Forces perfect margins and stretches the watermark! */
         @media print {
           @page { margin: 0; } 
           body, html, .invoice-page-wrapper { 
@@ -1328,10 +1328,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             box-shadow: none !important; 
             padding: 15mm !important;
             border-radius: 0 !important; 
+            min-height: 100vh !important; /* 🎯 STRETCHES CARD TO FILL A4 PAPER */
           }
         }
       `}</style>
-
       <div className="invoice-page-wrapper">
         <div className="invoice-max-width">
           
