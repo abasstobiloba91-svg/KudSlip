@@ -1386,7 +1386,7 @@ function LandingPage() {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", flex: 1 }}>
         
         {/* NAVBAR */}
-        <nav style={{ display: "flex", justify-content: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
+        <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons-desktop">
             <a href="#/login" className="btn-secondary btn-hover">Log In</a>
@@ -1568,7 +1568,7 @@ function LandingPage() {
       
       {/* FOOTER */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justify-content: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
           <div style={{ display: "flex", gap: "24px" }}>
             <a href="#/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
@@ -1580,7 +1580,6 @@ function LandingPage() {
     </div>
   );
 }
-
 // =========================================================
 // 6. AUTHENTICATION
 // =========================================================
