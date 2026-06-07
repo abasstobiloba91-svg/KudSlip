@@ -289,7 +289,7 @@ function LegalPage({ type }) {
     <div ref={topAnchorRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
       <GlobalStyles />
       <nav style={{ padding: "24px", borderBottom: `1px solid ${DESIGN.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <a href="#/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">&larr; Back Home</a>
+        <a href="/" style={{ textDecoration: "none", color: DESIGN.textMuted, fontWeight: "700", fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }} className="btn-hover">&larr; Back Home</a>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "24px", transform: "scale(1.5)" }} />
       </nav>
       
@@ -876,7 +876,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           clientEmail: inv.clients.email,
           clientName: inv.clients.name || "Valued Client",
           invoiceAmount: inv.amount,
-          invoiceLink: `${window.location.origin}/#/pay/${inv.id}`,
+          invoiceLink: `${window.location.origin}/pay/${inv.id}`,
           vendorName: user.business_name || "KudiSlip Merchant"
         })
       });
@@ -1703,7 +1703,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         if (signInError) throw signInError;
         const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
         onLoginSuccess({ ...data.user, ...vendorData });
-        window.location.hash = "#/dashboard/invoices";
+        window.location.hash = "/dashboard/invoices";
       }
     } catch (err) { 
       setError(err.message); 
