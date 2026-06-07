@@ -2498,7 +2498,7 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH PROFIT ANALYTICS)
+// MAIN APP ROUTER & MOBILE DRAWER (WITH NOTIF COLLISION FIX)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2506,7 +2506,10 @@ function AppRouter() {
   const [showSplash, setShowSplash] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifs, setNotifs] = useState([]);
-  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  
+  // 🎯 THE FIX: Track WHICH menu is open ('mobile' or 'desktop') instead of just true/false
+  const [activeNotifMenu, setActiveNotifMenu] = useState(null); 
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
@@ -2584,10 +2587,14 @@ function AppRouter() {
     setNotifs(updatedNotifs);
   };
 
-  const toggleNotifMenu = () => {
-    const isOpening = !showNotifMenu;
-    setShowNotifMenu(isOpening);
-    if (isOpening) markNotificationsRead();
+  // 🎯 THE FIX: Smart toggle logic to close active menu or open the specific one
+  const toggleNotifMenu = (menuId) => {
+    if (activeNotifMenu === menuId) {
+      setActiveNotifMenu(null); // Clicked the same bell, close it
+    } else {
+      setActiveNotifMenu(menuId); // Clicked a new bell, open it
+      markNotificationsRead();
+    }
   };
 
   const renderView = () => {
@@ -2637,8 +2644,8 @@ function AppRouter() {
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{ position: "relative" }}>
-               <div onClick={toggleNotifMenu}><BellIcon count={unreadCount} /></div>
-               {showNotifMenu && (
+               <div onClick={() => toggleNotifMenu('mobile')}><BellIcon count={unreadCount} /></div>
+               {activeNotifMenu === 'mobile' && (
                  <div style={{ position: "absolute", top: "100%", right: "-10px", width: "300px", background: "#FFF", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 1000, overflow: "hidden", marginTop: "12px" }}>
                    <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
@@ -2657,7 +2664,7 @@ function AppRouter() {
           </div>
         </div>
 
-        <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+        <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
@@ -2669,7 +2676,6 @@ function AppRouter() {
             {user.role !== 'support' && (
               <>
                 <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
-                {/* 🎯 THE PRO MENUBUTTON WIRED IN */}
                 <a href="#/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   Profit Analytics <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px", fontWeight: "800"}}>PRO</span>
                 </a>
@@ -2694,10 +2700,10 @@ function AppRouter() {
           {/* DESKTOP NOTIFICATION BELL */}
           <div style={{ padding: "0 32px", marginBottom: "24px" }}>
             <div style={{ position: "relative", display: "inline-block" }}>
-               <div onClick={toggleNotifMenu} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#64748B", fontWeight: "700", fontSize: "14px" }}>
+               <div onClick={() => toggleNotifMenu('desktop')} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#64748B", fontWeight: "700", fontSize: "14px" }}>
                  <BellIcon count={unreadCount} /> Notifications
                </div>
-               {showNotifMenu && (
+               {activeNotifMenu === 'desktop' && (
                  <div style={{ position: "absolute", bottom: "100%", left: "0", width: "300px", background: "#FFF", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 -10px 25px -5px rgba(0,0,0,0.1)", zIndex: 1000, overflow: "hidden", marginBottom: "12px" }}>
                    <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
@@ -2723,7 +2729,7 @@ function AppRouter() {
         </div>
 
         {/* MAIN VIEW CONTROLLER PANEL */}
-        <div className="main-content" onClick={() => { if(showNotifMenu) setShowNotifMenu(false) }}>
+        <div className="main-content" onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <KudiSlipInvoiceEngine user={user} showToast={showToast} />}
           {activeTab === "expenses" && <ExpensesManager user={user} showToast={showToast} />} 
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
