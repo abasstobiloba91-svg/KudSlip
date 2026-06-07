@@ -1375,7 +1375,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 5. LANDING PAGE 
+// 5. LANDING PAGE (WITH NEW CUSTOM HERO IMAGE)
 // =========================================================
 function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1386,7 +1386,7 @@ function LandingPage() {
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", flex: 1 }}>
         
         {/* NAVBAR */}
-        <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
+        <nav style={{ display: "flex", justify-content: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons-desktop">
             <a href="#/login" className="btn-secondary btn-hover">Log In</a>
@@ -1407,7 +1407,14 @@ function LandingPage() {
             <p style={{ fontSize: "18px", color: "#64748B", margin: "0 0 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
             <a href="#/signup" className="btn-primary btn-hover" style={{ padding: "16px 36px", fontSize: "16px" }}>Create Your Account</a>
           </div>
-          <div><img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80" alt="Nigerian Professional Dashboard" style={{ width: "100%", borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} /></div>
+          {/* THE NEW HERO IMAGE IS INJECTED HERE */}
+          <div>
+            <img 
+              src="/hero-image.jpg" 
+              alt="KudiSlip Merchants" 
+              style={{ width: "100%", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", objectFit: "cover", border: "1px solid #E2E8F0" }} 
+            />
+          </div>
         </main>
         
         {/* CORE 3 FEATURES */}
@@ -1561,7 +1568,7 @@ function LandingPage() {
       
       {/* FOOTER */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justify-content: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
           <div style={{ display: "flex", gap: "24px" }}>
             <a href="#/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
