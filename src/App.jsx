@@ -497,7 +497,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
         <div style={{ padding: "40px 32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
           <div style={{ fontSize: "18px", fontWeight: "800", color: DESIGN.premium, marginBottom: "12px" }}>Premium Feature</div>
           <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, alter colors, and set custom thank-you messages.</div>
-          <a href="#/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ display: "block", width: "100%" }}>Upgrade to Premium</a>
+          <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ display: "block", width: "100%" }}>Upgrade to Premium</a>
         </div>
       </div>
     );
@@ -1424,7 +1424,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               )}
               
               {currentUser?.id === vendor?.id && (
-                <a href="#/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
+                <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
               )}
             </div>
           </div>
@@ -1466,7 +1466,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
   );
 }
 // =========================================================
-// 5. LANDING PAGE (WITH NEW CUSTOM HERO IMAGE)
+// 5. LANDING PAGE (CLEAN URLs)
 // =========================================================
 function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1475,40 +1475,31 @@ function LandingPage() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <GlobalStyles />
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", width: "100%", flex: 1 }}>
-        
-        {/* NAVBAR */}
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0", borderBottom: `1px solid #E2E8F0` }}>
           <div style={{ width: "180px", display: "flex", alignItems: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} /></div>
           <div className="nav-buttons-desktop">
-            <a href="#/login" className="btn-secondary btn-hover">Log In</a>
-            <a href="#/signup" className="btn-primary btn-hover">Get Started Free</a>
+            <a href="/login" className="btn-secondary btn-hover">Log In</a>
+            <a href="/signup" className="btn-primary btn-hover">Get Started Free</a>
           </div>
           <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>☰</button>
         </nav>
         <div className={`mobile-nav-dropdown ${mobileMenuOpen ? 'open' : ''}`}>
-          <a href="#/login" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Log In</a>
-          <a href="#/signup" className="btn-primary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
+          <a href="/login" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Log In</a>
+          <a href="/signup" className="btn-primary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
         </div>
         
-        {/* HERO SECTION */}
         <main className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center", padding: "80px 0 60px" }}>
           <div className="hero-text-container" style={{ paddingRight: "40px" }}>
             <div style={{ display: "inline-block", padding: "6px 16px", background: "#F1F5F9", border: `1px solid #E2E8F0`, borderRadius: "20px", fontSize: "13px", fontWeight: "600", color: "#64748B", marginBottom: "24px" }}>The #1 CRM & Invoicing Tool</div>
             <h1 className="hero-title" style={{ fontSize: "56px", fontWeight: "900", letterSpacing: "-1.5px", margin: "0 0 24px", color: "#0F172A", lineHeight: "1.1" }}>Manage Customers.<br />Automate Payments.</h1>
             <p style={{ fontSize: "18px", color: "#64748B", margin: "0 0 40px", lineHeight: "1.6" }}>KudiSlip is your all-in-one CRM tool to generate professional invoices, track customer relationships, and receive instant bank settlements through automated Paystack routing.</p>
-            <a href="#/signup" className="btn-primary btn-hover" style={{ padding: "16px 36px", fontSize: "16px" }}>Create Your Account</a>
+            <a href="/signup" className="btn-primary btn-hover" style={{ padding: "16px 36px", fontSize: "16px" }}>Create Your Account</a>
           </div>
-          {/* THE NEW HERO IMAGE IS INJECTED HERE */}
           <div>
-            <img 
-              src="/hero-image.jpg" 
-              alt="KudiSlip Merchants" 
-              style={{ width: "100%", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", objectFit: "cover", border: "1px solid #E2E8F0" }} 
-            />
+            <img src="/hero-image.jpg" alt="KudiSlip Merchants" style={{ width: "100%", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", objectFit: "cover", border: "1px solid #E2E8F0" }} />
           </div>
         </main>
         
-        {/* CORE 3 FEATURES */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", paddingBottom: "80px" }}>
           <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px 24px", textAlign: "center" }}>
             <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=150&q=80" alt="Invoicing Terminals" style={{ height: "60px", width: "60px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} />
@@ -1527,7 +1518,6 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* WHY CHOOSE KUDISLIP */}
         <div style={{ background: "#F1F5F9", padding: "80px 24px", margin: "0 -24px", textAlign: "center", borderRadius: "24px", marginBottom: "80px" }}>
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Why Nigerian Businesses Choose KudiSlip</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "32px", maxWidth: "1000px", margin: "0 auto" }}>
@@ -1549,67 +1539,46 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* --- NEW PLATFORM UPDATES --- */}
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <span style={{ background: "#EFF6FF", color: "#3B82F6", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px" }}>Platform Updates</span>
             <h2 style={{ fontSize: "36px", fontWeight: "900", marginTop: "16px", marginBottom: "12px" }}>Powerful new tools to scale your business.</h2>
             <p style={{ color: "#64748B", fontSize: "16px", maxWidth: "600px", margin: "0 auto" }}>Everything you need to manage your money, from automated reminders to cross-border payments.</p>
           </div>
-          
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-            
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: "#3B82F6" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: "#3B82F6" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Global Multi-Currency</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Bill clients across borders. Switch seamlessly between Naira (₦), US Dollars ($), and British Pounds (£) via Paystack.</p>
             </div>
-
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.success }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: DESIGN.success }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Net Profit Tracker</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Stop guessing your income. Log your daily business expenses directly in the app to see your actual net profit in real-time.</p>
             </div>
-
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.premium }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: DESIGN.premium }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Automated Reminders</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Let our background engine chase your money. Automated midnight email drops and 1-click WhatsApp reminders for pending invoices.</p>
             </div>
-
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: "#F59E0B" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 22 7 12 2"></polygon><polyline points="2 17 2 22 22 22 22 17"></polyline><line x1="6" y1="12" x2="6" y2="17"></line><line x1="10" y1="12" x2="10" y2="17"></line><line x1="14" y1="12" x2="14" y2="17"></line><line x1="18" y1="12" x2="18" y2="17"></line></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: "#F59E0B" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 22 7 12 2"></polygon><polyline points="2 17 2 22 22 22 22 17"></polyline><line x1="6" y1="12" x2="6" y2="17"></line><line x1="10" y1="12" x2="10" y2="17"></line><line x1="14" y1="12" x2="14" y2="17"></line><line x1="18" y1="12" x2="18" y2="17"></line></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Built-In Tax Engine</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Stay compliant effortlessly. Apply the standard 7.5% government VAT to any invoice total with a single click.</p>
             </div>
-
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.textMain }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: DESIGN.textMain }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Manual Transfer Logs</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Client paid in cash or via direct bank transfer? Bypass the payment gateway and mark invoices as paid manually to keep your CRM accurate.</p>
             </div>
-
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: "#EAB308" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              </div>
+              <div style={{ marginBottom: "16px", color: "#EAB308" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Premium Branding</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Upgrade to Pro to remove watermarks, upload your custom business logo, and tailor custom thank-you messages for your clients.</p>
             </div>
           </div>
         </div>
 
-        {/* MEET THE TEAM */}
         <div style={{ paddingBottom: "100px", textAlign: "center" }}>
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Meet The Team</h2>
           <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap" }}>
@@ -1626,7 +1595,6 @@ function LandingPage() {
           </div>
         </div>
 
-        {/* PRICING */}
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <h2 style={{ fontSize: "36px", fontWeight: "900", marginBottom: "12px" }}>Simple, transparent pricing.</h2>
@@ -1641,7 +1609,7 @@ function LandingPage() {
                 <li>Instant Bank Settlements</li>
                 <li><strong style={{color: DESIGN.textMain}}>Includes KudiSlip Watermark</strong></li>
               </ul>
-              <a href="#/signup" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
+              <a href="/signup" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
             </div>
             <div style={{ background: DESIGN.card, border: `2px solid ${DESIGN.premium}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
               <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: DESIGN.premium }}>Premium Pro</div>
@@ -1651,19 +1619,18 @@ function LandingPage() {
                 <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
                 <li>Fully Independent Branding</li>
               </ul>
-              <a href="#/signup" className="btn-primary btn-premium btn-hover" style={{ width: "100%", display: "block" }}>Upgrade to Premium</a>
+              <a href="/signup" className="btn-primary btn-premium btn-hover" style={{ width: "100%", display: "block" }}>Upgrade to Premium</a>
             </div>
           </div>
         </div>
       </div>
       
-      {/* FOOTER */}
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
-        <div style={{ display: "flex", gap: "24px" }}>
-            <a href="#/terms" onClick={() => window.scrollTo(0, 0)} style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
-            <a href="#/privacy" onClick={() => window.scrollTo(0, 0)} style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
+          <div style={{ display: "flex", gap: "24px" }}>
+            <a href="/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
+            <a href="/privacy" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
             <a href="mailto:support@kudislip.com" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Contact Us</a>
           </div>
         </div>
@@ -1672,7 +1639,7 @@ function LandingPage() {
   );
 }
 // =========================================================
-// 6. AUTHENTICATION
+// 6. AUTHENTICATION (CLEAN URLs)
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
@@ -1703,7 +1670,8 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         if (signInError) throw signInError;
         const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
         onLoginSuccess({ ...data.user, ...vendorData });
-        window.location.hash = "/dashboard/invoices";
+        // FORCE BROWSER REDIRECT CLEAN URL
+        window.location.href = "/dashboard/invoices";
       }
     } catch (err) { 
       setError(err.message); 
@@ -1722,7 +1690,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
       <GlobalStyles />
-      <a href="#/" style={{ textDecoration: "none", position: "absolute", top: "24px", left: "24px", color: "#64748B", fontWeight: "600", fontSize: "14px", padding: "8px" }} className="btn-hover">&larr; Back to Home</a>
+      <a href="/" style={{ textDecoration: "none", position: "absolute", top: "24px", left: "24px", color: "#64748B", fontWeight: "600", fontSize: "14px", padding: "8px" }} className="btn-hover">&larr; Back to Home</a>
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
       <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
@@ -1734,24 +1702,9 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
           <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}>
             <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label>
             <div style={{ position: "relative", width: "100%" }}>
-              <input 
-                className="form-input" 
-                type={showPassword ? "text" : "password"} 
-                placeholder="••••••••" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                style={{ paddingRight: "48px" }} 
-                required 
-              />
-              <div 
-                onClick={() => setShowPassword(!showPassword)} 
-                style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}
-              >
-                {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                )}
+              <input className="form-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} style={{ paddingRight: "48px" }} required />
+              <div onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}>
+                {showPassword ? ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> ) : ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> )}
               </div>
             </div>
           </div>
@@ -1760,15 +1713,13 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
             <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
               <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
               <label htmlFor="terms" style={{ fontSize: "12px", color: DESIGN.textMuted, lineHeight: "1.5" }}>
-                I agree to the <a href="#/terms" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Terms & Conditions</a> and <a href="#/privacy" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Privacy Policy</a>.
+                I agree to the <a href="/terms" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Terms & Conditions</a> and <a href="/privacy" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Privacy Policy</a>.
               </label>
             </div>
           )}
-          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit">
-            {isSignUp ? "Sign Up" : "Log In"}
-          </button>
+          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit">{isSignUp ? "Sign Up" : "Log In"}</button>
         </form>
-        <div style={{ textAngle: "center", textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
+        <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
           <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span>
         </div>
@@ -2532,7 +2483,7 @@ function AdminSupportInbox({ user, showToast }) {
   );
 }
 // =========================================================
-// DRAGGABLE SUPPORT BUTTON COMPONENT
+// DRAGGABLE SUPPORT BUTTON COMPONENT (CLEAN URLs)
 // =========================================================
 function DraggableSupportButton() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -2540,23 +2491,13 @@ function DraggableSupportButton() {
   const dragStart = useRef({ x: 0, y: 0 });
   const hasMoved = useRef(false);
 
-  const handleStart = (clientX, clientY) => {
-    setIsDragging(true);
-    hasMoved.current = false;
-    dragStart.current = { x: clientX - pos.x, y: clientY - pos.y };
-  };
-
-  const handleMove = (clientX, clientY) => {
-    if (!isDragging) return;
-    hasMoved.current = true;
-    setPos({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y });
-  };
-
+  const handleStart = (clientX, clientY) => { setIsDragging(true); hasMoved.current = false; dragStart.current = { x: clientX - pos.x, y: clientY - pos.y }; };
+  const handleMove = (clientX, clientY) => { if (!isDragging) return; hasMoved.current = true; setPos({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y }); };
   const handleEnd = () => setIsDragging(false);
 
   return (
     <a
-      href="#/dashboard/support"
+      href="/dashboard/support"
       onClick={(e) => { if (hasMoved.current) e.preventDefault(); }}
       onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
       onMouseMove={(e) => isDragging && handleMove(e.clientX, e.clientY)}
@@ -2566,30 +2507,14 @@ function DraggableSupportButton() {
       onTouchMove={(e) => isDragging && handleMove(e.touches.clientX, e.touches.clientY)}
       onTouchEnd={handleEnd}
       className="btn-primary btn-hover"
-      style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        transform: `translate(${pos.x}px, ${pos.y}px)`,
-        borderRadius: "50px",
-        padding: "14px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        zIndex: 9999,
-        boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)",
-        textDecoration: "none",
-        touchAction: "none",
-        cursor: isDragging ? "grabbing" : "grab"
-      }}
+      style={{ position: "fixed", bottom: "24px", right: "24px", transform: `translate(${pos.x}px, ${pos.y}px)`, borderRadius: "50px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "8px", zIndex: 9999, boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)", textDecoration: "none", touchAction: "none", cursor: isDragging ? "grabbing" : "grab" }}
     >
       <MessageIcon /> <span className="support-text-mobile">Support</span>
     </a>
   );
 }
-
 // =========================================================
-// MAIN APP ROUTER (NOW USING CLEAN URLs)
+// MAIN APP ROUTER (THE CLEAN URL INTERCEPTOR)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2602,20 +2527,14 @@ function AppRouter() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState(null);
   
-  const showToast = (title, message, type = "success") => {
-    setToast({ title, message, type });
-    setTimeout(() => setToast(null), 5000);
-  };
+  const showToast = (title, message, type = "success") => { setToast({ title, message, type }); setTimeout(() => setToast(null), 5000); };
 
   // 1. STATE NOW TRACKS CLEAN URL PATHS
   const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
 
-  useEffect(() => {
-    const splashTimer = setTimeout(() => setShowSplash(false), 3000);
-    return () => clearTimeout(splashTimer);
-  }, []);
+  useEffect(() => { const splashTimer = setTimeout(() => setShowSplash(false), 3000); return () => clearTimeout(splashTimer); }, []);
 
-  // 2. MAGIC ROUTER: INTERCEPTS CLICKS SO APP DOESN'T HARD RELOAD
+  // 2. MAGIC ROUTER: INTERCEPTS CLICKS GLOBALLY
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname || "/");
     window.addEventListener("popstate", handlePopState);
@@ -2623,7 +2542,6 @@ function AppRouter() {
     const handleGlobalClick = (e) => {
       const link = e.target.closest('a');
       if (link && link.getAttribute('href') && link.getAttribute('href').startsWith('/')) {
-        // Ignore external or new-tab links
         if (link.getAttribute('target') === '_blank') return;
         
         e.preventDefault();
@@ -2634,19 +2552,11 @@ function AppRouter() {
     };
     document.addEventListener('click', handleGlobalClick);
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      document.removeEventListener('click', handleGlobalClick);
-    };
+    return () => { window.removeEventListener("popstate", handlePopState); document.removeEventListener('click', handleGlobalClick); };
   }, []);
 
-  // 3. SCROLL FIX FOR CLEAN URLS
   useEffect(() => {
-    const scrollTimer = setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0; 
-    }, 100);
+    const scrollTimer = setTimeout(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }, 100);
     return () => clearTimeout(scrollTimer);
   }, [currentPath]);
 
@@ -2671,7 +2581,6 @@ function AppRouter() {
               }
             }).subscribe();
 
-          // 4. CLEAN URL REDIRECTS FOR LOGGED IN USERS
           const path = window.location.pathname;
           if (path === "" || path === "/" || path === "/login" || path === "/signup") {
              window.history.pushState({}, '', '/dashboard/invoices');
@@ -2691,10 +2600,7 @@ function AppRouter() {
     else query = query.eq('user_id', 'SYSTEM_ADMIN');
     
     const { data } = await query;
-    if (data) {
-      setNotifs(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
-    }
+    if (data) { setNotifs(data); setUnreadCount(data.filter(n => !n.is_read).length); }
   };
 
   const markNotificationsRead = async () => {
@@ -2705,17 +2611,11 @@ function AppRouter() {
     
     await query;
     setUnreadCount(0);
-    const updatedNotifs = notifs.map(n => ({ ...n, is_read: true }));
-    setNotifs(updatedNotifs);
+    setNotifs(notifs.map(n => ({ ...n, is_read: true })));
   };
 
   const toggleNotifMenu = (menuId) => {
-    if (activeNotifMenu === menuId) {
-      setActiveNotifMenu(null);
-    } else {
-      setActiveNotifMenu(menuId);
-      markNotificationsRead();
-    }
+    if (activeNotifMenu === menuId) { setActiveNotifMenu(null); } else { setActiveNotifMenu(menuId); markNotificationsRead(); }
   };
 
   const renderView = () => {
@@ -2738,7 +2638,6 @@ function AppRouter() {
       </div>
     );
 
-    // 5. RENDER BASED ON CLEAN URL PATHS
     if (currentPath.startsWith('/pay/')) {
       const cleanId = currentPath.replace('/pay/', '').replace(/[^a-zA-Z0-9-]/g, '');
       return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
@@ -2773,9 +2672,7 @@ function AppRouter() {
                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                      {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
                       notifs.map(n => (
-                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>
-                          {n.message}
-                        </div>
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>{n.message}</div>
                       ))
                      }
                    </div>
@@ -2831,9 +2728,7 @@ function AppRouter() {
                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                      {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
                       notifs.map(n => (
-                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>
-                          {n.message}
-                        </div>
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>{n.message}</div>
                       ))
                      }
                    </div>
