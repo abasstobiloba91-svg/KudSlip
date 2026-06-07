@@ -1579,9 +1579,9 @@ function LandingPage() {
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
-          <div style={{ display: "flex", gap: "24px" }}>
-            <a href="#/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
-            <a href="#/privacy" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
+        <div style={{ display: "flex", gap: "24px" }}>
+            <a href="#/terms" onClick={() => window.scrollTo(0, 0)} style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
+            <a href="#/privacy" onClick={() => window.scrollTo(0, 0)} style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
             <a href="mailto:support@kudislip.com" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Contact Us</a>
           </div>
         </div>
@@ -2540,9 +2540,14 @@ function AppRouter() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // 🎯 THE NEW FIX: Global Scroll Reset. Forces page to top on every navigation
+  // 🎯 THE NUCLEAR FIX: Delayed override + iOS/Safari fallbacks
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0; // Fallback for iOS/Safari
+      document.body.scrollTop = 0;            // Fallback for older mobile browsers
+    }, 100);
+    return () => clearTimeout(scrollTimer);
   }, [hash]);
 
   useEffect(() => { setSidebarOpen(false); }, [hash]);
