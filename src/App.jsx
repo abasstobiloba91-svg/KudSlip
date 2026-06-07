@@ -272,9 +272,13 @@ const Toast = ({ toast, onClose }) => {
 function LegalPage({ type }) {
   const isTerms = type === "terms";
   
-  // 🎯 THE FIX: Instantly snap the scrollbar back to the very top!
+ // 🎯 THE BULLETPROOF FIX: Forces React to wait for the DOM to paint before scrolling
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 50);
+    
+    return () => clearTimeout(scrollTimer);
   }, [type]);
   
   return (
