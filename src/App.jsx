@@ -1136,7 +1136,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 9. PUBLIC INVOICE VIEW (CLASSIC A4 PRINTABLE)
+// 9. PUBLIC INVOICE VIEW (ORIGINAL STYLE + PRO WATERMARK LOGIC)
 // =========================================================
 function PublicInvoice({ invoiceId, showToast }) {
   const [invoice, setInvoice] = useState(null);
@@ -1147,9 +1147,10 @@ function PublicInvoice({ invoiceId, showToast }) {
   useEffect(() => {
     const fetchInvoice = async () => {
       try {
+        // 🎯 FIX: We must fetch the vendor's 'subscription_tier' to know if we should show the watermark!
         const { data, error } = await supabase
           .from('invoices')
-          .select('*, vendors(business_name, logo_url, brand_color, paystack_subaccount_code, custom_thank_you), clients(name, email, phone)')
+          .select('*, vendors(business_name, logo_url, brand_color, paystack_subaccount_code, custom_thank_you, subscription_tier), clients(name, email, phone)')
           .eq('id', invoiceId)
           .single();
 
@@ -1211,6 +1212,7 @@ function PublicInvoice({ invoiceId, showToast }) {
 
   const isPaid = invoice.status === 'paid';
   const brandColor = invoice.vendors?.brand_color || "#000000";
+  const isPremium = invoice.vendors?.subscription_tier === 'premium';
   const parsedItems = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : (invoice.items || []);
   const currencySymbol = invoice.currency === "USD" ? "$" : invoice.currency === "GBP" ? "£" : "₦";
 
@@ -1236,7 +1238,7 @@ function PublicInvoice({ invoiceId, showToast }) {
       {/* ACTUAL A4 INVOICE PAPER                 */}
       {/* ======================================= */}
       <div className="invoice-page-wrapper">
-        <div className="invoice-content-wrapper print-container" style={{ background: "#FFFFFF", padding: "48px", borderRadius: "8px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", borderTop: `8px solid ${brandColor}` }}>
+        <div className="invoice-content-wrapper print-container" style={{ background: "#FFFFFF", padding: "48px", borderRadius: "8px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", borderTop: `8px solid ${brandColor}`, position: "relative" }}>
           
           {/* HEADER */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #E2E8F0", paddingBottom: "24px", marginBottom: "32px", flexWrap: "wrap", gap: "24px" }}>
@@ -1246,7 +1248,6 @@ function PublicInvoice({ invoiceId, showToast }) {
               ) : (
                 <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", color: brandColor, fontWeight: "900" }}>{invoice.vendors?.business_name || "Invoice"}</h1>
               )}
-              <div style={{ color: "#64748B", fontSize: "14px" }}>Generated via KudiSlip</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <h2 style={{ fontSize: "36px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0", letterSpacing: "1px" }}>INVOICE</h2>
@@ -1316,16 +1317,20 @@ function PublicInvoice({ invoiceId, showToast }) {
             </div>
           </div>
 
-          {/* FOOTER */}
+          {/* FOOTER & PRO WATERMARK LOGIC */}
           <div style={{ borderTop: "2px solid #E2E8F0", paddingTop: "24px", textAlign: "center" }}>
             <div style={{ fontWeight: "700", color: "#0F172A", fontSize: "15px", marginBottom: "8px" }}>
               {invoice.vendors?.custom_thank_you || "Thank you for your business!"}
             </div>
-            {/* The watermark hides on PDF print automatically via CSS, but shows on the web unless they are premium */}
-            <div style={{ color: "#94A3B8", fontSize: "12px", marginTop: "16px" }} className="no-print">
-               Powered securely by KudiSlip
-            </div>
+            
+            {/* 🎯 THE WATERMARK: Only shows if the vendor is NOT on Premium */}
+            {!isPremium && (
+               <div style={{ color: "#94A3B8", fontSize: "13px", marginTop: "24px", fontWeight: "700" }}>
+                 Generated securely via <span style={{ color: "#0F172A" }}>KudiSlip.com.ng</span>
+               </div>
+            )}
           </div>
+
         </div>
       </div>
     </div>
