@@ -1185,7 +1185,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     window.print();
   };
 
-  const handlePayment = () => {
+const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
@@ -1197,7 +1197,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     try {
       let finalAmount = baseAmount;
       
-      // 🎯 THE PRO FEE LOGIC: Only calculates if the merchant turned it on!
       if (invoice?.fee_passed_on && invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         if (baseAmount < 2500) {
           finalAmount = baseAmount / 0.985;
@@ -1215,12 +1214,13 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
+      // THE PAYLOAD OBJECT
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
-       callback: function(response) {
+        callback: function(response) {
           supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
@@ -1242,6 +1242,8 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
             }
           });
         },
+        onClose: function() { console.log("Payment window closed."); }
+      }; // <--- THIS WAS THE MISSING BRACKET THAT CRASHED VERCEL!
 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
@@ -1254,7 +1256,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
       showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
     }
   };
-
   const submitReview = async () => {
     if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
     
