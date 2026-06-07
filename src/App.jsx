@@ -1136,6 +1136,206 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
+// 9. PUBLIC INVOICE VIEW (CLIENT PAYMENT PAGE)
+// =========================================================
+function PublicInvoice({ invoiceId, showToast }) {
+  const [invoice, setInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      try {
+        // Fetch invoice and join the necessary vendor & client data
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('*, vendors(business_name, logo_url, brand_color, paystack_subaccount_code, custom_thank_you), clients(name, email)')
+          .eq('id', invoiceId)
+          .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Invoice not found");
+
+        setInvoice(data);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("We couldn't find this invoice. It may have been deleted or the link is incorrect.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoice();
+  }, [invoiceId]);
+
+  const handlePayment = () => {
+    if (!PAYSTACK_PUBLIC_KEY) {
+      showToast("Payment Error", "Gateway configuration missing.", "error");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v2/inline.js";
+    script.async = true;
+
+    script.onload = () => {
+      try {
+        const paystack = new window.PaystackPop();
+        paystack.newTransaction({
+          key: PAYSTACK_PUBLIC_KEY,
+          email: invoice.clients?.email || "customer@kudislip.com",
+          amount: Math.round(invoice.amount * 100), // Convert Naira to Kobo
+          currency: invoice.currency || "NGN",
+          subaccount: invoice.vendors?.paystack_subaccount_code || "",
+          // PRO FEATURE: Decide who pays the fee based on Vendor Settings
+          bearer: invoice.fee_passed_on ? "account" : "subaccount",
+          onSuccess: async function(transaction) {
+            // Mark invoice as paid in the database!
+            await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
+            setInvoice({ ...invoice, status: 'paid' });
+            showToast("Payment Successful!", "Your receipt has been secured.", "success");
+            setIsProcessing(false);
+          },
+          onCancel: function() {
+            setIsProcessing(false);
+            showToast("Payment Cancelled", "You closed the secure checkout window.", "info");
+          }
+        });
+      } catch (err) {
+        setIsProcessing(false);
+        showToast("Gateway Error", "Could not launch secure checkout.", "error");
+      }
+    };
+
+    script.onerror = () => {
+      setIsProcessing(false);
+      showToast("Network Error", "Failed to load payment gateway.", "error");
+    };
+
+    document.body.appendChild(script);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
+        <GlobalStyles />
+        <div className="spinner" style={{ border: "4px solid #E2E8F0", borderTop: "4px solid #000000", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", marginBottom: "16px" }}></div>
+        <div style={{ fontWeight: "700", color: "#64748B" }}>Loading Secure Invoice...</div>
+      </div>
+    );
+  }
+
+  if (error || !invoice) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F8FAFC", padding: "24px", textAlign: "center" }}>
+        <GlobalStyles />
+        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📄</div>
+        <h2 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", marginBottom: "12px" }}>Invoice Not Found</h2>
+        <p style={{ color: "#64748B", maxWidth: "400px", lineHeight: "1.6", margin: "0 auto" }}>{error}</p>
+      </div>
+    );
+  }
+
+  const brandColor = invoice.vendors?.brand_color || "#000000";
+  const isPaid = invoice.status === 'paid';
+  const parsedItems = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : (invoice.items || []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F1F5F9", padding: "40px 24px" }}>
+      <GlobalStyles />
+      <div style={{ maxWidth: "600px", margin: "0 auto", background: "#FFFFFF", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+        
+        {/* INVOICE HEADER */}
+        <div style={{ background: brandColor, padding: "40px 32px", color: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            {invoice.vendors?.logo_url ? (
+              <img src={invoice.vendors.logo_url} alt="Business Logo" style={{ height: "48px", objectFit: "contain", background: "#FFF", padding: "4px", borderRadius: "8px", marginBottom: "16px" }} />
+            ) : (
+              <div style={{ fontSize: "24px", fontWeight: "900", marginBottom: "16px" }}>{invoice.vendors?.business_name || "Invoice"}</div>
+            )}
+            <div style={{ opacity: 0.9, fontSize: "14px" }}>Billed To:</div>
+            <div style={{ fontSize: "18px", fontWeight: "800", marginTop: "4px" }}>{invoice.clients?.name}</div>
+            <div style={{ opacity: 0.9, fontSize: "14px", marginTop: "2px" }}>{invoice.clients?.email}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.9, fontWeight: "800", marginBottom: "8px" }}>Status</div>
+            <div style={{ display: "inline-block", background: isPaid ? "#10B981" : "#FFFFFF", color: isPaid ? "#FFFFFF" : brandColor, padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+              {isPaid ? "Paid" : "Pending"}
+            </div>
+          </div>
+        </div>
+
+        {/* INVOICE BODY */}
+        <div style={{ padding: "40px 32px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "24px", borderBottom: "1px solid #E2E8F0" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>Date Issued</div>
+              <div style={{ fontWeight: "600", color: "#0F172A" }}>{new Date(invoice.created_at).toLocaleDateString()}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>Due Date</div>
+              <div style={{ fontWeight: "600", color: "#0F172A" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "16px", display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr", gap: "12px", fontSize: "12px", color: "#64748B", fontWeight: "800", textTransform: "uppercase" }}>
+            <div>Description</div>
+            <div style={{ textAlign: "center" }}>Qty</div>
+            <div style={{ textAlign: "right" }}>Amount</div>
+          </div>
+
+          {parsedItems.map((item, idx) => (
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr", gap: "12px", padding: "16px 0", borderTop: "1px solid #F1F5F9", color: "#0F172A", fontSize: "15px" }}>
+              <div style={{ fontWeight: "600" }}>{item.description}</div>
+              <div style={{ textAlign: "center", color: "#64748B" }}>{item.quantity}</div>
+              <div style={{ textAlign: "right", fontWeight: "600" }}>₦{Number(item.price).toLocaleString()}</div>
+            </div>
+          ))}
+
+          <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "2px dashed #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "16px", color: "#64748B", fontWeight: "700" }}>Total Due</div>
+            <div style={{ fontSize: "32px", fontWeight: "900", color: brandColor }}>₦{Number(invoice.amount).toLocaleString()}</div>
+          </div>
+        </div>
+
+        {/* ACTION SECTION */}
+        <div style={{ padding: "0 32px 40px 32px" }}>
+          {isPaid ? (
+            <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "24px", borderRadius: "12px", textAlign: "center" }}>
+              <div style={{ color: "#10B981", fontSize: "32px", marginBottom: "8px" }}>✅</div>
+              <h3 style={{ margin: "0 0 8px 0", color: "#065F46", fontSize: "18px", fontWeight: "800" }}>Payment Completed</h3>
+              <p style={{ margin: 0, color: "#047857", fontSize: "14px", lineHeight: "1.5" }}>
+                {invoice.vendors?.custom_thank_you || "Thank you for your business! Your payment has been securely processed."}
+              </p>
+            </div>
+          ) : (
+            <button 
+              onClick={handlePayment} 
+              disabled={isProcessing}
+              style={{ width: "100%", padding: "18px", background: brandColor, color: "#FFFFFF", border: "none", borderRadius: "12px", fontSize: "16px", fontWeight: "800", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", opacity: isProcessing ? 0.7 : 1, transition: "transform 0.2s, box-shadow 0.2s" }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0,0,0,0.1)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+            >
+              {isProcessing ? "Connecting to Bank..." : "Pay Securely Now"}
+            </button>
+          )}
+        </div>
+
+        {/* KUDISLIP WATERMARK */}
+        <div style={{ textAlign: "center", padding: "20px", background: "#F8FAFC", borderTop: "1px solid #E2E8F0" }}>
+          <div style={{ color: "#64748B", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            Powered by KudiSlip
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  );
+}
+// =========================================================
 // 5. LANDING PAGE (WITH NEW CUSTOM HERO IMAGE)
 // =========================================================
 function LandingPage() {
