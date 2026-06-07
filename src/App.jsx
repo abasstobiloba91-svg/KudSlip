@@ -915,7 +915,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     return 0;
   });
 
-  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="#/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
+  if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
@@ -1252,7 +1252,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
       <GlobalStyles/>
       <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", marginBottom: "16px" }}><AlertIcon /><h2 style={{ margin: 0 }}>System Routing Error</h2></div>
       <p style={{background: "white", padding: "20px", borderRadius: "8px", border: "1px solid #FECACA", maxWidth: "600px"}}>{debugError}</p>
-      <a href="#/" className="btn-primary btn-hover" style={{marginTop: "16px"}}>Go to Dashboard</a>
+      <a href="/" className="btn-primary btn-hover" style={{marginTop: "16px"}}>Go to Dashboard</a>
     </div>
   );
   if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
@@ -1457,7 +1457,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           )}
 
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
-             <a href="#/" className="btn-secondary btn-hover no-print" style={{ width: "100%", padding: "16px", background: "#FFFFFF", textAlign: "center", borderRadius: "12px" }}>Return to KudiSlip Home</a>
+             <a href="/" className="btn-secondary btn-hover no-print" style={{ width: "100%", padding: "16px", background: "#FFFFFF", textAlign: "center", borderRadius: "12px" }}>Return to KudiSlip Home</a>
           )}
 
         </div>
@@ -2514,7 +2514,7 @@ function DraggableSupportButton() {
   );
 }
 // =========================================================
-// MAIN APP ROUTER (THE CLEAN URL INTERCEPTOR)
+// MAIN APP ROUTER (THE CLEAN URL INTERCEPTOR - BULLETPROOF)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2532,27 +2532,40 @@ function AppRouter() {
   // 1. STATE NOW TRACKS CLEAN URL PATHS
   const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
 
+  // A helper function to safely navigate without full page reloads
+  const navigateTo = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  };
+
   useEffect(() => { const splashTimer = setTimeout(() => setShowSplash(false), 3000); return () => clearTimeout(splashTimer); }, []);
 
-  // 2. MAGIC ROUTER: INTERCEPTS CLICKS GLOBALLY
+  // 2. MAGIC ROUTER: INTERCEPTS CLICKS GLOBALLY - FIXED!
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname || "/");
     window.addEventListener("popstate", handlePopState);
     
     const handleGlobalClick = (e) => {
+      // Find the closest anchor tag that was clicked
       const link = e.target.closest('a');
+      
+      // If it's a link, and it starts with a slash (internal link), intercept it
       if (link && link.getAttribute('href') && link.getAttribute('href').startsWith('/')) {
-        if (link.getAttribute('target') === '_blank') return;
+        // Do NOT intercept external links or links meant to open in a new tab
+        if (link.getAttribute('target') === '_blank' || link.getAttribute('href').startsWith('http')) return;
         
         e.preventDefault();
         const newPath = link.getAttribute('href');
-        window.history.pushState({}, '', newPath);
-        setCurrentPath(newPath);
+        navigateTo(newPath);
       }
     };
+    
     document.addEventListener('click', handleGlobalClick);
 
-    return () => { window.removeEventListener("popstate", handlePopState); document.removeEventListener('click', handleGlobalClick); };
+    return () => { 
+      window.removeEventListener("popstate", handlePopState); 
+      document.removeEventListener('click', handleGlobalClick); 
+    };
   }, []);
 
   useEffect(() => {
@@ -2582,9 +2595,9 @@ function AppRouter() {
             }).subscribe();
 
           const path = window.location.pathname;
+          // Clean URL redirect logic
           if (path === "" || path === "/" || path === "/login" || path === "/signup") {
-             window.history.pushState({}, '', '/dashboard/invoices');
-             setCurrentPath('/dashboard/invoices');
+             navigateTo('/dashboard/invoices');
           }
         });
       } else { setIsLoading(false); }
@@ -2647,8 +2660,8 @@ function AppRouter() {
     if (currentPath === "/privacy") return <LegalPage type="privacy" />;
 
     if (!user) {
-      if (currentPath === "/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.href = "/dashboard/invoices"; }} />;
-      if (currentPath === "/signup") return <KudiSlipAuth initialIsSignUp={true} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.href = "/dashboard/invoices"; }} />;
+      if (currentPath === "/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); navigateTo("/dashboard/invoices"); }} />;
+      if (currentPath === "/signup") return <KudiSlipAuth initialIsSignUp={true} showToast={showToast} onLoginSuccess={(u) => { setUser(u); navigateTo("/dashboard/invoices"); }} />;
       return <LandingPage />;
     }
 
@@ -2741,7 +2754,7 @@ function AppRouter() {
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.href = "/"; })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
           </div>
         </div>
 
