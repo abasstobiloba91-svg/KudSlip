@@ -1432,7 +1432,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   {invoice.vendors?.custom_thank_you || "Thank you for your business!"}
                 </div>
                 
-                {!isPremium && (
+             {isFreeTier && (
                   <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
                     <div style={{ fontSize: "11px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Powered Securely By</div>
                     <img src="/logo.png" alt="KudiSlip" style={{ height: "20px" }} />
