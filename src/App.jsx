@@ -1136,7 +1136,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 9. PUBLIC INVOICE VIEW (YOUR ORIGINAL UI + PRO FEE LOGIC)
+// 9. PUBLIC INVOICE VIEW (PRO FEE LOGIC & GUARANTEED WATERMARKS)
 // =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
@@ -1188,7 +1188,6 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     try {
       let finalAmount = baseAmount;
       
-      // 🎯 THE FIX: Only calculate and pass the extra fee if the vendor checked the box!
       if (invoice?.fee_passed_on && invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         if (baseAmount < 2500) {
           finalAmount = baseAmount / 0.985;
@@ -1311,7 +1310,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         
         /* 🖨️ THE FIX: Forces perfect margins on every computer */
         @media print {
-          @page { margin: 0; } /* Kills the browser's unpredictable cached margins */
+          @page { margin: 0; } 
           body, html, .invoice-page-wrapper { 
             background: #FFFFFF !important; 
             padding: 0 !important; 
@@ -1327,15 +1326,13 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
           .print-card { 
             border: none !important; 
             box-shadow: none !important; 
-            padding: 15mm !important; /* Acts as the permanent 'Default' margin */
+            padding: 15mm !important;
             border-radius: 0 !important; 
           }
         }
       `}</style>
 
       <div className="invoice-page-wrapper">
-        {isFreeTier && <div className="no-print" style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 1, transform: "rotate(-15deg)" }} />}
-        
         <div className="invoice-max-width">
           
           {/* Top Download Button */}
@@ -1349,87 +1346,104 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
               Download PDF
             </button>
           </div>
-          
-          {isFreeTier && (
-            <div className="no-print" style={{ textAlign: "center", marginBottom: "-8px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
-              <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
-            </div>
-          )}
 
-          {/* The Actual Invoice Paper/Card */}
-          <div className="print-card card-hover">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
-              <div>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
-                {vendor?.logo_url ? (
-                  <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
+          {/* THE ACTUAL PRINTABLE INVOICE CARD */}
+          {/* We trap the watermark inside this div so it prints perfectly on mobile and desktop */}
+          <div className="print-card card-hover" style={{ position: "relative", overflow: "hidden" }}>
+            
+            {/* 🎯 THE BACKGROUND WATERMARK FIX: Injected directly onto the paper! */}
+            {isFreeTier && (
+              <div style={{ position: "absolute", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "150px", opacity: 0.04, pointerEvents: "none", zIndex: 0, transform: "rotate(-15deg)" }} />
+            )}
+
+            {/* Content wrapper to ensure text sits above the watermark */}
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
+                  {vendor?.logo_url ? (
+                    <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
+                      <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
+                  <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
+                </div>
+              </div>
+              
+              <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
+                  <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{client?.name || "Client"}</div>
+                  <div style={{ fontSize: "14px", color: DESIGN.textMuted, marginTop: "2px" }}>{client?.email || "No email"}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
+                  <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{safeDate}</div>
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: "40px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px", paddingBottom: "12px", borderBottom: `1px solid ${DESIGN.border}` }}>
+                  <div style={{ flex: 1 }}>Description</div>
+                  <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
+                  <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
+                </div>
+                
+                {safeItems.map((item, idx) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
+                    <div style={{ flex: 1, fontWeight: "600", fontSize: "14px", color: DESIGN.textMain, wordBreak: "break-word", paddingRight: "16px" }}>{item.description}</div>
+                    <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: DESIGN.textMuted, fontWeight: "600" }}>{item.quantity}</div>
+                    <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: DESIGN.textMain }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+              
+              <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid ${DESIGN.border}` }}>
+                <div style={{ fontSize: "14px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
+                <div style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+              </div>
+              
+              <div className="no-print">
+                {invoice.status === 'pending' ? (
+                  <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
+                    Proceed to Secure Payment
+                  </button>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
-                    <div style={{ fontSize: "18px", fontWeight: "900", color: DESIGN.textMain }}>{vendor?.business_name || "Verified Merchant"}</div>
+                  <div style={{ textAlign: "center", padding: "20px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
+                    <div style={{ color: DESIGN.success, fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}><CheckIcon /> Payment Complete</div>
+                    <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
+                  </div>
+                )}
+                
+                {currentUser?.id === vendor?.id && (
+                  <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
+                )}
+              </div>
+
+              {/* 🎯 THE FOOTER WATERMARK FIX: Stamped at the bottom of the printed page! */}
+              <div style={{ borderTop: "2px solid #E2E8F0", marginTop: "32px", paddingTop: "24px", textAlign: "center" }}>
+                <div style={{ fontWeight: "700", color: "#0F172A", fontSize: "15px", marginBottom: "8px" }}>
+                  {invoice.vendors?.custom_thank_you || "Thank you for your business!"}
+                </div>
+                
+                {!isPremium && (
+                  <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Powered Securely By</div>
+                    <img src="/logo.png" alt="KudiSlip" style={{ height: "20px" }} />
                   </div>
                 )}
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
-              </div>
-            </div>
-            
-            <div style={{ borderTop: `1px solid ${DESIGN.border}`, borderBottom: `1px solid ${DESIGN.border}`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-                <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{client?.name || "Client"}</div>
-                <div style={{ fontSize: "14px", color: DESIGN.textMuted, marginTop: "2px" }}>{client?.email || "No email"}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-                <div style={{ fontWeight: "700", fontSize: "15px", color: DESIGN.textMain, marginTop: "4px" }}>{safeDate}</div>
-              </div>
-            </div>
-            
-            {/* The stable, original Flexbox layout for items so they wrap perfectly! */}
-            <div style={{ marginBottom: "40px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px", paddingBottom: "12px", borderBottom: `1px solid ${DESIGN.border}` }}>
-                <div style={{ flex: 1 }}>Description</div>
-                <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
-                <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
-              </div>
-              
-              {safeItems.map((item, idx) => (
-                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
-                  <div style={{ flex: 1, fontWeight: "600", fontSize: "14px", color: DESIGN.textMain, wordBreak: "break-word", paddingRight: "16px" }}>{item.description}</div>
-                  <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: DESIGN.textMuted, fontWeight: "600" }}>{item.quantity}</div>
-                  <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: DESIGN.textMain }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-            
-            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid ${DESIGN.border}` }}>
-              <div style={{ fontSize: "14px", fontWeight: "800", color: DESIGN.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
-              <div style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
-            </div>
-            
-            <div className="no-print">
-              {invoice.status === 'pending' ? (
-                <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
-                  Proceed to Secure Payment
-                </button>
-              ) : (
-                <div style={{ textAlign: "center", padding: "20px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
-                  <div style={{ color: DESIGN.success, fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}><CheckIcon /> Payment Complete</div>
-                  <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
-                </div>
-              )}
-              
-              {currentUser?.id === vendor?.id && (
-                <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block" }}>Return to Dashboard</a>
-              )}
+
             </div>
           </div>
 
-          {/* Review Component */}
+          {/* Review Component (Hidden on Print) */}
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
             <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${DESIGN.border}`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
               <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
