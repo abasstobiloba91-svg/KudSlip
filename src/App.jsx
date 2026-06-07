@@ -1136,7 +1136,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   );
 }
 // =========================================================
-// 9. PUBLIC INVOICE VIEW (CLIENT PAYMENT PAGE)
+// 9. PUBLIC INVOICE VIEW (CLASSIC A4 PRINTABLE)
 // =========================================================
 function PublicInvoice({ invoiceId, showToast }) {
   const [invoice, setInvoice] = useState(null);
@@ -1147,10 +1147,9 @@ function PublicInvoice({ invoiceId, showToast }) {
   useEffect(() => {
     const fetchInvoice = async () => {
       try {
-        // Fetch invoice and join the necessary vendor & client data
         const { data, error } = await supabase
           .from('invoices')
-          .select('*, vendors(business_name, logo_url, brand_color, paystack_subaccount_code, custom_thank_you), clients(name, email)')
+          .select('*, vendors(business_name, logo_url, brand_color, paystack_subaccount_code, custom_thank_you), clients(name, email, phone)')
           .eq('id', invoiceId)
           .single();
 
@@ -1170,11 +1169,7 @@ function PublicInvoice({ invoiceId, showToast }) {
   }, [invoiceId]);
 
   const handlePayment = () => {
-    if (!PAYSTACK_PUBLIC_KEY) {
-      showToast("Payment Error", "Gateway configuration missing.", "error");
-      return;
-    }
-
+    if (!PAYSTACK_PUBLIC_KEY) return showToast("Payment Error", "Gateway configuration missing.", "error");
     setIsProcessing(true);
 
     const script = document.createElement("script");
@@ -1187,13 +1182,11 @@ function PublicInvoice({ invoiceId, showToast }) {
         paystack.newTransaction({
           key: PAYSTACK_PUBLIC_KEY,
           email: invoice.clients?.email || "customer@kudislip.com",
-          amount: Math.round(invoice.amount * 100), // Convert Naira to Kobo
+          amount: Math.round(invoice.amount * 100),
           currency: invoice.currency || "NGN",
           subaccount: invoice.vendors?.paystack_subaccount_code || "",
-          // PRO FEATURE: Decide who pays the fee based on Vendor Settings
           bearer: invoice.fee_passed_on ? "account" : "subaccount",
-          onSuccess: async function(transaction) {
-            // Mark invoice as paid in the database!
+          onSuccess: async function() {
             await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id);
             setInvoice({ ...invoice, status: 'paid' });
             showToast("Payment Successful!", "Your receipt has been secured.", "success");
@@ -1201,7 +1194,7 @@ function PublicInvoice({ invoiceId, showToast }) {
           },
           onCancel: function() {
             setIsProcessing(false);
-            showToast("Payment Cancelled", "You closed the secure checkout window.", "info");
+            showToast("Payment Cancelled", "Transaction closed.", "info");
           }
         });
       } catch (err) {
@@ -1209,128 +1202,131 @@ function PublicInvoice({ invoiceId, showToast }) {
         showToast("Gateway Error", "Could not launch secure checkout.", "error");
       }
     };
-
-    script.onerror = () => {
-      setIsProcessing(false);
-      showToast("Network Error", "Failed to load payment gateway.", "error");
-    };
-
+    script.onerror = () => { setIsProcessing(false); showToast("Network Error", "Failed to load payment gateway.", "error"); };
     document.body.appendChild(script);
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
-        <GlobalStyles />
-        <div className="spinner" style={{ border: "4px solid #E2E8F0", borderTop: "4px solid #000000", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", marginBottom: "16px" }}></div>
-        <div style={{ fontWeight: "700", color: "#64748B" }}>Loading Secure Invoice...</div>
-      </div>
-    );
-  }
+  if (loading) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}><div className="pulsing-text">Loading Invoice...</div></div>;
+  if (error || !invoice) return <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}><div style={{ textAlign: "center", padding: "24px" }}><h2 style={{fontSize: "24px", fontWeight: "900", marginBottom: "12px"}}>Invoice Not Found</h2><p style={{color: "#64748B"}}>{error}</p></div></div>;
 
-  if (error || !invoice) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F8FAFC", padding: "24px", textAlign: "center" }}>
-        <GlobalStyles />
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📄</div>
-        <h2 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", marginBottom: "12px" }}>Invoice Not Found</h2>
-        <p style={{ color: "#64748B", maxWidth: "400px", lineHeight: "1.6", margin: "0 auto" }}>{error}</p>
-      </div>
-    );
-  }
-
-  const brandColor = invoice.vendors?.brand_color || "#000000";
   const isPaid = invoice.status === 'paid';
+  const brandColor = invoice.vendors?.brand_color || "#000000";
   const parsedItems = typeof invoice.items === 'string' ? JSON.parse(invoice.items) : (invoice.items || []);
+  const currencySymbol = invoice.currency === "USD" ? "$" : invoice.currency === "GBP" ? "£" : "₦";
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F1F5F9", padding: "40px 24px" }}>
+    <div style={{ minHeight: "100vh", background: "#F8FAFC", padding: "40px 20px" }}>
       <GlobalStyles />
-      <div style={{ maxWidth: "600px", margin: "0 auto", background: "#FFFFFF", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-        
-        {/* INVOICE HEADER */}
-        <div style={{ background: brandColor, padding: "40px 32px", color: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            {invoice.vendors?.logo_url ? (
-              <img src={invoice.vendors.logo_url} alt="Business Logo" style={{ height: "48px", objectFit: "contain", background: "#FFF", padding: "4px", borderRadius: "8px", marginBottom: "16px" }} />
-            ) : (
-              <div style={{ fontSize: "24px", fontWeight: "900", marginBottom: "16px" }}>{invoice.vendors?.business_name || "Invoice"}</div>
-            )}
-            <div style={{ opacity: 0.9, fontSize: "14px" }}>Billed To:</div>
-            <div style={{ fontSize: "18px", fontWeight: "800", marginTop: "4px" }}>{invoice.clients?.name}</div>
-            <div style={{ opacity: 0.9, fontSize: "14px", marginTop: "2px" }}>{invoice.clients?.email}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.9, fontWeight: "800", marginBottom: "8px" }}>Status</div>
-            <div style={{ display: "inline-block", background: isPaid ? "#10B981" : "#FFFFFF", color: isPaid ? "#FFFFFF" : brandColor, padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", letterSpacing: "0.5px", textTransform: "uppercase" }}>
-              {isPaid ? "Paid" : "Pending"}
-            </div>
-          </div>
-        </div>
+      
+      {/* ======================================= */}
+      {/* ACTION BAR (HIDDEN DURING PDF PRINTING) */}
+      {/* ======================================= */}
+      <div className="no-print" style={{ maxWidth: "800px", margin: "0 auto 24px auto", display: "flex", justifyContent: "flex-end", gap: "12px", flexWrap: "wrap" }}>
+        <button className="btn-secondary btn-hover" onClick={() => window.print()} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#FFF" }}>
+          <DownloadIcon /> Download PDF
+        </button>
+        {!isPaid && (
+          <button className="btn-primary btn-hover" onClick={handlePayment} disabled={isProcessing} style={{ background: brandColor }}>
+            {isProcessing ? "Processing..." : "Pay Securely via Paystack"}
+          </button>
+        )}
+      </div>
 
-        {/* INVOICE BODY */}
-        <div style={{ padding: "40px 32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "24px", borderBottom: "1px solid #E2E8F0" }}>
+      {/* ======================================= */}
+      {/* ACTUAL A4 INVOICE PAPER                 */}
+      {/* ======================================= */}
+      <div className="invoice-page-wrapper">
+        <div className="invoice-content-wrapper print-container" style={{ background: "#FFFFFF", padding: "48px", borderRadius: "8px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", borderTop: `8px solid ${brandColor}` }}>
+          
+          {/* HEADER */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #E2E8F0", paddingBottom: "24px", marginBottom: "32px", flexWrap: "wrap", gap: "24px" }}>
             <div>
-              <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>Date Issued</div>
-              <div style={{ fontWeight: "600", color: "#0F172A" }}>{new Date(invoice.created_at).toLocaleDateString()}</div>
+              {invoice.vendors?.logo_url ? (
+                <img src={invoice.vendors.logo_url} alt="Logo" style={{ height: "60px", objectFit: "contain", marginBottom: "16px" }} />
+              ) : (
+                <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", color: brandColor, fontWeight: "900" }}>{invoice.vendors?.business_name || "Invoice"}</h1>
+              )}
+              <div style={{ color: "#64748B", fontSize: "14px" }}>Generated via KudiSlip</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>Due Date</div>
-              <div style={{ fontWeight: "600", color: "#0F172A" }}>{new Date(invoice.due_date).toLocaleDateString()}</div>
+              <h2 style={{ fontSize: "36px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0", letterSpacing: "1px" }}>INVOICE</h2>
+              <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "4px" }}><strong>Invoice #:</strong> INV-{invoice.id.substring(0,6).toUpperCase()}</div>
+              <div style={{ fontSize: "14px", color: "#64748B", marginBottom: "4px" }}><strong>Date:</strong> {new Date(invoice.created_at).toLocaleDateString()}</div>
+              <div style={{ fontSize: "14px", color: "#64748B" }}><strong>Due Date:</strong> {new Date(invoice.due_date).toLocaleDateString()}</div>
             </div>
           </div>
 
-          <div style={{ marginBottom: "16px", display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr", gap: "12px", fontSize: "12px", color: "#64748B", fontWeight: "800", textTransform: "uppercase" }}>
-            <div>Description</div>
-            <div style={{ textAlign: "center" }}>Qty</div>
-            <div style={{ textAlign: "right" }}>Amount</div>
-          </div>
-
-          {parsedItems.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr", gap: "12px", padding: "16px 0", borderTop: "1px solid #F1F5F9", color: "#0F172A", fontSize: "15px" }}>
-              <div style={{ fontWeight: "600" }}>{item.description}</div>
-              <div style={{ textAlign: "center", color: "#64748B" }}>{item.quantity}</div>
-              <div style={{ textAlign: "right", fontWeight: "600" }}>₦{Number(item.price).toLocaleString()}</div>
+          {/* BILLED TO */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px", flexWrap: "wrap", gap: "24px" }}>
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Billed To:</div>
+              <div style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", marginBottom: "4px" }}>{invoice.clients?.name}</div>
+              <div style={{ fontSize: "14px", color: "#475569", marginBottom: "2px" }}>{invoice.clients?.email}</div>
+              <div style={{ fontSize: "14px", color: "#475569" }}>{invoice.clients?.phone || ""}</div>
             </div>
-          ))}
-
-          <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "2px dashed #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: "16px", color: "#64748B", fontWeight: "700" }}>Total Due</div>
-            <div style={{ fontSize: "32px", fontWeight: "900", color: brandColor }}>₦{Number(invoice.amount).toLocaleString()}</div>
-          </div>
-        </div>
-
-        {/* ACTION SECTION */}
-        <div style={{ padding: "0 32px 40px 32px" }}>
-          {isPaid ? (
-            <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "24px", borderRadius: "12px", textAlign: "center" }}>
-              <div style={{ color: "#10B981", fontSize: "32px", marginBottom: "8px" }}>✅</div>
-              <h3 style={{ margin: "0 0 8px 0", color: "#065F46", fontSize: "18px", fontWeight: "800" }}>Payment Completed</h3>
-              <p style={{ margin: 0, color: "#047857", fontSize: "14px", lineHeight: "1.5" }}>
-                {invoice.vendors?.custom_thank_you || "Thank you for your business! Your payment has been securely processed."}
-              </p>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Payment Status:</div>
+              <div style={{ display: "inline-block", padding: "6px 16px", background: isPaid ? "#ECFDF5" : "#FEF2F2", color: isPaid ? "#10B981" : "#EF4444", borderRadius: "4px", fontSize: "14px", fontWeight: "900", textTransform: "uppercase", border: `1px solid ${isPaid ? "#A7F3D0" : "#FECACA"}` }}>
+                {isPaid ? "PAID" : "PENDING"}
+              </div>
             </div>
-          ) : (
-            <button 
-              onClick={handlePayment} 
-              disabled={isProcessing}
-              style={{ width: "100%", padding: "18px", background: brandColor, color: "#FFFFFF", border: "none", borderRadius: "12px", fontSize: "16px", fontWeight: "800", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", opacity: isProcessing ? 0.7 : 1, transition: "transform 0.2s, box-shadow 0.2s" }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0,0,0,0.1)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-            >
-              {isProcessing ? "Connecting to Bank..." : "Pay Securely Now"}
-            </button>
-          )}
-        </div>
+          </div>
 
-        {/* KUDISLIP WATERMARK */}
-        <div style={{ textAlign: "center", padding: "20px", background: "#F8FAFC", borderTop: "1px solid #E2E8F0" }}>
-          <div style={{ color: "#64748B", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            Powered by KudiSlip
+          {/* ITEMS TABLE */}
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "40px", minWidth: "500px" }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC", borderBottom: "2px solid #E2E8F0" }}>
+                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>Description</th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "12px", color: "#64748B", textTransform: "uppercase", width: "100px" }}>Qty</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "12px", color: "#64748B", textTransform: "uppercase", width: "150px" }}>Unit Price</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "12px", color: "#64748B", textTransform: "uppercase", width: "150px" }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parsedItems.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #E2E8F0" }}>
+                    <td style={{ padding: "16px", color: "#0F172A", fontWeight: "500", fontSize: "15px" }}>{item.description}</td>
+                    <td style={{ padding: "16px", textAlign: "center", color: "#475569", fontSize: "15px" }}>{item.quantity}</td>
+                    <td style={{ padding: "16px", textAlign: "right", color: "#475569", fontSize: "15px" }}>{currencySymbol}{Number(item.price).toLocaleString()}</td>
+                    <td style={{ padding: "16px", textAlign: "right", color: "#0F172A", fontWeight: "700", fontSize: "15px" }}>{currencySymbol}{(Number(item.quantity) * Number(item.price)).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* TOTALS */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "40px" }}>
+            <div style={{ width: "100%", maxWidth: "300px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #E2E8F0", color: "#64748B" }}>
+                <span>Subtotal</span>
+                <span>{currencySymbol}{Number(invoice.amount).toLocaleString()}</span>
+              </div>
+              {invoice.fee_passed_on && !isPaid && (
+                 <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #E2E8F0", color: "#64748B", fontSize: "12px" }}>
+                  <span>Processing Fee (Paystack)</span>
+                  <span>+1.5%</span>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "16px", background: "#F8FAFC", borderRadius: "8px", marginTop: "12px", alignItems: "center" }}>
+                <span style={{ fontSize: "14px", fontWeight: "800", color: "#0F172A", textTransform: "uppercase" }}>Total Due</span>
+                <span style={{ fontSize: "24px", fontWeight: "900", color: brandColor }}>{currencySymbol}{Number(invoice.amount).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* FOOTER */}
+          <div style={{ borderTop: "2px solid #E2E8F0", paddingTop: "24px", textAlign: "center" }}>
+            <div style={{ fontWeight: "700", color: "#0F172A", fontSize: "15px", marginBottom: "8px" }}>
+              {invoice.vendors?.custom_thank_you || "Thank you for your business!"}
+            </div>
+            {/* The watermark hides on PDF print automatically via CSS, but shows on the web unless they are premium */}
+            <div style={{ color: "#94A3B8", fontSize: "12px", marginTop: "16px" }} className="no-print">
+               Powered securely by KudiSlip
+            </div>
           </div>
         </div>
-        
       </div>
     </div>
   );
