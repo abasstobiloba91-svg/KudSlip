@@ -272,6 +272,11 @@ const Toast = ({ toast, onClose }) => {
 function LegalPage({ type }) {
   const isTerms = type === "terms";
   
+  // 🎯 THE FIX: Instantly snap the scrollbar back to the very top!
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [type]);
+  
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FFFFFF" }}>
       <GlobalStyles />
