@@ -639,7 +639,16 @@ function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
 // =========================================================
 // 4. SUPER ADMIN OPERATIONS DASHBOARD 
 // =========================================================
-function SuperAdminDashboard({ showToast }) {
+function SuperAdminDashboard({ user, showToast }) {
+  // 🛡️ IRONCLAD SECURITY BLOCK: Kicks out anyone who isn't an admin
+  if (user?.role !== 'admin') {
+    return (
+      <div style={{ padding: "60px 24px", textAlign: "center", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", borderRadius: "12px", border: "1px solid #FECACA", maxWidth: "600px", margin: "40px auto" }}>
+        🚨 UNAUTHORIZED: This operations area is restricted to Super Admins only.
+      </div>
+    );
+  }
+
   const [globalVendors, setGlobalVendors] = useState([]);
   const [globalInvoices, setGlobalInvoices] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -2782,7 +2791,7 @@ function AppRouter() {
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
-          {activeTab === "admin" && user?.role === 'admin' && <SuperAdminDashboard showToast={showToast} />}
+        {activeTab === "admin" && <SuperAdminDashboard user={user} showToast={showToast} />}
         </div>
       </div>
     );
