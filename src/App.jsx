@@ -1949,7 +1949,7 @@ function ExpensesManager({ user, showToast }) {
 }
 
 // =========================================================
-// 10. PAYOUT SETTINGS (WITH LOCKED SUCCESS UI)
+// 10. PAYOUT SETTINGS (PREMIUM ENTERPRISE UI)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
@@ -2070,34 +2070,49 @@ function PayoutSettings({ user, showToast }) {
         {hasLinkedBank && !isEditing ? (
           
           /* =========================================
-             THE LOCKED SUCCESS VIEW (READ-ONLY)
+             THE LOCKED SUCCESS VIEW (PREMIUM UI)
              ========================================= */
-          <div style={{ textAlign: "center", padding: "10px 0" }}>
-            <div style={{ width: "72px", height: "72px", background: "#ECFDF5", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px auto", color: "#10B981" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "36px", height: "36px" }}>
-                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-              </svg>
+          <div style={{ padding: "10px 0" }}>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
+              <div style={{ width: "48px", height: "48px", background: "#000000", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.2)" }}>
+                <ShieldIcon />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 4px 0", color: "#0F172A" }}>Settlement Route Active</h3>
+                <div style={{ color: DESIGN.success, fontSize: "13px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                   Verified by Paystack
+                </div>
+              </div>
             </div>
             
-            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px", color: "#0F172A" }}>Congratulations! 🎉</h3>
             <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "32px" }}>
-              Your payout account has been successfully verified and linked. All your automated settlements will be securely routed here.
+              Your automated payout destination is securely linked. All paid invoices will be routed directly to this verified bank account.
             </p>
 
-            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", padding: "20px", borderRadius: "12px", maxWidth: "300px", margin: "0 auto 32px auto", textAlign: "left" }}>
-              <div style={{ fontSize: "11px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>Bank Name</div>
-              <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "16px" }}>{linkedBankName}</div>
+            {/* Dark Mode Bank Card */}
+            <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", padding: "28px", borderRadius: "16px", marginBottom: "32px", position: "relative", overflow: "hidden", color: "#FFF", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
+              {/* Abstract decorative circles for premium feel */}
+              <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "120px", height: "120px", borderRadius: "50%", background: "rgba(255,255,255,0.03)" }}></div>
+              <div style={{ position: "absolute", bottom: "-40px", left: "-20px", width: "150px", height: "150px", borderRadius: "50%", background: "rgba(255,255,255,0.02)" }}></div>
               
-              <div style={{ fontSize: "11px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>Account Number</div>
-              <div style={{ fontSize: "18px", fontWeight: "900", color: "#0F172A", letterSpacing: "2px" }}>{maskedAccount}</div>
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Bank Name</div>
+                <div style={{ fontSize: "18px", fontWeight: "800", color: "#FFFFFF", marginBottom: "24px" }}>{linkedBankName}</div>
+                
+                <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Account Number</div>
+                <div style={{ fontSize: "24px", fontWeight: "900", color: "#FFFFFF", letterSpacing: "4px", fontFamily: "monospace" }}>{maskedAccount}</div>
+              </div>
             </div>
 
             <button 
               onClick={() => setIsEditing(true)} 
-              style={{ background: "transparent", border: "1px solid #CBD5E1", padding: "12px 24px", borderRadius: "8px", color: "#64748B", fontWeight: "800", cursor: "pointer", fontSize: "13px" }} 
+              style={{ background: "transparent", border: "2px solid #E2E8F0", padding: "14px 24px", borderRadius: "8px", color: "#0F172A", fontWeight: "800", cursor: "pointer", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "8px" }} 
               className="btn-hover"
             >
-              Change Payout Account
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              Update Bank Details
             </button>
           </div>
 
