@@ -1220,14 +1220,28 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
-        callback: function(response) {
+       callback: function(response) {
           supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
+            
+            // 🚀 TRIGGER THE MERCHANT EMAIL ALERT
+            if (vendor?.email) {
+              fetch('/api/send-payment-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  vendorEmail: vendor.email,
+                  vendorName: vendor.business_name || "Merchant",
+                  clientName: client?.name || "A client",
+                  amount: Number(invoice.amount).toLocaleString(),
+                  currency: CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency,
+                  invoiceId: invoice.id
+                })
+              }).catch(e => console.error("Alert failed to send:", e));
+            }
           });
         },
-        onClose: function() { console.log("Payment window closed."); }
-      };
 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         paystackPayload.subaccount = vendor.paystack_subaccount_code;
@@ -1668,7 +1682,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
         if (authError) throw authError;
         if (authData.user) {
-          const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName }]);
+          const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName, email: email }]);
           if (dbError) throw dbError;
         }
         showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
