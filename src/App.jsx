@@ -93,7 +93,7 @@ const GlobalStyles = () => (
     .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
     
     .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; transition: transform 0.3s ease; }
-    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justifyContent: space-between; align-items: center; width: 100%; }
     .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
     .sidebar-footer { padding: 16px 32px; margin-top: auto; display: block; }
     
