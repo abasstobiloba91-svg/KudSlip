@@ -2589,7 +2589,7 @@ function DraggableSupportButton() {
 }
 
 // =========================================================
-// MAIN APP ROUTER & MOBILE DRAWER (WITH GLOBAL SCROLL FIX)
+// MAIN APP ROUTER (NOW USING CLEAN URLs)
 // =========================================================
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -2598,41 +2598,59 @@ function AppRouter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifs, setNotifs] = useState([]);
   
-  // 🎯 Track WHICH menu is open ('mobile' or 'desktop')
   const [activeNotifMenu, setActiveNotifMenu] = useState(null); 
-  
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
   const [toast, setToast] = useState(null);
+  
   const showToast = (title, message, type = "success") => {
     setToast({ title, message, type });
     setTimeout(() => setToast(null), 5000);
   };
 
-  const [hash, setHash] = useState(window.location.hash || "#/");
+  // 1. STATE NOW TRACKS CLEAN URL PATHS
+  const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
 
   useEffect(() => {
     const splashTimer = setTimeout(() => setShowSplash(false), 3000);
     return () => clearTimeout(splashTimer);
   }, []);
 
+  // 2. MAGIC ROUTER: INTERCEPTS CLICKS SO APP DOESN'T HARD RELOAD
   useEffect(() => {
-    const handleHashChange = () => setHash(window.location.hash || "#/");
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    const handlePopState = () => setCurrentPath(window.location.pathname || "/");
+    window.addEventListener("popstate", handlePopState);
+    
+    const handleGlobalClick = (e) => {
+      const link = e.target.closest('a');
+      if (link && link.getAttribute('href') && link.getAttribute('href').startsWith('/')) {
+        // Ignore external or new-tab links
+        if (link.getAttribute('target') === '_blank') return;
+        
+        e.preventDefault();
+        const newPath = link.getAttribute('href');
+        window.history.pushState({}, '', newPath);
+        setCurrentPath(newPath);
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      document.removeEventListener('click', handleGlobalClick);
+    };
   }, []);
 
-  // 🎯 THE NUCLEAR FIX: Delayed override + iOS/Safari fallbacks
+  // 3. SCROLL FIX FOR CLEAN URLS
   useEffect(() => {
     const scrollTimer = setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      document.documentElement.scrollTop = 0; // Fallback for iOS/Safari
-      document.body.scrollTop = 0;            // Fallback for older mobile browsers
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0; 
     }, 100);
     return () => clearTimeout(scrollTimer);
-  }, [hash]);
+  }, [currentPath]);
 
-  useEffect(() => { setSidebarOpen(false); }, [hash]);
+  useEffect(() => { setSidebarOpen(false); }, [currentPath]);
 
   useEffect(() => {
     if (initializationError || !supabase) { setIsLoading(false); return; }
@@ -2653,8 +2671,11 @@ function AppRouter() {
               }
             }).subscribe();
 
-          if (window.location.hash === "" || window.location.hash === "#/" || window.location.hash === "#/login" || window.location.hash === "#/signup") {
-             window.location.hash = "#/dashboard/invoices";
+          // 4. CLEAN URL REDIRECTS FOR LOGGED IN USERS
+          const path = window.location.pathname;
+          if (path === "" || path === "/" || path === "/login" || path === "/signup") {
+             window.history.pushState({}, '', '/dashboard/invoices');
+             setCurrentPath('/dashboard/invoices');
           }
         });
       } else { setIsLoading(false); }
@@ -2717,23 +2738,22 @@ function AppRouter() {
       </div>
     );
 
-    if (hash.startsWith('#/pay/')) {
-      const cleanId = hash.replace('#/pay/', '').replace(/[^a-zA-Z0-9-]/g, '');
+    // 5. RENDER BASED ON CLEAN URL PATHS
+    if (currentPath.startsWith('/pay/')) {
+      const cleanId = currentPath.replace('/pay/', '').replace(/[^a-zA-Z0-9-]/g, '');
       return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
     }
 
-    if (hash === "#/terms") return <LegalPage type="terms" />;
-    
-    // 🎯 Missing parenthesis bug fixed here!
-    if (hash === "#/privacy") return <LegalPage type="privacy" />;
+    if (currentPath === "/terms") return <LegalPage type="terms" />;
+    if (currentPath === "/privacy") return <LegalPage type="privacy" />;
 
     if (!user) {
-      if (hash === "#/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
-      if (hash === "#/signup") return <KudiSlipAuth initialIsSignUp={true} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.hash = "#/dashboard/invoices"; }} />;
+      if (currentPath === "/login") return <KudiSlipAuth initialIsSignUp={false} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.href = "/dashboard/invoices"; }} />;
+      if (currentPath === "/signup") return <KudiSlipAuth initialIsSignUp={true} showToast={showToast} onLoginSuccess={(u) => { setUser(u); window.location.href = "/dashboard/invoices"; }} />;
       return <LandingPage />;
     }
 
-    const activeTab = hash.replace('#/dashboard/', '');
+    const activeTab = currentPath.replace('/dashboard/', '');
 
     return (
       <div className="dashboard-layout">
@@ -2741,7 +2761,7 @@ function AppRouter() {
         
         {/* MOBILE HEADER */}
         <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}>
-          <a href="#/dashboard/invoices" style={{ display: "block", textDecoration: "none" }}>
+          <a href="/dashboard/invoices" style={{ display: "block", textDecoration: "none" }}>
             <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -2777,22 +2797,22 @@ function AppRouter() {
           <div className="sidebar-menu">
             {user.role !== 'support' && (
               <>
-                <a href="#/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
-                <a href="#/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
+                <a href="/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   Profit Analytics <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px", fontWeight: "800"}}>PRO</span>
                 </a>
-                <a href="#/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
-                <a href="#/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
-                <a href="#/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
-                <a href="#/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
+                <a href="/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
+                <a href="/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
+                <a href="/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
+                <a href="/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
               </>
             )}
-            <a href="#/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <a href="/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                {user.role === 'vendor' ? 'Helpdesk & Ticket' : 'Support Inbox'}
             </a>
 
             {user?.role === 'admin' && (
-              <a href="#/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <ShieldIcon /> Admin Operations
               </a>
             )}
@@ -2826,7 +2846,7 @@ function AppRouter() {
             <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.hash = "#/"; })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); window.location.href = "/"; })}>Log Out</button>
           </div>
         </div>
 
@@ -2852,7 +2872,7 @@ function AppRouter() {
       </ErrorBoundary>
       <Toast toast={toast} onClose={() => setToast(null)} />
       
-      {user && user.role === 'vendor' && hash !== "#/dashboard/support" && !hash.startsWith("#/pay/") && (
+      {user && user.role === 'vendor' && currentPath !== "/dashboard/support" && !currentPath.startsWith("/pay/") && (
         <DraggableSupportButton />
       )}
     </>
