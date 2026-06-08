@@ -795,7 +795,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
   
-  // EMAIL ENGINE STATE (Tracks exactly which invoice is sending)
+  // EMAIL ENGINE STATE
   const [sendingEmailId, setSendingEmailId] = useState(null);
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
@@ -838,12 +838,13 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
   };
 
-const handleMarkAsPaid = async (invId) => {
+  // 🎯 THE MANUAL PAYMENT LOGGER
+  const handleMarkAsPaid = async (invId) => {
     const confirmLog = window.confirm("Mark this invoice as Paid? Use this if the client paid via cash or direct bank transfer.");
     if (!confirmLog) return;
     
     setLoading(true);
-    // 🚀 We specifically log that this was a MANUAL payment
+    // 🚀 We specifically log that this was a MANUAL payment so the Public Page triggers the anti-fraud warning
     const { error } = await supabase.from('invoices').update({ status: 'paid', payment_method: 'manual' }).eq('id', invId);
     if (error) { 
       showToast("Database Error", error.message, "error"); 
@@ -889,9 +890,6 @@ const handleMarkAsPaid = async (invId) => {
     setLoading(false);
   };
 
-  // =========================================================
-  // AUTOMATED EMAIL ENGINE LOGIC
-  // =========================================================
   const handleSendEmail = async (inv) => {
     if (!inv || !inv.clients?.email) {
       showToast("Missing Info", "This client doesn't have an email address saved.", "error");
@@ -1122,39 +1120,44 @@ const handleMarkAsPaid = async (invId) => {
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   
-                  {/* ================================================= */}
-                  {/* NEW ACTION BUTTONS ROW (WITH EMAIL BUTTON)        */}
-                  {/* ================================================= */}
                   <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
                     <button className="btn-secondary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "140px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
                     
                     {inv.status === 'pending' && (
-                      <button 
-                        onClick={() => handleSendEmail(inv)} 
-                        disabled={sendingEmailId === inv.id}
-                        className="btn-secondary btn-hover"
-                        style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1 }}
-                      >
-                        {sendingEmailId === inv.id ? (
-                          <>
-                            <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
-                              <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
-                            </svg>
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
-                            </svg>
-                            Email Client
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {inv.status === 'pending' && (
-                      <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp Alert</a>
+                      <>
+                        <button 
+                          onClick={() => handleMarkAsPaid(inv.id)}
+                          className="btn-secondary btn-hover"
+                          style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569" }}
+                        >
+                          <CheckIcon /> Cash / Manual
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleSendEmail(inv)} 
+                          disabled={sendingEmailId === inv.id}
+                          className="btn-secondary btn-hover"
+                          style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1 }}
+                        >
+                          {sendingEmailId === inv.id ? (
+                            <>
+                              <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+                                <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+                              </svg>
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
+                              </svg>
+                              Email Client
+                            </>
+                          )}
+                        </button>
+                        
+                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp Alert</a>
+                      </>
                     )}
                   </div>
                 </div>
