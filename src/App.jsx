@@ -1754,25 +1754,23 @@ const handleAuth = async (e) => {
       if (isSignUp) {
         if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
         
-        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
-        if (authError) throw authError;
+        const authRes = await supabase.auth.signUp({ email: email, password: password });
+        if (authRes.error) throw authRes.error;
         
-        if (authData.user) {
-          const { error: dbError } = await supabase.from('vendors').insert([{ 
-            id: authData.user.id, 
+        if (authRes.data.user) {
+          const dbRes = await supabase.from('vendors').insert([{ 
+            id: authRes.data.user.id, 
             business_name: businessName, 
             email: email 
           }]);
-          if (dbError) throw dbError;
+          if (dbRes.error) throw dbRes.error;
           
           try {
+            const payload = { userEmail: email, businessName: businessName };
             await fetch('/api/send-welcome', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userEmail: email,
-                businessName: businessName
-              })
+              body: JSON.stringify(payload)
             });
           } catch (mailErr) {
             console.error("Welcome email delivery failed:", mailErr);
@@ -1783,11 +1781,12 @@ const handleAuth = async (e) => {
         setIsSignUp(false);
         setLoading(false);
       } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
+        const loginRes = await supabase.auth.signInWithPassword({ email: email, password: password });
+        if (loginRes.error) throw loginRes.error;
         
-        const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
-        onLoginSuccess({ ...data.user, ...vendorData });
+        const vendorRes = await supabase.from('vendors').select('*').eq('id', loginRes.data.user.id).single();
+        const mergedUser = Object.assign({}, loginRes.data.user, vendorRes.data);
+        onLoginSuccess(mergedUser);
         window.location.href = "/dashboard/invoices";
       }
     } catch (err) { 
