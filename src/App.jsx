@@ -1246,48 +1246,29 @@ const handlePayment = () => {
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
-      // THE PAYLOAD OBJECT
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
-       callback: function(response) {
-          // 🚀 NEW: We now specifically log that this was verified by PAYSTACK
+        callback: function(response) {
           supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
             
-            // 🚀 TRIGGER THE MERCHANT EMAIL ALERT
             if (vendor?.email) {
               fetch('/api/send-payment-alert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   vendorEmail: vendor.email,
-                  vendorName: vendor.business_name || "Merchant",
+                  vendorName: vendor?.business_name || "Merchant",
                   clientName: client?.name || "A client",
                   amount: Number(invoice.amount).toLocaleString(),
                   currency: CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency,
                   invoiceId: invoice.id
                 })
               }).catch(e => console.error("Alert failed to send:", e));
-            }
-       onLoginSuccess({ ...data.user, ...vendorData });
-        window.location.href = "/dashboard/invoices";
-      }
-    } catch (err) { 
-      setError(err.message); 
-      showToast("Authentication Error", err.message, "error"); 
-      setLoading(false); 
-    }
-  };
-
-  const fetchRecentInvoices = async () => {
-              .catch(e => showToast("Network Error", "Could not reach email server.", "error"));
-            } else {
-              // If the Supabase Security (RLS) accidentally hid the vendor email from the public, this will catch it!
-              showToast("Data Missing", "Cannot send alert: Vendor email hidden by database security.", "error");
             }
           });
         },
