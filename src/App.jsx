@@ -846,6 +846,22 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
   };
 
+const handleMarkAsPaid = async (invId) => {
+    const confirmLog = window.confirm("Mark this invoice as Paid? Use this if the client paid via cash or direct bank transfer.");
+    if (!confirmLog) return;
+    
+    setLoading(true);
+    // 🚀 We specifically log that this was a MANUAL payment
+    const { error } = await supabase.from('invoices').update({ status: 'paid', payment_method: 'manual' }).eq('id', invId);
+    if (error) { 
+      showToast("Database Error", error.message, "error"); 
+    } else {
+      showToast("Payment Logged", "Invoice manually marked as paid.", "success");
+      fetchRecentInvoices();
+    }
+    setLoading(false);
+  };
+
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
@@ -1236,12 +1252,13 @@ const handlePayment = () => {
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
-        callback: function(response) {
-          supabase.from('invoices').update({ status: 'paid' }).eq('id', invoice.id).then(() => {
-            setInvoice({ ...invoice, status: 'paid' });
+       callback: function(response) {
+          // 🚀 NEW: We now specifically log that this was verified by PAYSTACK
+          supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
+            setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
             
-            // 🚀 LOUD ERROR TRACKER: Forces the merchant alert to reveal any hidden crashes
+            // 🚀 TRIGGER THE MERCHANT EMAIL ALERT
             if (vendor?.email) {
               fetch('/api/send-payment-alert', {
                 method: 'POST',
@@ -1254,7 +1271,10 @@ const handlePayment = () => {
                   currency: CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency,
                   invoiceId: invoice.id
                 })
-              })
+              }).catch(e => console.error("Alert failed to send:", e));
+            }
+          });
+        },
               .then(async (res) => {
                 const mailData = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -1463,15 +1483,28 @@ const handlePayment = () => {
               <div style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
             </div>
             
-            <div className="no-print">
+           <div className="no-print">
               {invoice.status === 'pending' ? (
                 <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
                   Proceed to Secure Payment
                 </button>
               ) : (
-                <div style={{ textAlign: "center", padding: "20px", background: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0" }}>
-                  <div style={{ color: DESIGN.success, fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}><CheckIcon /> Payment Complete</div>
-                  <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600" }}>{thankYouMessage}</div>
+                <div style={{ textAlign: "center", padding: "20px", background: invoice.payment_method === 'manual' ? "#F8FAFC" : "#ECFDF5", borderRadius: "12px", border: invoice.payment_method === 'manual' ? "1px dashed #94A3B8" : "1px solid #A7F3D0" }}>
+                  <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : DESIGN.success, fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <CheckIcon /> {invoice.payment_method === 'manual' ? "Marked as Paid (Manual)" : "Payment Complete"}
+                  </div>
+                  <div style={{ fontSize: "14px", color: DESIGN.textMain, fontWeight: "600", marginBottom: "12px" }}>{thankYouMessage}</div>
+                  
+                  {invoice.payment_method === 'manual' && (
+                    <div style={{ fontSize: "12px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "8px 12px", borderRadius: "6px", display: "inline-block", border: "1px solid #FECACA" }}>
+                      ⚠️ Logged via Cash/Direct Transfer. Not verified by KudiSlip.
+                    </div>
+                  )}
+                  {invoice.payment_method === 'paystack' && (
+                    <div style={{ fontSize: "12px", color: "#10B981", fontWeight: "800" }}>
+                      🔒 Securely Verified by Paystack
+                    </div>
+                  )}
                 </div>
               )}
               
