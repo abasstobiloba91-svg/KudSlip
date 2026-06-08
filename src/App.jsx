@@ -1505,8 +1505,8 @@ const handlePayment = () => {
                       🔒 Securely Verified by Paystack
                     </div>
                   )}
-                </div>
-              )}
+                
+        
               
               {currentUser?.id === vendor?.id && (
                 <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block", textAlign: "center" }}>Return to Dashboard</a>
