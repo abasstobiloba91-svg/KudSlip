@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   try {
     const data = await resend.emails.send({
-      from: 'KudiSlip Billing <invoices@kudislip.com.ng>',
+     from: 'KudiSlip Billing <invoices@kudislip.com.ng>',
       to: [vendorEmail],
       subject: `Payment Received: ${currency}${amount} from ${clientName}`,
       html: `
