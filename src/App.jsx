@@ -1746,19 +1746,26 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [showPassword, setShowPassword] = useState(false);
 
 const handleAuth = async (e) => {
-    e.preventDefault(); setLoading(true); setError("");
+    e.preventDefault(); 
+    setLoading(true); 
+    setError("");
     try {
       if (isSignUp) {
         if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
+        
         const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
         if (authError) throw authError;
+        
         if (authData.user) {
-          const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName, email: email }]);
+          const { error: dbError } = await supabase.from('vendors').insert([{ 
+            id: authData.user.id, 
+            business_name: businessName, 
+            email: email 
+          }]);
           if (dbError) throw dbError;
           
-          // 🚀 LOUD ERROR TRACKER: Forces the screen to show us exactly what Resend/Vercel is thinking
           try {
-            const mailRes = await fetch('/api/send-welcome', {
+            await fetch('/api/send-welcome', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1766,26 +1773,18 @@ const handleAuth = async (e) => {
                 businessName: businessName
               })
             });
-            
-            // Try to read the exact error message from the backend
-            const mailData = await mailRes.json().catch(() => ({ error: "Failed to read server response." }));
-            
-            if (!mailRes.ok) {
-              // This will pop up a red box telling us EXACTLY what broke!
-              showToast("Mail Server Crash", mailData.error || JSON.stringify(mailData), "error");
-            } else {
-              showToast("Mail Delivered!", "Check your inbox immediately.", "success");
-            }
           } catch (mailErr) {
-            showToast("Network Drop", "The frontend couldn't find the /api/ folder. Check vercel.json.", "error");
+            console.error("Welcome email delivery failed:", mailErr);
           }
         }
-        showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
+        
+        showToast("Account Created", "Your setup is complete. Please log in to continue.", "success");
         setIsSignUp(false);
         setLoading(false);
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
+        
         const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
         onLoginSuccess({ ...data.user, ...vendorData });
         window.location.href = "/dashboard/invoices";
