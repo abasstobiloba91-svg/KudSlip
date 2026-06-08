@@ -1273,16 +1273,17 @@ const handlePayment = () => {
                 })
               }).catch(e => console.error("Alert failed to send:", e));
             }
-          });
-        },
-              .then(async (res) => {
-                const mailData = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                  showToast("Alert Blocked", mailData.error || JSON.stringify(mailData), "error");
-                } else {
-                  showToast("Alert Sent!", "Merchant notified of payment.", "success");
-                }
-              })
+       onLoginSuccess({ ...data.user, ...vendorData });
+        window.location.href = "/dashboard/invoices";
+      }
+    } catch (err) { 
+      setError(err.message); 
+      showToast("Authentication Error", err.message, "error"); 
+      setLoading(false); 
+    }
+  };
+
+  const fetchRecentInvoices = async () => {
               .catch(e => showToast("Network Error", "Could not reach email server.", "error"));
             } else {
               // If the Supabase Security (RLS) accidentally hid the vendor email from the public, this will catch it!
