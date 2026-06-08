@@ -507,13 +507,13 @@ function BrandSettings({ user, onUpdate, showToast }) {
       
       <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", overflow: "hidden" }}>
         
-        {/* 🎯 THE GLASSMORPHISM PAYWALL */}
+   {/* 🎯 THE UPGRADED GLASSMORPHISM PAYWALL */}
         {!isPremium && (
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.5)", backdropFilter: "blur(4px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
-             <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>PREMIUM FEATURE</div>
-             <h3 style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0" }}>Unlock Custom Branding</h3>
-             <p style={{ color: "#64748B", fontSize: "14px", marginBottom: "24px", maxWidth: "280px", lineHeight: "1.5" }}>Upload your logo, pick your brand colors, and add custom thank-you notes.</p>
-             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(8px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
+             <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", border: `1px solid ${DESIGN.premium}` }}>💎 PREMIUM FEATURE</div>
+             <h3 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", margin: "0 0 12px 0" }}>Unlock Profit Analytics</h3>
+             <p style={{ color: "#475569", fontSize: "15px", marginBottom: "28px", maxWidth: "320px", lineHeight: "1.6", fontWeight: "500" }}>Log business expenses to automatically calculate your true net profit.</p>
+             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ padding: "16px 32px", fontSize: "15px", boxShadow: "0 10px 15px -3px rgba(139, 92, 246, 0.3)" }}>Upgrade to Premium</a>
           </div>
         )}
 
@@ -797,6 +797,9 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   
   // EMAIL ENGINE STATE
   const [sendingEmailId, setSendingEmailId] = useState(null);
+  
+  // NATIVE MODAL STATE
+  const [confirmModalData, setConfirmModalData] = useState(null);
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
@@ -838,13 +841,18 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
   };
 
-  // 🎯 THE MANUAL PAYMENT LOGGER
+  // 🎯 THE NATIVE MANUAL PAYMENT LOGGER
+  const triggerManualPaymentConfirm = (invId) => {
+    setConfirmModalData({
+      title: "Mark as Paid",
+      message: "Are you sure you want to mark this invoice as Paid? Use this if the client paid via cash or direct bank transfer.",
+      onConfirm: () => handleMarkAsPaid(invId)
+    });
+  };
+
   const handleMarkAsPaid = async (invId) => {
-    const confirmLog = window.confirm("Mark this invoice as Paid? Use this if the client paid via cash or direct bank transfer.");
-    if (!confirmLog) return;
-    
+    setConfirmModalData(null);
     setLoading(true);
-    // 🚀 We specifically log that this was a MANUAL payment so the Public Page triggers the anti-fraud warning
     const { error } = await supabase.from('invoices').update({ status: 'paid', payment_method: 'manual' }).eq('id', invId);
     if (error) { 
       showToast("Database Error", error.message, "error"); 
@@ -949,18 +957,38 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
-    <div style={{ maxWidth: "900px" }}>
+    <div style={{ maxWidth: "900px", position: "relative" }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
+      {/* 🎯 NATIVE CONFIRMATION MODAL */}
+      {confirmModalData && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#3B82F6", margin: "0 auto 20px auto" }}>
+              <InfoIcon />
+            </div>
+            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "12px", color: "#0F172A" }}>{confirmModalData.title}</h3>
+            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>{confirmModalData.message}</p>
+            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
+              <button className="btn-primary btn-hover" style={{ padding: "14px", fontSize: "15px" }} onClick={confirmModalData.onConfirm}>Yes, Mark as Paid</button>
+              <button className="btn-secondary btn-hover" style={{ padding: "14px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B" }} onClick={() => setConfirmModalData(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎯 UPGRADED LOGO WARNING MODAL (NO EMOJIS) */}
       {showLogoWarning && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 16px auto" }}>⚠️</div>
-            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "10px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
-            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
-            <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
-              <a href="#/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "14px", textDecoration: "none" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
-              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "14px", border: "none", background: "#F1F5F9" }}>Ignore & Generate</button>
+          <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FFFBEB", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", margin: "0 auto 20px auto" }}>
+              <AlertIcon />
+            </div>
+            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "12px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
+            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
+              <a href="/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "14px", textDecoration: "none", fontSize: "15px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
+              <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "14px", border: "none", background: "#F1F5F9", fontSize: "15px", color: "#0F172A" }}>Ignore & Generate</button>
               <button onClick={() => setShowLogoWarning(false)} style={{ background: "none", border: "none", color: "#64748B", fontWeight: "700", marginTop: "4px", cursor: "pointer", padding: "10px" }}>Cancel</button>
             </div>
           </div>
@@ -1126,7 +1154,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                     {inv.status === 'pending' && (
                       <>
                         <button 
-                          onClick={() => handleMarkAsPaid(inv.id)}
+                          onClick={() => triggerManualPaymentConfirm(inv.id)}
                           className="btn-secondary btn-hover"
                           style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569" }}
                         >
