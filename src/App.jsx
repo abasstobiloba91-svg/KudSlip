@@ -425,11 +425,9 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploadPercent, setUploadPercent] = useState(0);
 
   const handleLogoUpload = async (e) => {
-    // 🎯 THE FIX: target.files[0] prevents the 90% hang by sending the actual image file
-    const file = e.target.files[0];
+    const file = e.target.files;
     if (!file) return;
     
-    // Check file size (5MB Limit)
     if (file.size > 5242880) {
       showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
       return;
@@ -438,7 +436,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
     setUploading(true);
     setUploadPercent(0);
     
-    // Smart UI Tracker: Animates smoothly up to 90%
     const progressInterval = setInterval(() => {
       setUploadPercent((prev) => (prev >= 90 ? 90 : prev + 15));
     }, 250);
@@ -447,10 +444,8 @@ function BrandSettings({ user, onUpdate, showToast }) {
     const fileName = `${user.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${fileExt}`;
     
     try {
-      // SHIELD 1: Convert the raw file into an in-memory binary Blob to bypass mobile browser stream lockups
       const fileBlob = new Blob([file], { type: file.type });
 
-      // SHIELD 2: Set an 8-second timeout racer so the upload can NEVER hang at 90% infinitely
       const uploadPromise = supabase.storage.from('LOGOS').upload(fileName, fileBlob, {
         cacheControl: '3600',
         upsert: false 
@@ -460,7 +455,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
         setTimeout(() => reject(new Error("Database connection timed out. Check your RLS target or network status.")), 8000)
       );
 
-      // Execute race track conditions
       const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
       clearInterval(progressInterval);
@@ -472,7 +466,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
         return; 
       }
       
-      // Success! Snap straight to 100%
       setUploadPercent(100);
       const { data: urlData } = supabase.storage.from('LOGOS').getPublicUrl(fileName);
       setLogoUrl(urlData.publicUrl);
@@ -484,7 +477,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
       }, 1500);
 
     } catch (err) {
-      // Forces any silent backend dropouts to reveal their logs to us directly on screen
       clearInterval(progressInterval);
       setUploadPercent(0);
       setUploading(false);
@@ -506,26 +498,26 @@ function BrandSettings({ user, onUpdate, showToast }) {
 
   if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Brand Settings.</div>;
 
-  if (user?.subscription_tier !== 'premium') {
-    return (
-      <div style={{ maxWidth: "600px" }}>
-        <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
-        <div style={{ padding: "40px 32px", background: "#F5F3FF", border: `1px solid ${DESIGN.premium}`, borderRadius: "12px", textAlign: "center", marginTop: "24px" }}>
-          <div style={{ fontSize: "18px", fontWeight: "800", color: DESIGN.premium, marginBottom: "12px" }}>Premium Feature</div>
-          <div style={{ color: DESIGN.textMain, marginBottom: "24px", lineHeight: "1.6" }}>Upgrade your account to upload your custom business logo, alter colors, and set custom thank-you messages.</div>
-          <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ display: "block", width: "100%" }}>Upgrade to Premium</a>
-        </div>
-      </div>
-    );
-  }
+  const isPremium = user?.subscription_tier === 'premium';
 
   return (
     <div style={{ maxWidth: "600px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
       <div style={{ color: DESIGN.textMuted, marginBottom: "36px", fontSize: "15px" }}>Customize how your invoices look to your clients.</div>
       
-      <div style={{ background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px" }}>
-        <form onSubmit={handleSave}>
+      <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", overflow: "hidden" }}>
+        
+        {/* 🎯 THE GLASSMORPHISM PAYWALL */}
+        {!isPremium && (
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.5)", backdropFilter: "blur(4px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
+             <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>PREMIUM FEATURE</div>
+             <h3 style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0" }}>Unlock Custom Branding</h3>
+             <p style={{ color: "#64748B", fontSize: "14px", marginBottom: "24px", maxWidth: "280px", lineHeight: "1.5" }}>Upload your logo, pick your brand colors, and add custom thank-you notes.</p>
+             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} style={{ opacity: !isPremium ? 0.4 : 1, pointerEvents: !isPremium ? "none" : "auto" }}>
           <div style={{ marginBottom: "24px" }}>
             <label style={{ fontSize: "12px", color: DESIGN.textMuted, display: "block", marginBottom: "8px", fontWeight: "700" }}>Upload Company Logo</label>
             <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
@@ -1987,6 +1979,8 @@ function ExpensesManager({ user, showToast }) {
   const totalGross = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
   const netProfit = totalGross - totalExpenses;
+  
+  const isPremium = user?.subscription_tier === 'premium';
 
   if (loading) return <div style={{ color: "#64748B", fontWeight: "600" }}>Loading Ledger...</div>;
 
@@ -2010,19 +2004,32 @@ function ExpensesManager({ user, showToast }) {
         </div>
       </div>
 
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: "800" }}>Log Business Expense</h3>
-        <form onSubmit={handleAddExpense} style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <div style={{ flex: 2, minWidth: "200px" }}>
-            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Description</label>
-            <input className="form-input" placeholder="e.g. Server Hosting, Office Rent" value={description} onChange={e=>setDescription(e.target.value)} required />
+      <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px", overflow: "hidden" }}>
+        
+        {/* 🎯 THE GLASSMORPHISM PAYWALL */}
+        {!isPremium && (
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.5)", backdropFilter: "blur(4px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
+             <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>PREMIUM FEATURE</div>
+             <h3 style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0" }}>Unlock Profit Analytics</h3>
+             <p style={{ color: "#64748B", fontSize: "14px", marginBottom: "24px", maxWidth: "320px", lineHeight: "1.5" }}>Log business expenses to automatically calculate your true net profit.</p>
+             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
           </div>
-          <div style={{ flex: 1, minWidth: "120px" }}>
-            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Amount (₦)</label>
-            <input className="form-input" type="number" min="0" value={amount} onChange={e=>setAmount(e.target.value)} required />
-          </div>
-          <button className="btn-primary btn-hover" type="submit" disabled={saving || user?.subscription_tier !== 'premium'}>{saving ? "Saving..." : "Add to Ledger"}</button>
-        </form>
+        )}
+
+        <div style={{ opacity: !isPremium ? 0.4 : 1, pointerEvents: !isPremium ? "none" : "auto" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: "800" }}>Log Business Expense</h3>
+          <form onSubmit={handleAddExpense} style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: 2, minWidth: "200px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Description</label>
+              <input className="form-input" placeholder="e.g. Server Hosting, Office Rent" value={description} onChange={e=>setDescription(e.target.value)} required />
+            </div>
+            <div style={{ flex: 1, minWidth: "120px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Amount (₦)</label>
+              <input className="form-input" type="number" min="0" value={amount} onChange={e=>setAmount(e.target.value)} required />
+            </div>
+            <button className="btn-primary btn-hover" type="submit" disabled={saving}>{saving ? "Saving..." : "Add to Ledger"}</button>
+          </form>
+        </div>
       </div>
 
       <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Expense History</h3>
