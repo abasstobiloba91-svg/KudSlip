@@ -1782,7 +1782,7 @@ const handleAuth = async (e) => {
         showToast("Account Created", "Your setup is complete. Please log in to continue.", "success");
         setIsSignUp(false);
         setLoading(false);
-   } else {
+      } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
         
