@@ -389,6 +389,23 @@ function LegalPage({ type }) {
           </>
         )}
       </main>
+      {/* SOCIAL PROOF BANNER */}
+        <div style={{ padding: "0 0 80px 0", textAlign: "center", borderBottom: "1px solid #E2E8F0", marginBottom: "80px" }}>
+          <p style={{ fontSize: "12px", fontWeight: "800", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "32px" }}>Trusted by fast-growing merchants and businesses</p>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "48px", flexWrap: "wrap", opacity: 0.5, filter: "grayscale(100%)", transition: "opacity 0.3s ease" }}>
+            
+            {/* Realistic Random Business Names Styled as Logos */}
+            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", fontFamily: "serif" }}>Aura Boutiques</div>
+            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <div style={{ width: "16px", height: "16px", background: "#0F172A", borderRadius: "4px" }}></div>
+              Apex Logistics
+            </div>
+            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", fontStyle: "italic" }}>Lumina Tech</div>
+            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", textTransform: "uppercase", letterSpacing: "1px" }}>NOVA RETAIL</div>
+            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", letterSpacing: "2px", border: "2px solid #0F172A", padding: "2px 8px" }}>CREST</div>
+            
+          </div>
+        </div>
       
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
         © 2026 KudiSlip Technologies. All rights reserved.
@@ -1614,19 +1631,28 @@ function LandingPage() {
           </div>
         </div>
 
-        <div style={{ paddingBottom: "100px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Meet The Team</h2>
-          <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap" }}>
-            <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="/founder.jpg" alt="Tobiloba Abass" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
-              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Tobiloba Abass</h3>
-              <p style={{ color: DESIGN.premium, fontSize: "14px", fontWeight: "700", margin: 0 }}>Founder & CEO</p>
+      <div style={{ paddingBottom: "100px", textAlign: "center" }}>
+          <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "16px" }}>Meet The Team</h2>
+          <p style={{ color: "#64748B", fontSize: "16px", maxWidth: "600px", margin: "0 auto 40px auto", lineHeight: "1.6" }}>The builders and engineers working around the clock to make KudiSlip the most reliable invoicing platform in Africa.</p>
+          
+          <div style={{ display: "flex", justifyContent: "center", gap: "40px", flexWrap: "wrap", maxWidth: "800px", margin: "0 auto" }}>
+            
+            {/* Tobi - Founder */}
+            <div className="card-hover" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 16, padding: "32px", width: "320px", boxSizing: "border-box" }}>
+              <img src="/founder.jpg" alt="Tobiloba Abass" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" }} style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: "4px solid #F8FAFC" }} />
+              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px", color: "#0F172A" }}>Tobiloba Abass</h3>
+              <p style={{ color: "#8B5CF6", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 16px 0" }}>Founder & CEO</p>
+              <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Leading the vision and corporate strategy to empower African merchants with seamless, automated financial tools.</p>
             </div>
-            <div className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 16, padding: "32px", width: "260px" }}>
-              <img src="/marvelous.jpg" alt="Marvelous Fawole" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80" }} style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: `4px solid ${DESIGN.bg}` }} />
-              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px" }}>Marvelous Fawole</h3>
-              <p style={{ color: DESIGN.success, fontSize: "14px", fontWeight: "700", margin: 0 }}>Product Manager</p>
+
+            {/* Marvelous - PM */}
+            <div className="card-hover" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 16, padding: "32px", width: "320px", boxSizing: "border-box" }}>
+              <img src="/marvelous.jpg" alt="Marvelous Fawole" onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80" }} style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", marginBottom: "16px", border: "4px solid #F8FAFC" }} />
+              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "4px", color: "#0F172A" }}>Marvelous Fawole</h3>
+              <p style={{ color: "#10B981", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 16px 0" }}>Product Manager</p>
+              <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", margin: 0 }}>Architecting the user experience and driving platform growth through continuous technical innovation.</p>
             </div>
+
           </div>
         </div>
 
