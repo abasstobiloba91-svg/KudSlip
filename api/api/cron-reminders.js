@@ -30,7 +30,7 @@ export default async function handler(req, res) {
           html: `
             <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
               <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-                <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 40px;" />
+                <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
               </div>
               <div style="padding: 40px 30px;">
                 <h2 style="color: #0f172a; margin-top: 0;">Invoice Reminder</h2>
