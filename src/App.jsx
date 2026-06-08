@@ -1179,6 +1179,9 @@ const handleMarkAsPaid = async (invId) => {
 // =========================================================
 // 9. PUBLIC INVOICE VIEW (ORIGINAL LAYOUT + PRO LOGIC)
 // =========================================================
+// =========================================================
+// 9. PUBLIC INVOICE VIEW (ORIGINAL LAYOUT + PRO LOGIC)
+// =========================================================
 function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
@@ -1217,7 +1220,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
     window.print();
   };
 
-const handlePayment = () => {
+  const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
@@ -1286,6 +1289,7 @@ const handlePayment = () => {
       showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
     }
   };
+
   const submitReview = async () => {
     if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
     
@@ -1388,12 +1392,10 @@ const handlePayment = () => {
       `}</style>
 
       <div className="invoice-page-wrapper">
-        {/* 🎯 KUDISLIP WATERMARK: Removed "no-print" so it naturally renders on the generated PDF! */}
         {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 1, transform: "rotate(-15deg)" }} />}
         
         <div className="invoice-max-width">
           
-          {/* Top Download Button */}
           <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
             <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid ${DESIGN.border}`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1405,7 +1407,6 @@ const handlePayment = () => {
             </button>
           </div>
           
-          {/* 🎯 TOP HEADER LOGO: Removed "no-print" so it prints on the PDF too */}
           {isFreeTier && (
             <div style={{ textAlign: "center", marginBottom: "-8px" }}>
               <div style={{ fontSize: "11px", fontWeight: "700", color: DESIGN.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
@@ -1465,7 +1466,7 @@ const handlePayment = () => {
               <div style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
             </div>
             
-           <div className="no-print">
+            <div className="no-print">
               {invoice.status === 'pending' ? (
                 <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
                   Proceed to Secure Payment
@@ -1487,8 +1488,8 @@ const handlePayment = () => {
                       🔒 Securely Verified by Paystack
                     </div>
                   )}
-                
-        
+                </div>
+              )}
               
               {currentUser?.id === vendor?.id && (
                 <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block", textAlign: "center" }}>Return to Dashboard</a>
