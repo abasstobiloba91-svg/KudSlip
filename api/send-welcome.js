@@ -3,45 +3,53 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  const { userEmail, businessName } = req.body;
-  if (!userEmail || !businessName) return res.status(400).json({ error: 'Missing email or business name' });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(455).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const data = await resend.emails.send({
-      from: 'KudiSlip <invoices@kudislip.com.ng>',
+    // 🎯 THE FIX: Matches the exact words the frontend is sending
+    const { userEmail, businessName } = req.body;
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: 'KudiSlip <hello@kudislip.com.ng>',
       to: [userEmail],
-      subject: 'Welcome to KudiSlip',
+      subject: 'Welcome to KudiSlip! 🚀',
       html: `
-        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <h1 style="color: #0f172a; margin-bottom: 8px;">Welcome aboard, ${businessName}.</h1>
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0;">We are pleased to have you join the KudiSlip network.</p>
-          </div>
-          
-          <div style="background-color: #ffffff; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <p style="color: #0f172a; font-size: 15px; line-height: 1.6; margin-top: 0;">Your account is now fully active. You can immediately begin to:</p>
-            <ul style="color: #64748b; font-size: 15px; line-height: 1.6;">
-              <li style="margin-bottom: 8px;">Generate clean, professional invoices.</li>
-              <li style="margin-bottom: 8px;">Receive bank settlements automatically via Paystack.</li>
-              <li>Track your outstanding revenue and business health.</li>
-            </ul>
-          </div>
-
-          <div style="text-align: center; margin-top: 32px;">
-            <a href="https://kudislip.com.ng/login" style="display: inline-block; background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 15px;">Access Your Dashboard</a>
-          </div>
-
-          <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px dashed #cbd5e1; color: #94a3b8; font-size: 13px;">
-            If you require any assistance, please reply directly to this email.<br/>
-            © KudiSlip Technologies
-          </div>
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #1e3a8a;">Welcome aboard, ${businessName || 'Merchant'}! 👋</h2>
+          <p>Thank you for choosing KudiSlip to power your business invoicing and automated payments.</p>
+          <p>Your account is now fully active. You can start creating professional invoices, tracking your customers, and receiving split payouts instantly.</p>
+          <br />
+          <a href="https://kudislip.com.ng" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Go to Dashboard</a>
+          <br /><br />
+          <p style="color: #64748b; font-size: 14px;">If you have any questions, reply directly to this email. Our support team is always here to help.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #94a3b8; font-size: 12px;">© ${new Date().getFullYear()} KudiSlip. All rights reserved.</p>
         </div>
-      `
+      `,
     });
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+
+    if (error) {
+      return res.status(400).json({ error });
+    }
+
+    return res.status(200).json({ message: 'Welcome email sent successfully!', data });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 }
