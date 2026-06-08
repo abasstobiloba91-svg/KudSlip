@@ -1686,9 +1686,9 @@ const handleAuth = async (e) => {
           const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName, email: email }]);
           if (dbError) throw dbError;
           
-          // 🚀 THE MISSING LINK: Trigger the automated Welcome Email instantly!
+          // 🚀 LOUD ERROR TRACKER: Forces the screen to show us exactly what Resend/Vercel is thinking
           try {
-            fetch('/api/send-welcome', {
+            const mailRes = await fetch('/api/send-welcome', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1696,8 +1696,18 @@ const handleAuth = async (e) => {
                 businessName: businessName
               })
             });
+            
+            // Try to read the exact error message from the backend
+            const mailData = await mailRes.json().catch(() => ({ error: "Failed to read server response." }));
+            
+            if (!mailRes.ok) {
+              // This will pop up a red box telling us EXACTLY what broke!
+              showToast("Mail Server Crash", mailData.error || JSON.stringify(mailData), "error");
+            } else {
+              showToast("Mail Delivered!", "Check your inbox immediately.", "success");
+            }
           } catch (mailErr) {
-            console.error("Welcome email trigger failed:", mailErr);
+            showToast("Network Drop", "The frontend couldn't find the /api/ folder. Check vercel.json.", "error");
           }
         }
         showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
@@ -1708,7 +1718,6 @@ const handleAuth = async (e) => {
         if (signInError) throw signInError;
         const { data: vendorData } = await supabase.from('vendors').select('*').eq('id', data.user.id).single();
         onLoginSuccess({ ...data.user, ...vendorData });
-        // FORCE BROWSER REDIRECT CLEAN URL
         window.location.href = "/dashboard/invoices";
       }
     } catch (err) { 
