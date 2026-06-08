@@ -1750,37 +1750,12 @@ const handleAuth = async (e) => {
     e.preventDefault(); 
     setLoading(true); 
     setError("");
+    
     try {
-      if (isSignUp) {
-        if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
-        
-        const authRes = await supabase.auth.signUp({ email: email, password: password });
-        if (authRes.error) throw authRes.error;
-        
-        if (authRes.data.user) {
-          const dbRes = await supabase.from('vendors').insert([{ 
-            id: authRes.data.user.id, 
-            business_name: businessName, 
-            email: email 
-          }]);
-          if (dbRes.error) throw dbRes.error;
-          
-          try {
-            const payload = { userEmail: email, businessName: businessName };
-            await fetch('/api/send-welcome', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-          } catch (mailErr) {
-            console.error("Welcome email delivery failed:", mailErr);
-          }
-        }
-        
-        showToast("Account Created", "Your setup is complete. Please log in to continue.", "success");
-        setIsSignUp(false);
-        setLoading(false);
-      } else {
+      // ==========================================
+      // 1. LOGIN FLOW (Early Return)
+      // ==========================================
+      if (!isSignUp) {
         const loginRes = await supabase.auth.signInWithPassword({ email: email, password: password });
         if (loginRes.error) throw loginRes.error;
         
@@ -1788,7 +1763,37 @@ const handleAuth = async (e) => {
         const mergedUser = Object.assign({}, loginRes.data.user, vendorRes.data);
         onLoginSuccess(mergedUser);
         window.location.href = "/dashboard/invoices";
+        return; 
       }
+      
+      // ==========================================
+      // 2. SIGNUP FLOW (Flat Structure)
+      // ==========================================
+      if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
+      
+      const authRes = await supabase.auth.signUp({ email: email, password: password });
+      if (authRes.error) throw authRes.error;
+      
+      if (authRes.data.user) {
+        const dbRes = await supabase.from('vendors').insert([{ 
+          id: authRes.data.user.id, 
+          business_name: businessName, 
+          email: email 
+        }]);
+        if (dbRes.error) throw dbRes.error;
+        
+        // Using .catch() on a single line destroys the need for a nested try/catch block
+        await fetch('/api/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userEmail: email, businessName: businessName })
+        }).catch(err => console.log(err));
+      }
+      
+      showToast("Account Created", "Your setup is complete. Please log in to continue.", "success");
+      setIsSignUp(false);
+      setLoading(false);
+      
     } catch (err) { 
       setError(err.message); 
       showToast("Authentication Error", err.message, "error"); 
