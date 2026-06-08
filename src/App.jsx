@@ -1675,7 +1675,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleAuth = async (e) => {
+const handleAuth = async (e) => {
     e.preventDefault(); setLoading(true); setError("");
     try {
       if (isSignUp) {
@@ -1685,6 +1685,20 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
         if (authData.user) {
           const { error: dbError } = await supabase.from('vendors').insert([{ id: authData.user.id, business_name: businessName, email: email }]);
           if (dbError) throw dbError;
+          
+          // 🚀 THE MISSING LINK: Trigger the automated Welcome Email instantly!
+          try {
+            fetch('/api/send-welcome', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userEmail: email,
+                businessName: businessName
+              })
+            });
+          } catch (mailErr) {
+            console.error("Welcome email trigger failed:", mailErr);
+          }
         }
         showToast("Account Created", "Your setup is complete! Please log in to continue.", "success");
         setIsSignUp(false);
