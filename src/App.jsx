@@ -92,10 +92,9 @@ const GlobalStyles = () => (
     
     .dashboard-layout { display: flex; min-height: 100vh; flex-direction: row; }
     
-    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 32px 0; flex-shrink: 0; transition: transform 0.3s ease; }
-    .sidebar-header { padding: 0 32px; margin-bottom: 40px; display: flex; justifyContent: space-between; align-items: center; width: 100%; }
-    .sidebar-menu { display: flex; flex-direction: column; width: 100%; }
-    .sidebar-footer { padding: 16px 32px; margin-top: auto; display: block; }
+.sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding-top: 32px; flex-shrink: 0; transition: transform 0.3s ease; height: 100vh; position: sticky; top: 0; overflow: hidden; }
+.sidebar-menu { display: flex; flex-direction: column; width: 100%; flex: 1; overflow-y: auto; padding-bottom: 20px; }
+.sidebar-footer { padding: 24px 32px; border-top: 1px solid #E2E8F0; background: #F8FAFC; display: block; margin-top: 0; }
     
     .mobile-dashboard-header { display: none; }
     .mobile-close-btn { display: none; }
