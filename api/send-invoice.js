@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         // NOTE: Until you verify your domain, you must use this onboarding email
-        from: 'KudiSlip Invoicing <onboarding@resend.dev>', 
+      from: 'KudiSlip Billing <invoices@kudislip.com.ng>',
         to: [clientEmail],
         subject: `New Invoice from ${vendorName}`,
         html: `
