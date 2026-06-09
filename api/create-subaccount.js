@@ -1,9 +1,9 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
-  const { business_name, bank_code, account_number } = req.body;
+  // Notice we added percentage_charge here to catch it from the frontend!
+  const { business_name, bank_code, account_number, percentage_charge } = req.body;
   
-  // This uses your secure secret key stored in Vercel
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY; 
 
   try {
@@ -17,7 +17,8 @@ export default async function handler(req, res) {
         business_name: business_name,
         settlement_bank: bank_code,
         account_number: account_number,
-        percentage_charge: 1.5 // Your platform fee!
+        // Uses the 0% we set in App.jsx, or defaults to 0
+        percentage_charge: percentage_charge || 0 
       })
     });
 
