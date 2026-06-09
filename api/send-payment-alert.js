@@ -39,7 +39,7 @@ export default async function handler(req, res) {
           </div>
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
             <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
-              Follow us on Instagram <a href="https://instagram.com/kudislip" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislip</a>
+              Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislip</a>
             </p>
             <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
