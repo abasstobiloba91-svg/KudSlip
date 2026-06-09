@@ -38,15 +38,14 @@ export default async function handler(req, res) {
             </p>
           </div>
           
-          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+         <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
             <p style="color: #64748B; font-size: 13px; margin: 0 0 12px 0;">
-              <a href="https://instagram.com/kudislip" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">Follow us on Instagram</a>
+              <a href="https://instagram.com/kudislipp" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">Follow us on Instagram</a>
             </p>
             <p style="color: #94A3B8; font-size: 12px; margin: 0;">
               &copy; 2026 KudiSlip Technologies. All rights reserved.
             </p>
           </div>
-        </div>
       `,
       tags: [
         {
