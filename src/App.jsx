@@ -1626,22 +1626,104 @@ function LandingPage() {
           <h2 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "40px" }}>Why Nigerian Businesses Choose KudiSlip</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "32px", maxWidth: "1000px", margin: "0 auto" }}>
             <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.premium, marginBottom: "12px" }}><MapPinIcon /></div>
+               <div style={{ color: "#8B5CF6", marginBottom: "12px" }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
                <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Built for the Local Market</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>We understand the landscape. Receive instant Naira settlements directly to any of your local bank accounts via our secure Paystack integration.</p>
+               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0, fontSize: "14px" }}>We understand the landscape. Receive instant Naira settlements directly to any of your local bank accounts via our secure Paystack integration.</p>
             </div>
             <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.success, marginBottom: "12px" }}><TagIcon /></div>
+               <div style={{ color: "#10B981", marginBottom: "12px" }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg></div>
                <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Zero Hidden Fees</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Start for free. No setup fees, no monthly minimums. We only make money when you voluntarily upgrade to Premium for custom branding.</p>
+               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Start for free. No setup fees, no monthly minimums. We only make money when you voluntarily upgrade to Premium for custom branding.</p>
             </div>
             <div className="card-hover" style={{ textAlign: "left", background: "#FFF", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-               <div style={{ color: DESIGN.textMain, marginBottom: "12px" }}><ShieldIcon /></div>
+               <div style={{ color: "#0F172A", marginBottom: "12px" }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
                <h4 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "12px" }}>Bank-Grade Security</h4>
-               <p style={{ color: DESIGN.textMuted, lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Your data and your customers' money are protected by enterprise-level encryption. We never touch raw credit card numbers.</p>
+               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0, fontSize: "14px" }}>Your data and your customers' money are protected by enterprise-level encryption. We never touch raw credit card numbers.</p>
             </div>
           </div>
         </div>
+
+        {/* =========================================
+            🚀 THE NEW ULTIMATE REVENUE ENGINE BLOCK
+            ========================================= */}
+        <section style={{ padding: "80px 24px", margin: "0 -24px", background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", marginBottom: "80px", borderRadius: "24px" }}>
+          <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: "64px" }}>
+              <h2 style={{ fontSize: "36px", fontWeight: "900", color: "#0F172A", marginBottom: "16px", letterSpacing: "-0.5px" }}>
+                The Ultimate Revenue Engine
+              </h2>
+              <p style={{ fontSize: "18px", color: "#64748B", maxWidth: "600px", margin: "0 auto", lineHeight: "1.6" }}>
+                We just supercharged KudiSlip. Close deals faster, track opens in real-time, and let our automated engines collect your debts.
+              </p>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "32px" }}>
+              
+              {/* Feature 1: Real-Time Read Receipts */}
+              <div className="card-hover" style={{ background: "#FFFFFF", padding: "32px", borderRadius: "24px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", border: "1px solid #E2E8F0", transition: "transform 0.2s ease" }}>
+                <div style={{ width: "56px", height: "56px", background: "#F3E8FF", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#7E22CE", marginBottom: "24px" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0F172A", marginBottom: "12px" }}>Live Read Receipts</h3>
+                <p style={{ color: "#64748B", lineHeight: "1.6", fontSize: "15px", margin: 0 }}>
+                  Never get ghosted again. Know exactly the second your client opens your invoice with our invisible email tracking pixel.
+                </p>
+              </div>
+
+              {/* Feature 2: Automated Debt Collection (WhatsApp) */}
+              <div className="card-hover" style={{ background: "#FFFFFF", padding: "32px", borderRadius: "24px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", border: "1px solid #E2E8F0", transition: "transform 0.2s ease" }}>
+                <div style={{ width: "56px", height: "56px", background: "#DCFCE7", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#16A34A", marginBottom: "24px" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <path d="M12 7v6l4 2"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0F172A", marginBottom: "12px" }}>Auto-Debt Collection</h3>
+                <p style={{ color: "#64748B", lineHeight: "1.6", fontSize: "15px", margin: 0 }}>
+                  Stop begging for your money. Our background cron-engine automatically hunts down late payers with friendly WhatsApp reminders.
+                </p>
+              </div>
+
+              {/* Feature 3: Foreign Currency Auto-Converter */}
+              <div className="card-hover" style={{ background: "#FFFFFF", padding: "32px", borderRadius: "24px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", border: "1px solid #E2E8F0", transition: "transform 0.2s ease" }}>
+                <div style={{ width: "56px", height: "56px", background: "#EFF6FF", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", marginBottom: "24px" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0F172A", marginBottom: "12px" }}>Live Forex Calculator</h3>
+                <p style={{ color: "#64748B", lineHeight: "1.6", fontSize: "15px", margin: 0 }}>
+                  Billing a foreign client? Instantly pull live USD and GBP market rates and convert them to Naira with a single click.
+                </p>
+              </div>
+
+              {/* Feature 4: Smart Fee Passing */}
+              <div className="card-hover" style={{ background: "#FFFFFF", padding: "32px", borderRadius: "24px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", border: "1px solid #E2E8F0", transition: "transform 0.2s ease" }}>
+                <div style={{ width: "56px", height: "56px", background: "#FEF3C7", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "24px" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                    <path d="M7 15h.01"/>
+                    <path d="M11 15h2"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0F172A", marginBottom: "12px" }}>Smart Fee Passing</h3>
+                <p style={{ color: "#64748B", lineHeight: "1.6", fontSize: "15px", margin: 0 }}>
+                  Keep 100% of your profits. Premium vendors can automatically pass Paystack transaction fees directly to the client.
+                </p>
+              </div>
+
+            </div>
+          </div>
+        </section>
+        {/* =========================================
+            END NEW BLOCK
+            ========================================= */}
 
         <div style={{ paddingBottom: "100px" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
@@ -1656,12 +1738,12 @@ function LandingPage() {
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Bill clients across borders. Switch seamlessly between Naira (₦), US Dollars ($), and British Pounds (£) via Paystack.</p>
             </div>
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.success }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></div>
+              <div style={{ marginBottom: "16px", color: "#10B981" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Net Profit Tracker</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Stop guessing your income. Log your daily business expenses directly in the app to see your actual net profit in real-time.</p>
             </div>
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.premium }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg></div>
+              <div style={{ marginBottom: "16px", color: "#8B5CF6" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Automated Reminders</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Let our background engine chase your money. Automated midnight email drops and 1-click WhatsApp reminders for pending invoices.</p>
             </div>
@@ -1671,7 +1753,7 @@ function LandingPage() {
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Stay compliant effortlessly. Apply the standard 7.5% government VAT to any invoice total with a single click.</p>
             </div>
             <div className="card-hover" style={{ padding: "32px", background: "#F8FAFC", borderRadius: "16px", border: "1px solid #E2E8F0" }}>
-              <div style={{ marginBottom: "16px", color: DESIGN.textMain }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg></div>
+              <div style={{ marginBottom: "16px", color: "#0F172A" }}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg></div>
               <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "12px", color: "#0F172A" }}>Manual Transfer Logs</h3>
               <p style={{ color: "#64748B", lineHeight: "1.6", margin: 0 }}>Client paid in cash or via direct bank transfer? Bypass the payment gateway and mark invoices as paid manually to keep your CRM accurate.</p>
             </div>
@@ -1714,22 +1796,22 @@ function LandingPage() {
             <p style={{ color: "#64748B", fontSize: "16px" }}>Start for free, upgrade when you need to remove our branding.</p>
           </div>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", justifyContent: "center" }}>
-            <div style={{ background: DESIGN.card, border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px" }}>
+            <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px" }}>
               <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Free Tier</div>
-              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦0<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
-              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
+              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦0<span style={{fontSize: "16px", color: "#64748B"}}>/mo</span></div>
+              <ul style={{ paddingLeft: "20px", color: "#64748B", fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
                 <li>Unlimited Invoices & Clients</li>
                 <li>Instant Bank Settlements</li>
-                <li><strong style={{color: DESIGN.textMain}}>Includes KudiSlip Watermark</strong></li>
+                <li><strong style={{color: "#0F172A"}}>Includes KudiSlip Watermark</strong></li>
               </ul>
               <a href="/signup" className="btn-secondary btn-hover" style={{ width: "100%", display: "block" }}>Get Started Free</a>
             </div>
-            <div style={{ background: DESIGN.card, border: `2px solid ${DESIGN.premium}`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
-              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: DESIGN.premium }}>Premium Pro</div>
-              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦15,000<span style={{fontSize: "16px", color: DESIGN.textMuted}}>/mo</span></div>
-              <ul style={{ paddingLeft: "20px", color: DESIGN.textMuted, fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
+            <div style={{ background: "#FFFFFF", border: `2px solid #8B5CF6`, borderRadius: 12, padding: "40px", flex: "1", minWidth: "300px", maxWidth: "400px", boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.15)" }}>
+              <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px", color: "#8B5CF6" }}>Premium Pro</div>
+              <div style={{ fontSize: "36px", fontWeight: "900", marginBottom: "24px" }}>₦15,000<span style={{fontSize: "16px", color: "#64748B"}}>/mo</span></div>
+              <ul style={{ paddingLeft: "20px", color: "#64748B", fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
                 <li>Everything in Free</li>
-                <li><strong style={{color: DESIGN.textMain}}>Remove KudiSlip Watermark</strong></li>
+                <li><strong style={{color: "#0F172A"}}>Remove KudiSlip Watermark</strong></li>
                 <li>Fully Independent Branding</li>
               </ul>
               <a href="/signup" className="btn-primary btn-premium btn-hover" style={{ width: "100%", display: "block" }}>Upgrade to Premium</a>
@@ -1738,13 +1820,13 @@ function LandingPage() {
         </div>
       </div>
       
-      <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "40px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "14px", background: "#FFFFFF" }}>
+      <footer style={{ borderTop: `1px solid #E2E8F0`, padding: "40px 24px", textAlign: "center", color: "#64748B", fontSize: "14px", background: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div>© 2026 KudiSlip Technologies. All rights reserved.</div>
           <div style={{ display: "flex", gap: "24px" }}>
-            <a href="/terms" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Terms & Conditions</a>
-            <a href="/privacy" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Privacy Policy</a>
-            <a href="mailto:support@kudislip.com" style={{ textDecoration: "none", color: DESIGN.textMuted }} className="btn-hover">Contact Us</a>
+            <a href="/terms" style={{ textDecoration: "none", color: "#64748B" }} className="btn-hover">Terms & Conditions</a>
+            <a href="/privacy" style={{ textDecoration: "none", color: "#64748B" }} className="btn-hover">Privacy Policy</a>
+            <a href="mailto:support@kudislip.com" style={{ textDecoration: "none", color: "#64748B" }} className="btn-hover">Contact Us</a>
           </div>
         </div>
       </footer>
