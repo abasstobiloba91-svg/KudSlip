@@ -774,7 +774,7 @@ function SuperAdminDashboard({ user, showToast }) {
 }
 
 // =========================================================
-// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH ANALYTICS, PRO TOGGLES & EMAIL ENGINE)
+// 8. KUDISLIP UNIQUE INVOICE ENGINE (WITH REALTIME UPDATES)
 // =========================================================
 function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
@@ -788,25 +788,34 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   const [sortOrder, setSortOrder] = useState("date-desc");
   const [showLogoWarning, setShowLogoWarning] = useState(false);
   
-  // PRO TOGGLES
   const [invoiceType, setInvoiceType] = useState("one-time");
   const [passFees, setPassFees] = useState(false); 
 
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcData, setCalcData] = useState({ currency: 'USD', amount: '', rate: 0, result: 0, loading: false });
   
-  // EMAIL ENGINE STATE
   const [sendingEmailId, setSendingEmailId] = useState(null);
-  
-  // NATIVE MODAL STATE
   const [confirmModalData, setConfirmModalData] = useState(null);
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
     if (!supabase) return;
+    
+    // 1. Initial Data Load
     supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
     fetchRecentInvoices();
+
+    // 2. 🚀 THE MAGIC: Real-Time WebSocket Listener
+    // This listens for any changes (like the email webhook updating 'viewed_at') and updates the screen instantly
+    const invoiceChannel = supabase.channel('realtime_invoices')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invoices', filter: `vendor_id=eq.${user.id}` }, (payload) => {
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => inv.id === payload.new.id ? { ...inv, ...payload.new } : inv)
+        );
+      }).subscribe();
+
+    return () => { supabase.removeChannel(invoiceChannel); };
   }, []);
 
   const fetchRecentInvoices = async () => {
@@ -841,7 +850,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
   };
 
-  // 🎯 THE NATIVE MANUAL PAYMENT LOGGER
   const triggerManualPaymentConfirm = (invId) => {
     setConfirmModalData({
       title: "Mark as Paid",
@@ -858,7 +866,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       showToast("Database Error", error.message, "error"); 
     } else {
       showToast("Payment Logged", "Invoice manually marked as paid.", "success");
-      fetchRecentInvoices();
+      // We don't necessarily need to call fetchRecentInvoices here anymore because our realtime listener will catch it!
     }
     setLoading(false);
   };
@@ -893,7 +901,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
       setItems([{ description: "", quantity: 1, price: "" }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time"); setPassFees(false);
-      fetchRecentInvoices();
+      fetchRecentInvoices(); // Fetch newly inserted item
     }
     setLoading(false);
   };
@@ -916,7 +924,8 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           clientName: inv.clients.name || "Valued Client",
           invoiceAmount: inv.amount,
           invoiceLink: `${window.location.origin}/pay/${inv.id}`,
-          vendorName: user.business_name || "KudiSlip Merchant"
+          vendorName: user.business_name || "KudiSlip Merchant",
+          invoiceId: inv.id // Passing the ID so the backend can attach it to the email trackers
         })
       });
 
@@ -960,7 +969,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     <div style={{ maxWidth: "900px", position: "relative" }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
-      {/* 🎯 NATIVE CONFIRMATION MODAL */}
       {confirmModalData && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center" }}>
@@ -977,7 +985,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
         </div>
       )}
 
-      {/* 🎯 UPGRADED LOGO WARNING MODAL (NO EMOJIS) */}
       {showLogoWarning && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
@@ -1128,7 +1135,15 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{ wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px" }}>{inv.clients?.name}</div>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px", display: "flex", alignItems: "center" }}>
+                      {inv.clients?.name}
+                      {/* 🎯 THE REAL-TIME VIEWED BADGE */}
+                      {inv.viewed_at && inv.status === 'pending' && (
+                        <span style={{ fontSize: "11px", fontWeight: "900", padding: "4px 8px", borderRadius: "12px", background: "#F3E8FF", color: "#7E22CE", textTransform: "uppercase", letterSpacing: "0.5px", marginLeft: "8px", border: "1px solid #D8B4FE" }}>
+                          👁️ Viewed
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>
                       <div>{inv.clients?.email}</div>
                       {inv.clients?.phone && <div>{inv.clients.phone}</div>}
@@ -1854,10 +1869,11 @@ const handleAuth = async (e) => {
   );
 }
 // =========================================================
-// 7. CLIENTS CRM (FRICTIONLESS UPGRADE)
+// 7. CLIENTS CRM (WITH DYNAMIC CREDIT SCORING)
 // =========================================================
 function ClientsManager({ user, showToast }) {
   const [clients, setClients] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -1865,7 +1881,12 @@ function ClientsManager({ user, showToast }) {
 
   useEffect(() => {
     if (!supabase) return;
+    
+    // Fetch clients
     supabase.from('clients').select('*').eq('vendor_id', user.id).order('created_at', { ascending: false }).then(({ data }) => setClients(data || []));
+    
+    // Fetch all invoices to calculate the credit score mathematically
+    supabase.from('invoices').select('client_id, status, due_date').eq('vendor_id', user.id).then(({ data }) => setInvoices(data || []));
   }, []);
 
   const handleAddClient = async (e) => {
@@ -1879,12 +1900,41 @@ function ClientsManager({ user, showToast }) {
     setLoading(false);
   };
 
+  // 🎯 THE DYNAMIC CREDIT SCORE ENGINE
+  const getClientScore = (clientId) => {
+    const clientInvoices = invoices.filter(i => i.client_id === clientId);
+    
+    if (clientInvoices.length === 0) {
+      return { label: "NEW", color: "#64748B", bg: "#F1F5F9", text: "No data" };
+    }
+
+    let score = 100;
+    const now = new Date();
+    now.setHours(0,0,0,0); // Normalize to midnight for accurate day comparison
+
+    clientInvoices.forEach(inv => {
+      const dueDate = new Date(inv.due_date);
+      
+      if (inv.status === 'paid') {
+        score += 5; // Small boost for completed payments
+      } else if (inv.status === 'pending' && dueDate < now) {
+        score -= 35; // Massive penalty for holding overdue debt
+      }
+    });
+
+    if (score >= 100) return { label: "A+ (Excellent)", color: "#10B981", bg: "#ECFDF5", text: "Pays on time" };
+    if (score >= 70) return { label: "B (Good)", color: "#3B82F6", bg: "#EFF6FF", text: "Reliable" };
+    if (score >= 40) return { label: "C (Slow)", color: "#D97706", bg: "#FEF3C7", text: "Often late" };
+    return { label: "F (High Risk)", color: "#EF4444", bg: "#FEF2F2", text: "Overdue debt" };
+  };
+
   if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Client CRM.</div>;
 
   return (
     <div>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Client Directory</div>
-      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database.</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your customer database and track payment reliability.</div>
+      
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "24px" }}>
         <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800" }}>Add New Client</h3>
         <form onSubmit={handleAddClient} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", alignItems: "end" }}>
@@ -1894,14 +1944,39 @@ function ClientsManager({ user, showToast }) {
           <button className="btn-primary btn-hover" type="submit" disabled={loading}>{loading ? "Saving..." : "Add Client"}</button>
         </form>
       </div>
+
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, overflowX: "auto" }}>
         {clients.length === 0 ? <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No clients added yet.</div> : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "500px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "700px" }}>
             <thead style={{ background: "#F1F5F9", fontSize: "12px", color: "#64748B", textTransform: "uppercase" }}>
-              <tr><th style={{ padding: "16px 24px" }}>Name</th><th style={{ padding: "16px 24px" }}>Email</th><th style={{ padding: "16px 24px" }}>Phone</th></tr>
+              <tr>
+                <th style={{ padding: "16px 24px" }}>Client Name</th>
+                <th style={{ padding: "16px 24px" }}>Contact Info</th>
+                <th style={{ padding: "16px 24px" }}>Trust Score</th>
+              </tr>
             </thead>
             <tbody>
-              {clients.map(c => <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}><td style={{ padding: "16px 24px", fontWeight: "600" }}>{c.name}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.email || "—"}</td><td style={{ padding: "16px 24px", color: "#64748B" }}>{c.phone || "—"}</td></tr>)}
+              {clients.map(c => {
+                const score = getClientScore(c.id);
+                return (
+                  <tr key={c.id} style={{ borderTop: `1px solid #E2E8F0` }}>
+                    <td style={{ padding: "16px 24px", fontWeight: "800", color: "#0F172A" }}>{c.name}</td>
+                    <td style={{ padding: "16px 24px", color: "#64748B", fontSize: "13px", lineHeight: "1.6" }}>
+                      {c.email && <div>✉️ {c.email}</div>}
+                      {c.phone && <div>📞 {c.phone}</div>}
+                      {(!c.email && !c.phone) && "—"}
+                    </td>
+                    <td style={{ padding: "16px 24px" }}>
+                      <div style={{ display: "inline-flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ background: score.bg, color: score.color, padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          {score.label}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "600", paddingLeft: "4px" }}>{score.text}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
