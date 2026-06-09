@@ -1,60 +1,69 @@
-import { Resend } from 'resend';
+// api/cron-reminders.js
 import { createClient } from '@supabase/supabase-js';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY; 
-const supabase = createClient(supabaseUrl, supabaseKey);
+import twilio from 'twilio';
 
 export default async function handler(req, res) {
-  try {
-    const today = new Date().toISOString().split('T');
+  // 1. SECURITY: Only allow Vercel's internal cron engine to trigger this
+  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'Unauthorized access. Invalid Cron Secret.' });
+  }
 
-    const { data: invoices, error } = await supabase
+  // 2. Initialize Supabase (Using Master Key to bypass RLS)
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  
+  // 3. Initialize Twilio
+  const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+  try {
+    const today = new Date().toISOString();
+
+    // 4. Fetch OVERDUE invoices that belong to PREMIUM users
+    const { data: overdueInvoices, error } = await supabase
       .from('invoices')
-      .select('id, amount, currency, due_date, clients(name, email), vendors(business_name)')
+      .select(`
+        id, amount, currency, 
+        vendors!inner(business_name, subscription_tier), 
+        clients!inner(name, phone)
+      `)
       .eq('status', 'pending')
-      .eq('due_date', today);
+      .lt('due_date', today)
+      .eq('vendors.subscription_tier', 'premium'); // 💰 The Paywall Check
 
     if (error) throw error;
-    if (!invoices || invoices.length === 0) {
-      return res.status(200).json({ message: 'Zero invoices due today. Going back to sleep.' });
+    
+    if (!overdueInvoices || overdueInvoices.length === 0) {
+      return res.status(200).json({ message: "Zero overdue premium invoices today. Everyone paid!" });
     }
 
-    for (const inv of invoices) {
-      if (inv.clients?.email) {
-        await resend.emails.send({
-          from: 'KudiSlip Billing <invoices@kudislip.com.ng>',
-          to: [inv.clients.email],
-          subject: `Action Required: Invoice Due Today (${inv.currency || '₦'}${inv.amount})`,
-          html: `
-            <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-              <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-                <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
-              </div>
-              <div style="padding: 40px 30px;">
-                <h2 style="color: #0f172a; margin-top: 0;">Invoice Reminder</h2>
-                <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${inv.clients.name},</p>
-                <p style="color: #475569; line-height: 1.6; font-size: 16px;">This is an automated notification from <strong>${inv.vendors?.business_name || 'your vendor'}</strong> to remind you that your invoice for <strong>${inv.currency || '₦'}${Number(inv.amount).toLocaleString()}</strong> is due for payment today.</p>
-                <div style="text-align: center; margin: 35px 0;">
-                  <a href="https://kudislip.com.ng/pay/${inv.id}" style="background-color: #000000; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Proceed to Payment</a>
-                </div>
-                <p style="color: #64748b; font-size: 14px;">Prompt payment is highly appreciated. Please disregard this notice if payment has already been made.</p>
-              </div>
-              <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
-                  Follow us on Instagram <a href="https://instagram.com/kudislip" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislip</a>
-                </p>
-                <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
-              </div>
-            </div>
-          `
-        });
-      }
+    let messagesSent = 0;
+
+    // 5. Loop through and send the WhatsApp messages
+    for (const inv of overdueInvoices) {
+      const phone = inv.clients.phone;
+      if (!phone) continue; // Skip if no phone number
+
+      const amountFormat = `${inv.currency === 'USD' ? '$' : '₦'}${Number(inv.amount).toLocaleString()}`;
+      const paymentLink = `https://kudislip.vercel.app/pay/${inv.id}`;
+      
+      // Format the phone number to ensure it has a + (Twilio requires E.164 format like +234...)
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+
+      // 🚀 Send via Twilio WhatsApp API
+      await twilioClient.messages.create({
+        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+        to: `whatsapp:${formattedPhone}`,
+        body: `*Friendly Reminder from ${inv.vendors.business_name}* 👋\n\nHello ${inv.clients.name},\n\nThis is an automated reminder that your invoice for *${amountFormat}* is currently overdue.\n\nYou can easily view and settle this invoice securely using the link below:\n${paymentLink}\n\nThank you for your business! \n_Powered by KudiSlip_`
+      });
+
+      messagesSent++;
     }
 
-    return res.status(200).json({ message: `Success! Fired ${invoices.length} midnight reminders.` });
+    return res.status(200).json({ success: true, processed: overdueInvoices.length, sent: messagesSent });
+    
   } catch (err) {
+    console.error("Cron Error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
