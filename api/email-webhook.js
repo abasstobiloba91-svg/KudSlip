@@ -18,10 +18,24 @@ export default async function handler(req, res) {
     console.log("📨 WEBHOOK RECEIVED. Event Type:", event.type);
     
     if (event.type === 'email.opened') {
-      const invoiceId = event.data?.tags?.invoiceId;
-      console.log("🔍 Invoice ID found in tags:", invoiceId);
+      
+      // 🎯 THE BULLETPROOF TAG EXTRACTOR
+      let invoiceId = null;
+      const tags = event.data?.tags;
+      
+      if (Array.isArray(tags)) {
+        // If Resend sends a list: [ { name: 'invoiceId', value: '123' } ]
+        const foundTag = tags.find(t => t.name === 'invoiceId');
+        if (foundTag) invoiceId = foundTag.value;
+      } else if (tags && typeof tags === 'object') {
+        // If Resend sends a flat object: { invoiceId: '123' }
+        invoiceId = tags.invoiceId;
+      }
+
+      console.log("🔍 Extracted Invoice ID:", invoiceId);
       
       if (invoiceId) {
+        // Update the database bypassing RLS
         const { data, error } = await supabase
           .from('invoices')
           .update({ viewed_at: new Date().toISOString() })
