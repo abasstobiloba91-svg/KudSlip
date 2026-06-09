@@ -807,7 +807,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     fetchRecentInvoices();
 
     // 2. 🚀 THE MAGIC: Real-Time WebSocket Listener
-    // This listens for any changes (like the email webhook updating 'viewed_at') and updates the screen instantly
     const invoiceChannel = supabase.channel('realtime_invoices')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invoices', filter: `vendor_id=eq.${user.id}` }, (payload) => {
         setInvoices(prevInvoices => 
@@ -866,7 +865,6 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       showToast("Database Error", error.message, "error"); 
     } else {
       showToast("Payment Logged", "Invoice manually marked as paid.", "success");
-      // We don't necessarily need to call fetchRecentInvoices here anymore because our realtime listener will catch it!
     }
     setLoading(false);
   };
@@ -901,7 +899,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     else {
       showToast("Invoice Generated!", "A secure payment link has been created successfully.", "success");
       setItems([{ description: "", quantity: 1, price: "" }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time"); setPassFees(false);
-      fetchRecentInvoices(); // Fetch newly inserted item
+      fetchRecentInvoices(); 
     }
     setLoading(false);
   };
@@ -925,7 +923,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
           invoiceAmount: inv.amount,
           invoiceLink: `${window.location.origin}/pay/${inv.id}`,
           vendorName: user.business_name || "KudiSlip Merchant",
-          invoiceId: inv.id // Passing the ID so the backend can attach it to the email trackers
+          invoiceId: inv.id 
         })
       });
 
@@ -1137,10 +1135,10 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                   <div style={{ wordBreak: "break-word" }}>
                     <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px", display: "flex", alignItems: "center" }}>
                       {inv.clients?.name}
-                      {/* 🎯 THE REAL-TIME VIEWED BADGE */}
+                      {/* 🎯 SVG VIEWED BADGE */}
                       {inv.viewed_at && inv.status === 'pending' && (
-                        <span style={{ fontSize: "11px", fontWeight: "900", padding: "4px 8px", borderRadius: "12px", background: "#F3E8FF", color: "#7E22CE", textTransform: "uppercase", letterSpacing: "0.5px", marginLeft: "8px", border: "1px solid #D8B4FE" }}>
-                          👁️ Viewed
+                        <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "900", padding: "4px 8px", borderRadius: "12px", background: "#F3E8FF", color: "#7E22CE", textTransform: "uppercase", letterSpacing: "0.5px", marginLeft: "8px", border: "1px solid #D8B4FE" }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Viewed
                         </span>
                       )}
                     </div>
@@ -1173,7 +1171,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
                           className="btn-secondary btn-hover"
                           style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569" }}
                         >
-                          <CheckIcon /> Cash / Manual
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cash / Manual
                         </button>
                         
                         <button 
