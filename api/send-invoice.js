@@ -1,10 +1,8 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with your API Key
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
-  // Security: Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -16,7 +14,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields for email delivery.' });
     }
 
-    // Fire the formal email via Resend
     const data = await resend.emails.send({
       from: 'KudiSlip Invoicing <invoices@kudislip.com.ng>', 
       to: clientEmail,
@@ -37,7 +34,7 @@ export default async function handler(req, res) {
             </div>
             
             <p style="color: #10B981; font-size: 13px; text-align: center; font-weight: 700; margin-bottom: 8px;">
-              🔒 This is a secure payment link processed via KudiSlip and Paystack.
+              &#128274; This is a secure payment link processed via KudiSlip and Paystack.
             </p>
           </div>
           
@@ -51,11 +48,10 @@ export default async function handler(req, res) {
           </div>
         </div>
       `,
-      // 🎯 THE TRACKING ENGINE
       tags: [
         {
           name: 'invoiceId',
-          value: invoiceId
+          value: invoiceId.toString()
         }
       ]
     });
