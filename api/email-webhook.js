@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  // Only accept POST requests from your email provider (e.g., Resend)
+  // Only accept POST requests from Resend
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
   
   const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
@@ -10,17 +10,17 @@ export default async function handler(req, res) {
   try {
     const event = req.body;
     
-    // Check if the event is specifically an "email opened" event
     if (event.type === 'email.opened') {
-      // Extract the Invoice ID we passed as a hidden tag when sending the email
-      const invoiceId = event.data.tags?.invoiceId; 
+      // 🎯 THE FIX: Resend sends tags as an array like [{ name: "invoiceId", value: "123" }]
+      const tags = event.data?.tags || [];
+      const invoiceTag = tags.find(t => t.name === 'invoiceId');
       
-      if (invoiceId) {
-        // Update the database instantly! The frontend WebSocket will catch this.
+      if (invoiceTag && invoiceTag.value) {
+        // Instantly update the database! Your WebSocket will catch this and show the 👁️ badge.
         await supabase
           .from('invoices')
           .update({ viewed_at: new Date().toISOString() })
-          .eq('id', invoiceId);
+          .eq('id', invoiceTag.value);
       }
     }
     
