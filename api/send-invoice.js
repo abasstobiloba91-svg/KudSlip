@@ -1,51 +1,64 @@
 import { Resend } from 'resend';
 
+// Initialize Resend with your API Key from Vercel Environment Variables
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(455).json({ error: 'Method not allowed' });
+  // Security: Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const { clientEmail, clientName, invoiceAmount, invoiceLink, vendorName } = req.body;
-    if (!clientEmail) return res.status(400).json({ error: 'Client email is required' });
+    const { clientEmail, clientName, invoiceAmount, invoiceLink, vendorName, invoiceId } = req.body;
 
-    const { data, error } = await resend.emails.send({
-      from: 'KudiSlip Billing <invoices@kudislip.com.ng>',
-      to: [clientEmail],
-      subject: `New Invoice Received from ${vendorName}`,
+    // Validate that we have the essential data
+    if (!clientEmail || !invoiceLink || !invoiceId) {
+      return res.status(400).json({ error: 'Missing required fields for email delivery.' });
+    }
+
+    // Fire the email via Resend
+    const data = await resend.emails.send({
+      // NOTE: Make sure this email address matches the domain you verified in Resend!
+      from: 'KudiSlip Invoicing <invoices@kudislip.com.ng>', 
+      to: clientEmail,
+      subject: `New Invoice from ${vendorName || 'KudiSlip Merchant'}`,
       html: `
-        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
-            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; border-radius: 12px; background-color: #FFFFFF;">
+          <h2 style="color: #0F172A; margin-top: 0;">Hello ${clientName || 'Valued Client'},</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            You have a new pending invoice from <strong>${vendorName || 'us'}</strong> for the amount of <strong style="color: #0F172A;">${invoiceAmount}</strong>.
+          </p>
+          <div style="margin: 32px 0;">
+            <a href="${invoiceLink}" style="background-color: #000000; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              View & Pay Invoice
+            </a>
           </div>
-          <div style="padding: 40px 30px;">
-            <h2 style="color: #0f172a; margin-top: 0;">Invoice Notification</h2>
-            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${clientName},</p>
-            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Please be advised that a new invoice for <strong>${invoiceAmount}</strong> has been generated for you by <strong>${vendorName}</strong>.</p>
-            <div style="text-align: center; margin: 35px 0;">
-              <a href="${invoiceLink}" style="background-color: #000000; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">View and Pay Invoice</a>
-            </div>
-            <p style="color: #64748b; font-size: 14px;">This is a secure payment link processed via KudiSlip and Paystack.</p>
-          </div>
-          <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
-              Follow us on Instagram <a href="https://instagram.com/kudislip" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislip</a>
-            </p>
-            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
-          </div>
+          <p style="color: #94A3B8; font-size: 13px; margin-top: 32px; border-top: 1px solid #E2E8F0; padding-top: 16px;">
+            Securely powered by KudiSlip.
+          </p>
         </div>
       `,
+      // 🎯 THE TRACKING ENGINE
+      // This attaches the invisible ID to the email so your Webhook knows exactly who opened it!
+      tags: [
+        {
+          name: 'invoiceId',
+          value: invoiceId
+        }
+      ]
     });
 
-    if (error) return res.status(400).json({ error });
-    return res.status(200).json({ message: 'Invoice email sent successfully!', data });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    // Check if Resend rejected the email
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message });
+    }
+
+    // Success!
+    return res.status(200).json({ success: true, data });
+    
+  } catch (error) {
+    console.error('Resend Delivery Error:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
