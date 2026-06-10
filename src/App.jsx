@@ -2245,21 +2245,22 @@ function ExpensesManager({ user, showToast }) {
 }
 
 // =========================================================
-// 10. PAYOUT SETTINGS (PREMIUM ENTERPRISE UI)
+// 10. PAYOUT SETTINGS (WITH NUBAN RESOLUTION)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [resolvedName, setResolvedName] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Controls hiding/showing the form
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Auto-fill the form if the user already has a bank linked
+  // Auto-fill if user already has a bank linked
   useEffect(() => {
     if (user?.bank_code) setBankCode(user.bank_code);
     if (user?.account_number) setAccountNumber(user.account_number);
   }, [user]);
 
-  // Official Paystack Bank Codes for Nigeria
   const NIGERIAN_BANKS = [
     { name: "-- Select your bank --", code: "" },
     { name: "Access Bank", code: "044" },
@@ -2290,17 +2291,48 @@ function PayoutSettings({ user, showToast }) {
     { name: "Zenith Bank", code: "057" }
   ];
 
+  // 🎯 THE MAGIC: Automatically verify name when 10 digits are typed
+  useEffect(() => {
+    if (accountNumber.length === 10 && bankCode) {
+      verifyAccount();
+    } else {
+      setResolvedName("");
+    }
+  }, [accountNumber, bankCode]);
+
+  const verifyAccount = async () => {
+    setIsResolving(true);
+    setResolvedName("");
+    try {
+      const response = await fetch('/api/resolve-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_number: accountNumber, bank_code: bankCode })
+      });
+      const data = await response.json();
+      
+      if (response.ok && data.account_name) {
+        setResolvedName(data.account_name);
+      } else {
+        showToast("Verification Failed", data.error || "Could not verify this account number.", "error");
+      }
+    } catch (err) {
+      showToast("Network Error", "Failed to contact bank servers.", "error");
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
   const handleLinkBank = async (e) => {
     e.preventDefault();
-    if (accountNumber.length !== 10) {
-      showToast("Invalid Account", "Please enter a valid 10-digit account number.", "error");
+    if (!resolvedName) {
+      showToast("Verification Required", "Please wait for your account name to be verified.", "error");
       return;
     }
     
     setLoading(true);
     
     try {
-      // 1. Send details to your secure backend to talk to Paystack
       const response = await fetch('/api/create-subaccount', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2309,23 +2341,16 @@ function PayoutSettings({ user, showToast }) {
           bank_code: bankCode,
           business_name: user.business_name || "KudiSlip Vendor",
           vendor_id: user.id,
-          percentage_charge: 0 // 🎯 FORCE PLATFORM FEE TO 0% FOR 100% VENDOR SPLIT
+          percentage_charge: 0 
         })
       });
 
-      if (!response.headers.get("content-type")?.includes("application/json")) {
-         throw new Error("Backend API route not found. We need to create the Vercel API function!");
-      }
-
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Paystack rejected this account number.");
-      }
+      if (!response.ok) throw new Error(data.error || data.message || "Paystack rejected these details.");
 
       const subaccountCode = data.subaccount_code;
 
-      // 2. Save to Supabase
       const { error: dbError } = await supabase
         .from('vendors')
         .update({ 
@@ -2338,20 +2363,15 @@ function PayoutSettings({ user, showToast }) {
       if (dbError) throw dbError;
 
       showToast("Bank Verified!", "Paystack securely confirmed your account. Refreshing...", "success");
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setTimeout(() => window.location.reload(), 1500);
 
     } catch (err) {
-      showToast("Verification Failed", err.message, "error");
-      console.error("PAYSTACK VERIFICATION ERROR:", err);
+      showToast("Link Failed", err.message, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Safe checks for the Read-Only View
   const hasLinkedBank = user?.bank_code && user?.account_number;
   const linkedBankName = NIGERIAN_BANKS.find(b => b.code === user?.bank_code)?.name || "Your Linked Bank";
   const maskedAccount = user?.account_number ? `•••• •••• ${user.account_number.slice(-4)}` : "";
@@ -2364,21 +2384,15 @@ function PayoutSettings({ user, showToast }) {
       <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
         
         {hasLinkedBank && !isEditing ? (
-          
-          /* =========================================
-             THE LOCKED SUCCESS VIEW (PREMIUM UI)
-             ========================================= */
           <div style={{ padding: "10px 0" }}>
-            
             <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
-              <div style={{ width: "48px", height: "48px", background: "#000000", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.2)" }}>
+              <div style={{ width: "48px", height: "48px", background: "#000000", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF" }}>
                 <ShieldIcon />
               </div>
               <div>
                 <h3 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 4px 0", color: "#0F172A" }}>Settlement Route Active</h3>
-                <div style={{ color: DESIGN.success, fontSize: "13px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
-                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                   Verified by Paystack
+                <div style={{ color: "#10B981", fontSize: "13px", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Verified by Paystack
                 </div>
               </div>
             </div>
@@ -2387,12 +2401,7 @@ function PayoutSettings({ user, showToast }) {
               Your automated payout destination is securely linked. All paid invoices will be routed directly to this verified bank account.
             </p>
 
-            {/* Dark Mode Bank Card */}
             <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", padding: "28px", borderRadius: "16px", marginBottom: "32px", position: "relative", overflow: "hidden", color: "#FFF", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
-              {/* Abstract decorative circles for premium feel */}
-              <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "120px", height: "120px", borderRadius: "50%", background: "rgba(255,255,255,0.03)" }}></div>
-              <div style={{ position: "absolute", bottom: "-40px", left: "-20px", width: "150px", height: "150px", borderRadius: "50%", background: "rgba(255,255,255,0.02)" }}></div>
-              
               <div style={{ position: "relative", zIndex: 1 }}>
                 <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Bank Name</div>
                 <div style={{ fontSize: "18px", fontWeight: "800", color: "#FFFFFF", marginBottom: "24px" }}>{linkedBankName}</div>
@@ -2402,76 +2411,50 @@ function PayoutSettings({ user, showToast }) {
               </div>
             </div>
 
-            <button 
-              onClick={() => setIsEditing(true)} 
-              style={{ background: "transparent", border: "2px solid #E2E8F0", padding: "14px 24px", borderRadius: "8px", color: "#0F172A", fontWeight: "800", cursor: "pointer", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "8px" }} 
-              className="btn-hover"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <button onClick={() => setIsEditing(true)} className="btn-secondary btn-hover" style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
               Update Bank Details
             </button>
           </div>
-
         ) : (
-
-          /* =========================================
-             THE EDIT / SETUP FORM VIEW
-             ========================================= */
           <form onSubmit={handleLinkBank} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            
             <div>
               <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Bank Name</label>
-              <select className="form-input" value={bankCode} onChange={e => setBankCode(e.target.value)} required style={{ width: "100%", margin: 0, padding: "14px", cursor: "pointer" }}>
-                {NIGERIAN_BANKS.map((b) => (
-                  <option key={b.name} value={b.code} disabled={b.code === ""}>{b.name}</option>
-                ))}
+              <select className="form-input" value={bankCode} onChange={e => { setBankCode(e.target.value); setResolvedName(""); }} required>
+                {NIGERIAN_BANKS.map((b) => <option key={b.name} value={b.code} disabled={b.code === ""}>{b.name}</option>)}
               </select>
             </div>
             
             <div>
               <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Number</label>
-              <input 
-                type="number"
-                className="form-input" 
-                value={accountNumber} 
-                onChange={e => setAccountNumber(e.target.value)} 
-                required 
-                placeholder="e.g. 0123456789" 
-                style={{ width: "100%", margin: 0, padding: "14px", boxSizing: "border-box" }} 
-              />
+              <input type="number" className="form-input" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} required placeholder="e.g. 0123456789" />
             </div>
+
+            {/* 🎯 THE RESOLVED NAME BOX */}
+            {isResolving && (
+              <div style={{ padding: "12px", background: "#F1F5F9", borderRadius: "8px", color: "#64748B", fontSize: "13px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+                <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line></svg>
+                Verifying account details with NIBSS...
+              </div>
+            )}
+
+            {resolvedName && !isResolving && (
+              <div style={{ padding: "16px", background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#10B981", textTransform: "uppercase" }}>Verified Account Name</div>
+                <div style={{ fontSize: "15px", fontWeight: "900", color: "#065F46" }}>{resolvedName}</div>
+              </div>
+            )}
             
             <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-              <button 
-                className="btn-primary btn-hover" 
-                type="submit" 
-                disabled={loading || !bankCode || accountNumber.length !== 10} 
-                style={{ 
-                  padding: "16px", 
-                  opacity: (!bankCode || accountNumber.length !== 10) ? 0.5 : 1,
-                  flex: 1
-                }}
-              >
-                {loading ? "Verifying with Paystack..." : "Securely Link Bank"}
+              <button className="btn-primary btn-hover" type="submit" disabled={loading || !resolvedName} style={{ padding: "16px", flex: 1, opacity: (!resolvedName) ? 0.5 : 1 }}>
+                {loading ? "Linking..." : "Securely Link Bank"}
               </button>
               
-              {/* Show a Cancel button if they already have an account and change their mind */}
               {hasLinkedBank && (
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setIsEditing(false);
-                    setBankCode(user.bank_code);
-                    setAccountNumber(user.account_number);
-                  }} 
-                  className="btn-hover"
-                  style={{ padding: "16px 24px", background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer" }}
-                >
+                <button type="button" onClick={() => { setIsEditing(false); setBankCode(user.bank_code); setAccountNumber(user.account_number); }} className="btn-hover" style={{ padding: "16px 24px", background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer" }}>
                   Cancel
                 </button>
               )}
             </div>
-
           </form>
         )}
       </div>
