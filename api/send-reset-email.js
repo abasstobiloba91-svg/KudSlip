@@ -29,6 +29,10 @@ export default async function handler(req, res) {
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: email,
+      options: {
+        // FORCE Supabase to redirect here instead of localhost
+        redirectTo: 'https://kudislip.com.ng/update-password'
+      }
     });
 
     if (error) throw error;
@@ -37,7 +41,7 @@ export default async function handler(req, res) {
 
     // 2. Send the premium white-labeled email using Resend
     const emailResponse = await resend.emails.send({
-      from: 'KudiSlip Support <support@kudislip.com.ng>', // Updated to .com.ng
+      from: 'KudiSlip Support <support@kudislip.com.ng>',
       to: [email],
       subject: 'Reset Your KudiSlip Password',
       html: `
