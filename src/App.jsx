@@ -2951,6 +2951,89 @@ function DraggableSupportButton() {
   );
 }
 // =========================================================
+// UPDATE PASSWORD COMPONENT (PASSWORD RECOVERY SCREEN)
+// =========================================================
+function UpdatePassword({ showToast }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      if (showToast) {
+        showToast("Success!", "Your password has been securely updated.", "success");
+      } else {
+        alert("Password updated successfully!");
+      }
+      
+      // Redirect them to the login page after success!
+      setTimeout(() => {
+        window.location.href = "/"; 
+      }, 1500);
+
+    } catch (err) {
+      setError(err.message);
+      if (showToast) showToast("Error", err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC" }}>
+      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
+      </div>
+      
+      <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 8px", textAlign: "center", color: "#0F172A" }}>
+          Set New Password
+        </h2>
+        <p style={{ textAlign: "center", color: "#64748B", fontSize: "14px", marginBottom: "24px" }}>
+          Please enter your new secure password below.
+        </p>
+        
+        <form onSubmit={handleUpdatePassword}>
+          {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
+          
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>New Password</label>
+            <input 
+              className="form-input" 
+              type="password" 
+              placeholder="••••••••" 
+              value={newPassword} 
+              onChange={e => setNewPassword(e.target.value)} 
+              required 
+              style={{ width: "100%", padding: "14px", borderRadius: "8px", border: "1px solid #E2E8F0" }}
+            />
+          </div>
+
+          <button className="btn-primary btn-hover" style={{ width: "100%", padding: "16px", borderRadius: "8px", background: "#8B5CF6", color: "#FFF", fontWeight: "800", border: "none", cursor: "pointer" }} type="submit" disabled={loading}>
+            {loading ? "Updating..." : "Securely Update Password"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
 // MAIN APP ROUTER (THE CLEAN URL INTERCEPTOR - BULLETPROOF)
 // =========================================================
 function AppRouter() {
@@ -2977,18 +3060,15 @@ function AppRouter() {
 
   useEffect(() => { const splashTimer = setTimeout(() => setShowSplash(false), 3000); return () => clearTimeout(splashTimer); }, []);
 
-  // 2. MAGIC ROUTER: INTERCEPTS CLICKS GLOBALLY - FIXED!
+  // 2. MAGIC ROUTER: INTERCEPTS CLICKS GLOBALLY
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname || "/");
     window.addEventListener("popstate", handlePopState);
     
     const handleGlobalClick = (e) => {
-      // Find the closest anchor tag that was clicked
       const link = e.target.closest('a');
       
-      // If it's a link, and it starts with a slash (internal link), intercept it
       if (link && link.getAttribute('href') && link.getAttribute('href').startsWith('/')) {
-        // Do NOT intercept external links or links meant to open in a new tab
         if (link.getAttribute('target') === '_blank' || link.getAttribute('href').startsWith('http')) return;
         
         e.preventDefault();
@@ -3093,6 +3173,9 @@ function AppRouter() {
       return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
     }
 
+    // 🎯 NEW PASSWORD RECOVERY ROUTE ADDED HERE!
+    if (currentPath === "/update-password") return <UpdatePassword showToast={showToast} />;
+    
     if (currentPath === "/terms") return <LegalPage type="terms" />;
     if (currentPath === "/privacy") return <LegalPage type="privacy" />;
 
