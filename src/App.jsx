@@ -1850,7 +1850,7 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   // ==========================================
   // PASSWORD RESET FLOW
   // ==========================================
-  const handleResetPassword = async (e) => {
+ const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!email) {
       setError("Please enter your email address first.");
@@ -1860,10 +1860,18 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
     setError("");
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`, 
+      // Call your custom API endpoint instead of Supabase directly
+      const response = await fetch('/api/send-reset-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
       });
-      if (error) throw error;
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send reset link.");
+      }
       
       showToast("Reset Link Sent!", "Check your inbox for the secure reset link.", "success");
       setIsResettingPassword(false);
@@ -1874,7 +1882,6 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
       setLoading(false);
     }
   };
-
   // ==========================================
   // MAIN AUTH FLOW (LOGIN/SIGNUP)
   // ==========================================
