@@ -74,8 +74,8 @@ export default async function handler(req, res) {
           </div>
           
           <div style="margin-top: 32px; text-align: center;">
-            <a href="https://instagram.com/kudislip" style="color: #000000; text-decoration: none; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 12px;">
-              Follow us on Instagram @kudislip
+            <a href="https://instagram.com/kudislipp" style="color: #000000; text-decoration: none; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 12px;">
+              Follow us on Instagram @kudislipp
             </a>
             <div style="color: #64748B; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
               &copy; ${new Date().getFullYear()} KudiSlip Technologies.
