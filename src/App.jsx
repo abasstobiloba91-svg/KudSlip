@@ -1834,10 +1834,11 @@ function LandingPage() {
   );
 }
 // =========================================================
-// 6. AUTHENTICATION (CLEAN URLs)
+// 6. AUTHENTICATION (CLEAN URLs) - WITH FORGOT PASSWORD
 // =========================================================
 function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
+  const [isResettingPassword, setIsResettingPassword] = useState(false); // NEW STATE
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -1846,15 +1847,44 @@ function KudiSlipAuth({ onLoginSuccess, initialIsSignUp, showToast }) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-const handleAuth = async (e) => {
+  // ==========================================
+  // PASSWORD RESET FLOW
+  // ==========================================
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`, 
+      });
+      if (error) throw error;
+      
+      showToast("Reset Link Sent!", "Check your inbox for the secure reset link.", "success");
+      setIsResettingPassword(false);
+    } catch (err) {
+      setError(err.message);
+      showToast("Reset Error", err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // MAIN AUTH FLOW (LOGIN/SIGNUP)
+  // ==========================================
+  const handleAuth = async (e) => {
     e.preventDefault(); 
     setLoading(true); 
     setError("");
     
     try {
-      // ==========================================
       // 1. LOGIN FLOW (Early Return)
-      // ==========================================
       if (!isSignUp) {
         const loginRes = await supabase.auth.signInWithPassword({ email: email, password: password });
         if (loginRes.error) throw loginRes.error;
@@ -1866,9 +1896,7 @@ const handleAuth = async (e) => {
         return; 
       }
       
-      // ==========================================
       // 2. SIGNUP FLOW (Flat Structure)
-      // ==========================================
       if (!agreedToTerms) throw new Error("You must agree to the Terms and Privacy Policy to continue.");
       
       const authRes = await supabase.auth.signUp({ email: email, password: password });
@@ -1904,7 +1932,9 @@ const handleAuth = async (e) => {
   if (loading) return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "#F8FAFC", gap: "24px", width: "100vw", position: "fixed", top: 0, left: 0, zIndex: 99999 }}>
       <img src="/logo.png" alt="KudiSlip Logo" className="bouncing-logo" style={{ height: "40px", transformOrigin: "center center" }} />
-      <div className="pulsing-text" style={{ marginTop: "8px" }}>Authenticating...</div>
+      <div className="pulsing-text" style={{ marginTop: "8px" }}>
+        {isResettingPassword ? "Sending link..." : "Authenticating..."}
+      </div>
     </div>
   );
 
@@ -1913,36 +1943,65 @@ const handleAuth = async (e) => {
       <GlobalStyles />
       <a href="/" style={{ textDecoration: "none", position: "absolute", top: "24px", left: "24px", color: "#64748B", fontWeight: "600", fontSize: "14px", padding: "8px" }} className="btn-hover">&larr; Back to Home</a>
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}><img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} /></div>
+      
       <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
-        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>{isSignUp ? "Create your account" : "Welcome back"}</h2>
-        <form onSubmit={handleAuth}>
+        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 24px", textAlign: "center" }}>
+          {isResettingPassword ? "Reset your password" : isSignUp ? "Create your account" : "Welcome back"}
+        </h2>
+        
+        <form onSubmit={isResettingPassword ? handleResetPassword : handleAuth}>
           {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
-          {isSignUp && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
+          
+          {isSignUp && !isResettingPassword && <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Business Name</label><input className="form-input" placeholder="e.g. Acme Corp" value={businessName} onChange={e => setBusinessName(e.target.value)} required /></div>}
+          
+          {/* Email is used in all 3 states */}
           <div style={{ marginBottom: "16px" }}><label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Email Address</label><input className="form-input" type="email" placeholder="merchant@company.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
           
-          <div style={{ marginBottom: isSignUp ? "16px" : "28px" }}>
-            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label>
-            <div style={{ position: "relative", width: "100%" }}>
-              <input className="form-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} style={{ paddingRight: "48px" }} required />
-              <div onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}>
-                {showPassword ? ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> ) : ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> )}
+          {!isResettingPassword && (
+            <>
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>Password</label>
+                <div style={{ position: "relative", width: "100%" }}>
+                  <input className="form-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} style={{ paddingRight: "48px" }} required />
+                  <div onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748B" }}>
+                    {showPassword ? ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> ) : ( <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+              
+              {/* Forgot Password Link strictly on Login */}
+              {!isSignUp && (
+                <div style={{ textAlign: "right", marginBottom: "24px" }}>
+                   <span onClick={() => setIsResettingPassword(true)} style={{ fontSize: "12px", color: DESIGN.primary || "#8B5CF6", fontWeight: "700", cursor: "pointer", textDecoration: "none" }}>Forgot Password?</span>
+                </div>
+              )}
 
-          {isSignUp && (
-            <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
-              <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
-              <label htmlFor="terms" style={{ fontSize: "12px", color: DESIGN.textMuted, lineHeight: "1.5" }}>
-                I agree to the <a href="/terms" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Terms & Conditions</a> and <a href="/privacy" style={{ color: DESIGN.primary, fontWeight: "800", textDecoration: "none" }} target="_blank">Privacy Policy</a>.
-              </label>
-            </div>
+              {isSignUp && (
+                <div style={{ marginBottom: "28px", marginTop: "16px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ cursor: "pointer", marginTop: "2px" }} required />
+                  <label htmlFor="terms" style={{ fontSize: "12px", color: "#64748B", lineHeight: "1.5" }}>
+                    I agree to the <a href="/terms" style={{ color: "#000", fontWeight: "800", textDecoration: "none" }} target="_blank">Terms & Conditions</a> and <a href="/privacy" style={{ color: "#000", fontWeight: "800", textDecoration: "none" }} target="_blank">Privacy Policy</a>.
+                  </label>
+                </div>
+              )}
+            </>
           )}
-          <button className="btn-primary btn-hover" style={{ width: "100%" }} type="submit">{isSignUp ? "Sign Up" : "Log In"}</button>
+
+          <button className="btn-primary btn-hover" style={{ width: "100%", marginTop: isResettingPassword ? "24px" : "0" }} type="submit">
+            {isResettingPassword ? "Send Reset Link" : isSignUp ? "Sign Up" : "Log In"}
+          </button>
         </form>
+
+        {/* Dynamic Footer Toggle */}
         <div style={{ textAlign: "center", marginTop: "24px", color: "#64748B", fontSize: "14px" }}>
-          {isSignUp ? "Already have an account? " : "Don't have an account? "}
-          <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span>
+          {isResettingPassword ? (
+             <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer" }} onClick={() => { setIsResettingPassword(false); setError(""); }}>&larr; Back to Log In</span>
+          ) : (
+            <>
+              {isSignUp ? "Already have an account? " : "Don't have an account? "}
+              <span style={{ color: "#000000", fontWeight: "800", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>{isSignUp ? "Log In" : "Sign Up"}</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -2245,7 +2304,7 @@ function ExpensesManager({ user, showToast }) {
 }
 
 // =========================================================
-// 10. PAYOUT SETTINGS (WITH NUBAN RESOLUTION)
+// 10. PAYOUT SETTINGS (PREMIUM VIRTUAL CARD UI WITH REAL NAME)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
@@ -2259,6 +2318,7 @@ function PayoutSettings({ user, showToast }) {
   useEffect(() => {
     if (user?.bank_code) setBankCode(user.bank_code);
     if (user?.account_number) setAccountNumber(user.account_number);
+    if (user?.account_name) setResolvedName(user.account_name); 
   }, [user]);
 
   const NIGERIAN_BANKS = [
@@ -2293,12 +2353,15 @@ function PayoutSettings({ user, showToast }) {
 
   // 🎯 THE MAGIC: Automatically verify name when 10 digits are typed
   useEffect(() => {
-    if (accountNumber.length === 10 && bankCode) {
-      verifyAccount();
-    } else {
-      setResolvedName("");
+    // Only resolve if we are actively editing/creating, not just loading the saved data
+    if (isEditing || !user?.bank_code) {
+      if (accountNumber.length === 10 && bankCode) {
+        verifyAccount();
+      } else {
+        setResolvedName("");
+      }
     }
-  }, [accountNumber, bankCode]);
+  }, [accountNumber, bankCode, isEditing, user]);
 
   const verifyAccount = async () => {
     setIsResolving(true);
@@ -2351,11 +2414,13 @@ function PayoutSettings({ user, showToast }) {
 
       const subaccountCode = data.subaccount_code;
 
+      // Make sure you have an 'account_name' column in your Supabase 'vendors' table!
       const { error: dbError } = await supabase
         .from('vendors')
         .update({ 
           bank_code: bankCode, 
           account_number: accountNumber,
+          account_name: resolvedName, // Saving the verified real name to Supabase
           paystack_subaccount_code: subaccountCode 
         })
         .eq('id', user.id);
@@ -2375,6 +2440,12 @@ function PayoutSettings({ user, showToast }) {
   const hasLinkedBank = user?.bank_code && user?.account_number;
   const linkedBankName = NIGERIAN_BANKS.find(b => b.code === user?.bank_code)?.name || "Your Linked Bank";
   const maskedAccount = user?.account_number ? `•••• •••• ${user.account_number.slice(-4)}` : "";
+  
+  // 🎯 STRICTLY THE VERIFIED BANK ACCOUNT NAME ONLY (No Business Name)
+  const displayAccountName = resolvedName || user?.account_name || "VERIFYING HOLDER...";
+
+  // Repeating Watermark SVG Background
+  const watermarkPattern = `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'%3E%3Ctext x='10' y='50' font-family='sans-serif' font-size='14' font-weight='bold' transform='rotate(-45 50 50)'%3EKudiSlip%3C/text%3E%3C/g%3E%3C/svg%3E")`;
 
   return (
     <div style={{ maxWidth: "600px" }}>
@@ -2387,7 +2458,7 @@ function PayoutSettings({ user, showToast }) {
           <div style={{ padding: "10px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
               <div style={{ width: "48px", height: "48px", background: "#000000", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFF" }}>
-                <ShieldIcon />
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               </div>
               <div>
                 <h3 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 4px 0", color: "#0F172A" }}>Settlement Route Active</h3>
@@ -2401,13 +2472,44 @@ function PayoutSettings({ user, showToast }) {
               Your automated payout destination is securely linked. All paid invoices will be routed directly to this verified bank account.
             </p>
 
-            <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", padding: "28px", borderRadius: "16px", marginBottom: "32px", position: "relative", overflow: "hidden", color: "#FFF", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
+            {/* =========================================
+                💳 THE PREMIUM VIRTUAL CARD UI
+                ========================================= */}
+            <div style={{ 
+              background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", 
+              backgroundImage: watermarkPattern + ", linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+              padding: "32px", 
+              borderRadius: "20px", 
+              marginBottom: "32px", 
+              position: "relative", 
+              overflow: "hidden", 
+              color: "#FFF", 
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04)" 
+            }}>
+              
+              {/* EMV Chip & NFC Icon Row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", position: "relative", zIndex: 1 }}>
+                <div style={{ width: "45px", height: "35px", background: "linear-gradient(135deg, #FCD34D 0%, #D97706 100%)", borderRadius: "6px", opacity: 0.9 }}></div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+              </div>
+              
               <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Bank Name</div>
-                <div style={{ fontSize: "18px", fontWeight: "800", color: "#FFFFFF", marginBottom: "24px" }}>{linkedBankName}</div>
+                {/* Account Number */}
+                <div style={{ fontSize: "28px", fontWeight: "900", color: "#FFFFFF", letterSpacing: "4px", fontFamily: "'Courier New', Courier, monospace", marginBottom: "24px", textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
+                  {maskedAccount}
+                </div>
                 
-                <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Account Number</div>
-                <div style={{ fontSize: "24px", fontWeight: "900", color: "#FFFFFF", letterSpacing: "4px", fontFamily: "monospace" }}>{maskedAccount}</div>
+                {/* Name & Bank Footer */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                  <div>
+                    <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Account Holder</div>
+                    <div style={{ fontSize: "16px", fontWeight: "700", color: "#FFFFFF", letterSpacing: "1px", textTransform: "uppercase" }}>{displayAccountName}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                     <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Bank</div>
+                     <div style={{ fontSize: "14px", fontWeight: "800", color: "#FFFFFF" }}>{linkedBankName}</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2777,7 +2879,7 @@ function AdminSupportInbox({ user, showToast }) {
   );
 }
 // =========================================================
-// DRAGGABLE SUPPORT BUTTON COMPONENT (CLEAN URLs)
+// DRAGGABLE SUPPORT BUTTON COMPONENT (UPGRADED POINTER EVENTS)
 // =========================================================
 function DraggableSupportButton() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -2785,25 +2887,59 @@ function DraggableSupportButton() {
   const dragStart = useRef({ x: 0, y: 0 });
   const hasMoved = useRef(false);
 
-  const handleStart = (clientX, clientY) => { setIsDragging(true); hasMoved.current = false; dragStart.current = { x: clientX - pos.x, y: clientY - pos.y }; };
-  const handleMove = (clientX, clientY) => { if (!isDragging) return; hasMoved.current = true; setPos({ x: clientX - dragStart.current.x, y: clientY - dragStart.current.y }); };
-  const handleEnd = () => setIsDragging(false);
+  const handlePointerDown = (e) => {
+    setIsDragging(true);
+    hasMoved.current = false;
+    dragStart.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    // This locks the pointer to the button so dragging doesn't break if you move the mouse too fast
+    e.target.setPointerCapture(e.pointerId); 
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging) return;
+    hasMoved.current = true;
+    setPos({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+  };
+
+  const handlePointerUp = (e) => {
+    setIsDragging(false);
+    e.target.releasePointerCapture(e.pointerId);
+  };
 
   return (
     <a
       href="/dashboard/support"
-      onClick={(e) => { if (hasMoved.current) e.preventDefault(); }}
-      onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
-      onMouseMove={(e) => isDragging && handleMove(e.clientX, e.clientY)}
-      onMouseUp={handleEnd}
-      onMouseLeave={handleEnd}
-      onTouchStart={(e) => handleStart(e.touches.clientX, e.touches.clientY)}
-      onTouchMove={(e) => isDragging && handleMove(e.touches.clientX, e.touches.clientY)}
-      onTouchEnd={handleEnd}
+      onClick={(e) => { 
+        // Prevent navigating to the support page if they were just trying to drag the button
+        if (hasMoved.current) e.preventDefault(); 
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp} // Failsafe if a touch is interrupted (e.g., a phone call comes in)
       className="btn-primary btn-hover"
-      style={{ position: "fixed", bottom: "24px", right: "24px", transform: `translate(${pos.x}px, ${pos.y}px)`, borderRadius: "50px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "8px", zIndex: 9999, boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)", textDecoration: "none", touchAction: "none", cursor: isDragging ? "grabbing" : "grab" }}
+      style={{ 
+        position: "fixed", 
+        bottom: "24px", 
+        right: "24px", 
+        transform: `translate(${pos.x}px, ${pos.y}px)`, 
+        borderRadius: "50px", 
+        padding: "14px 20px", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "8px", 
+        zIndex: 9999, 
+        boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)", 
+        textDecoration: "none", 
+        touchAction: "none", 
+        cursor: isDragging ? "grabbing" : "grab",
+        userSelect: "none", // Prevents accidental text highlighting while dragging
+        color: "#FFFFFF",
+        backgroundColor: "#8B5CF6" // Using KudiSlip purple, adjust if needed!
+      }}
     >
-      <MessageIcon /> <span className="support-text-mobile">Support</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 
+      <span className="support-text-mobile" style={{ fontWeight: "700" }}>Support</span>
     </a>
   );
 }
