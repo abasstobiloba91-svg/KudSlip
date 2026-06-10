@@ -1,30 +1,84 @@
-// App.jsx (or wherever your routes are)
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import KudiSlipAuth from './components/KudiSlipAuth';
-import DashboardLayout from './components/DashboardLayout';
-import UpdatePassword from './components/UpdatePassword'; // 1. Import it here!
+import { useState } from 'react';
+// 🚨 IMPORTANT: Import your Supabase client exactly how you do in your Auth file!
+// import { supabase } from './supabaseClient'; 
 
-function App() {
-  const showToast = (title, message, type) => {
-    // your existing toast logic
+export default function UpdatePassword({ showToast }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+
+    try {
+      // The Supabase command to update the user's password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      if (showToast) {
+        showToast("Success!", "Your password has been securely updated.", "success");
+      } else {
+        alert("Password updated successfully!");
+      }
+      
+      // Send them back to the login page
+      setTimeout(() => {
+        window.location.href = "/"; 
+      }, 1500);
+
+    } catch (err) {
+      setError(err.message);
+      if (showToast) showToast("Error", err.message, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Router>
-      <Routes>
-        {/* Your existing routes */}
-        <Route path="/" element={<KudiSlipAuth showToast={showToast} />} />
-        <Route path="/dashboard/*" element={<DashboardLayout />} />
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC" }}>
+      <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
+      </div>
+      
+      <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+        <h2 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 8px", textAlign: "center", color: "#0F172A" }}>
+          Set New Password
+        </h2>
+        <p style={{ textAlign: "center", color: "#64748B", fontSize: "14px", marginBottom: "24px" }}>
+          Please enter your new secure password below.
+        </p>
         
-        {/* 2. ADD THIS NEW ROUTE HERE */}
-        <Route 
-          path="/update-password" 
-          element={<UpdatePassword showToast={showToast} />} 
-        />
-        
-      </Routes>
-    </Router>
+        <form onSubmit={handleUpdatePassword}>
+          {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "600", border: "1px solid #FECACA" }}>{error}</div>}
+          
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase" }}>New Password</label>
+            <input 
+              className="form-input" 
+              type="password" 
+              placeholder="••••••••" 
+              value={newPassword} 
+              onChange={e => setNewPassword(e.target.value)} 
+              required 
+              style={{ width: "100%", padding: "14px", borderRadius: "8px", border: "1px solid #E2E8F0" }}
+            />
+          </div>
+
+          <button className="btn-primary btn-hover" style={{ width: "100%", padding: "16px", borderRadius: "8px", background: "#8B5CF6", color: "#FFF", fontWeight: "800", border: "none", cursor: "pointer" }} type="submit" disabled={loading}>
+            {loading ? "Updating..." : "Securely Update Password"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
-
-export default App;
