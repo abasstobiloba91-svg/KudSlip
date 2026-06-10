@@ -34,7 +34,7 @@ function UpdatePassword({ showToast }) {
         alert("Password updated successfully!");
       }
       
-      // Redirect them to the dashboard since they are already authenticated!
+      // Redirect straight to dashboard workspace
       setTimeout(() => {
         window.location.href = "/dashboard/invoices"; 
       }, 1500);
@@ -49,8 +49,13 @@ function UpdatePassword({ showToast }) {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC" }}>
-      {/* 🎯 THE FIX: Injecting KudiSlip's Global Font & Styles here */}
+      {/* Inject clean structural typography rules for absolute global matching */}
       <GlobalStyles />
+      <style>{`
+        .auth-card h2, .auth-card p, .auth-card label, .auth-card input, .auth-card button {
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        }
+      `}</style>
       
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
