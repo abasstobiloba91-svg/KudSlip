@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       type: 'recovery',
       email: email,
       options: {
-        // FORCE Supabase to redirect here instead of localhost
+        // FORCE Supabase to redirect here
         redirectTo: 'https://kudislip.com.ng/update-password'
       }
     });
@@ -52,29 +52,34 @@ export default async function handler(req, res) {
               <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip Logo" style="height: 48px; object-fit: contain;" />
             </div>
 
-            <h2 style="color: #0F172A; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">
+            <h2 style="color: #000000; font-size: 24px; font-weight: 900; margin-top: 0; margin-bottom: 16px; text-align: center; letter-spacing: -0.5px;">
               Reset Your Password
             </h2>
 
-            <p style="color: #64748B; font-size: 16px; line-height: 1.6; margin-bottom: 32px; text-align: center;">
+            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 32px; text-align: center; font-weight: 500;">
               We received a request to unlock your KudiSlip command center. Click the button below to securely set a new password and regain access.
             </p>
 
             <div style="text-align: center;">
-              <a href="${resetLink}" style="display: inline-block; background-color: #8B5CF6; color: #FFFFFF; padding: 16px 32px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 16px;">
+              <a href="${resetLink}" style="display: inline-block; background-color: #000000; color: #FFFFFF; padding: 16px 32px; border-radius: 8px; font-weight: 800; text-decoration: none; font-size: 15px;">
                 Securely Reset Password
               </a>
             </div>
 
             <div style="border-top: 1px solid #E2E8F0; margin-top: 32px; padding-top: 24px;">
-              <p style="color: #94A3B8; font-size: 13px; line-height: 1.5; margin: 0; text-align: center;">
+              <p style="color: #94A3B8; font-size: 13px; line-height: 1.5; margin: 0; text-align: center; font-weight: 500;">
                 If you didn't request this, you can safely ignore this email. Your KudiSlip account remains completely secure.
               </p>
             </div>
           </div>
           
-          <div style="margin-top: 32px; color: #94A3B8; font-size: 12px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px;">
-            &copy; ${new Date().getFullYear()} KudiSlip. The Ultimate Revenue Engine.
+          <div style="margin-top: 32px; text-align: center;">
+            <a href="https://instagram.com/kudislip" style="color: #000000; text-decoration: none; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 12px;">
+              Follow us on Instagram @kudislip
+            </a>
+            <div style="color: #64748B; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+              &copy; ${new Date().getFullYear()} KudiSlip Technologies.
+            </div>
           </div>
         </div>
       `
