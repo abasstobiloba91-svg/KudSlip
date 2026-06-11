@@ -3315,7 +3315,7 @@ function AppRouter() {
           </div>
         </div>
 
-        {/* MAIN VIEW CONTROLLER PANEL */}
+       {/* MAIN VIEW CONTROLLER PANEL */}
         <div className="main-content" onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <KudiSlipInvoiceEngine user={user} showToast={showToast} />}
           {activeTab === "expenses" && <ExpensesManager user={user} showToast={showToast} />} 
@@ -3328,13 +3328,14 @@ function AppRouter() {
         </div>
       </div>
     );
+  }; // <-- 1. This securely closes the renderView() function
 
   return (
     <>
       <ErrorBoundary>
         {renderView()}
       </ErrorBoundary>
-<Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={() => setToast(null)} />
       
       {/* 🛡️ SECURITY FIX: Explicitly hide the floating button on the update-password route */}
       {user && user.role === 'vendor' && currentPath !== "/dashboard/support" && !currentPath.startsWith("/pay/") && currentPath !== "/update-password" && (
@@ -3342,6 +3343,7 @@ function AppRouter() {
       )}
     </>
   );
-}
+} // <-- 2. This securely closes the AppRouter() function
 
+// 3. Now the export sits safely outside!
 export default AppRouter;
