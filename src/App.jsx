@@ -3203,7 +3203,26 @@ function AppRouter() {
       return <LandingPage />;
     }
 
-    const activeTab = currentPath.replace('/dashboard/', '');
+   // =========================================================
+    // 🎯 THE FIX: BULLETPROOF ROUTE PARSING & FAILSAFE
+    // =========================================================
+    // 1. Break the path into clean pieces, ignoring extra slashes
+    const pathParts = currentPath.split('/').filter(Boolean);
+    const dashboardIndex = pathParts.indexOf('dashboard');
+    
+    // 2. Default to 'invoices' automatically
+    let activeTab = "invoices"; 
+    
+    // 3. Securely grab the exact tab name without trailing slashes
+    if (dashboardIndex !== -1 && pathParts.length > dashboardIndex + 1) {
+      activeTab = pathParts[dashboardIndex + 1].toLowerCase();
+    }
+    
+    // 4. THE FAILSAFE: If the browser mangles the URL to something that doesn't exist, force it back to invoices
+    const validTabs = ["invoices", "expenses", "clients", "payouts", "brand", "billing", "support", "admin"];
+    if (!validTabs.includes(activeTab)) {
+      activeTab = "invoices";
+    }
 
     return (
       <div className="dashboard-layout">
@@ -3230,7 +3249,7 @@ function AppRouter() {
                  </div>
                )}
             </div>
-            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: DESIGN.textMain }} onClick={() => setSidebarOpen(true)}>☰</button>
+            <button style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: "#0F172A" }} onClick={() => setSidebarOpen(true)}>☰</button>
           </div>
         </div>
 
@@ -3260,7 +3279,7 @@ function AppRouter() {
             </a>
 
             {user?.role === 'admin' && (
-              <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: DESIGN.premium, borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: "#8B5CF6", borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <ShieldIcon /> Admin Operations
               </a>
             )}
@@ -3289,10 +3308,10 @@ function AppRouter() {
           </div>
 
           <div className="sidebar-footer">
-            <div style={{ fontSize: "12px", color: DESIGN.textMuted, fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: DESIGN.error }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: "#EF4444" }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
           </div>
         </div>
 
@@ -3305,11 +3324,10 @@ function AppRouter() {
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
-        {activeTab === "admin" && <SuperAdminDashboard user={user} showToast={showToast} />}
+          {activeTab === "admin" && <SuperAdminDashboard user={user} showToast={showToast} />}
         </div>
       </div>
     );
-  };
 
   return (
     <>
