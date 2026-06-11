@@ -2886,7 +2886,7 @@ function AdminSupportInbox({ user, showToast }) {
   );
 }
 // =========================================================
-// DRAGGABLE SUPPORT BUTTON COMPONENT (UPGRADED POINTER EVENTS)
+// DRAGGABLE SUPPORT BUTTON COMPONENT (PREMIUM MONOCHROME)
 // =========================================================
 function DraggableSupportButton() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -2898,7 +2898,6 @@ function DraggableSupportButton() {
     setIsDragging(true);
     hasMoved.current = false;
     dragStart.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-    // This locks the pointer to the button so dragging doesn't break if you move the mouse too fast
     e.target.setPointerCapture(e.pointerId); 
   };
 
@@ -2917,13 +2916,12 @@ function DraggableSupportButton() {
     <a
       href="/dashboard/support"
       onClick={(e) => { 
-        // Prevent navigating to the support page if they were just trying to drag the button
         if (hasMoved.current) e.preventDefault(); 
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp} // Failsafe if a touch is interrupted (e.g., a phone call comes in)
+      onPointerCancel={handlePointerUp} 
       className="btn-primary btn-hover"
       style={{ 
         position: "fixed", 
@@ -2940,9 +2938,10 @@ function DraggableSupportButton() {
         textDecoration: "none", 
         touchAction: "none", 
         cursor: isDragging ? "grabbing" : "grab",
-        userSelect: "none", // Prevents accidental text highlighting while dragging
+        userSelect: "none",
         color: "#FFFFFF",
-        backgroundColor: "#8B5CF6" // Using KudiSlip purple, adjust if needed!
+        backgroundColor: "#000000", // 🎯 Updated to Premium Black
+        fontFamily: "inherit"
       }}
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 
@@ -2986,7 +2985,6 @@ function UpdatePassword({ showToast }) {
         alert("Password updated successfully!");
       }
       
-      // Redirect them to the dashboard since they are already authenticated!
       setTimeout(() => {
         window.location.href = "/dashboard/invoices"; 
       }, 1500);
@@ -3000,24 +2998,26 @@ function UpdatePassword({ showToast }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC", fontFamily: "inherit" }}>
+      <GlobalStyles />
+      
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
       </div>
       
       <div className="auth-card card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "40px", width: "100%", maxWidth: "420px", boxSizing: "border-box", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
-        <h2 style={{ fontSize: "24px", fontWeight: "900", margin: "0 0 8px", textAlign: "center", color: "#000000", letterSpacing: "-0.5px" }}>
+        <h2 style={{ fontSize: "24px", fontWeight: "900", margin: "0 0 8px", textAlign: "center", color: "#000000", letterSpacing: "-0.5px", fontFamily: "inherit" }}>
           Set New Password
         </h2>
-        <p style={{ textAlign: "center", color: "#64748B", fontSize: "14px", marginBottom: "24px", fontWeight: "500" }}>
+        <p style={{ textAlign: "center", color: "#64748B", fontSize: "14px", marginBottom: "24px", fontWeight: "500", fontFamily: "inherit" }}>
           Please enter and confirm your new secure password below.
         </p>
         
         <form onSubmit={handleUpdatePassword}>
-          {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "700", border: "1px solid #FECACA" }}>{error}</div>}
+          {error && <div style={{ color: "#EF4444", background: "#FEF2F2", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", fontWeight: "700", border: "1px solid #FECACA", fontFamily: "inherit" }}>{error}</div>}
           
           <div style={{ marginBottom: "16px" }}>
-            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "800", textTransform: "uppercase" }}>New Password</label>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "800", textTransform: "uppercase", fontFamily: "inherit" }}>New Password</label>
             <input 
               className="form-input" 
               type="password" 
@@ -3025,11 +3025,12 @@ function UpdatePassword({ showToast }) {
               value={newPassword} 
               onChange={e => setNewPassword(e.target.value)} 
               required 
+              style={{ fontFamily: "inherit" }}
             />
           </div>
 
           <div style={{ marginBottom: "32px" }}>
-            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "800", textTransform: "uppercase" }}>Confirm Password</label>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "800", textTransform: "uppercase", fontFamily: "inherit" }}>Confirm Password</label>
             <input 
               className="form-input" 
               type="password" 
@@ -3037,10 +3038,11 @@ function UpdatePassword({ showToast }) {
               value={confirmPassword} 
               onChange={e => setConfirmPassword(e.target.value)} 
               required 
+              style={{ fontFamily: "inherit" }}
             />
           </div>
 
-          <button className="btn-primary btn-hover" style={{ width: "100%", padding: "16px", borderRadius: "8px", background: "#000000", color: "#FFFFFF", fontWeight: "800", border: "none", cursor: "pointer", fontSize: "15px" }} type="submit" disabled={loading}>
+          <button className="btn-primary btn-hover" style={{ width: "100%", padding: "16px", borderRadius: "8px", background: "#000000", color: "#FFFFFF", fontWeight: "800", border: "none", cursor: "pointer", fontSize: "15px", fontFamily: "inherit" }} type="submit" disabled={loading}>
             {loading ? "Updating..." : "Securely Update Password"}
           </button>
         </form>
