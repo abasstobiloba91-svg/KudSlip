@@ -1291,11 +1291,13 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         metadata: {
           invoice_id: invoice.id
         },
-        callback: function(response) {
+      callback: function(response) {
           supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-            
+            // ✂️ The frontend email fetch block has been completely removed. The backend webhook handles this now!
+          });
+        },
             if (vendor?.email) {
               fetch('/api/send-payment-alert', {
                 method: 'POST',
@@ -3343,7 +3345,7 @@ function AppRouter() {
             <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer" }} onClick={() => setSidebarOpen(false)}>×</button>
           </div>
           
-          <div className="sidebar-menu">
+         <div className="sidebar-menu">
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
@@ -3353,7 +3355,7 @@ function AppRouter() {
                 <a href="/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
                 <a href="/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
                 
-                {/* 🎯 NEW PROFILE LINK IN SIDEBAR */}
+                {/* 🎯 THE PROFILE SECTION LINK FOR BOTH MOBILE AND DESKTOP */}
                 <a href="/dashboard/profile" className={`menu-btn ${activeTab === "profile" ? "active" : ""}`}>Profile Settings</a>
                 
                 <a href="/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
