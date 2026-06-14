@@ -64,7 +64,7 @@ export default async function handler(req, res) {
               © 2026 KudiSlip Technologies
             </p>
             <p style="margin: 8px 0 0 0; font-size: 12px; color: #94A3B8;">
-              Follow us on Instagram <a href="https://instagram.com/kudislip" style="color: #3B82F6; text-decoration: none; font-weight: 700;">@KudiSlip</a>
+              Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #3B82F6; text-decoration: none; font-weight: 700;">@KudiSlip</a>
             </p>
           </div>
 
