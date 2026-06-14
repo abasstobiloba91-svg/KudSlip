@@ -1282,7 +1282,7 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
-      // 🎯 SECURE PAYSTACK PAYLOAD (WITH WEBHOOK FIX)
+      // 🎯 SECURE PAYSTACK PAYLOAD (CLEANED UP FOR BACKEND WEBHOOK)
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
@@ -1291,27 +1291,10 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
         metadata: {
           invoice_id: invoice.id
         },
-      callback: function(response) {
+        callback: function(response) {
           supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-            // ✂️ The frontend email fetch block has been completely removed. The backend webhook handles this now!
-          });
-        },
-            if (vendor?.email) {
-              fetch('/api/send-payment-alert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  vendorEmail: vendor.email,
-                  vendorName: vendor?.business_name || "Merchant",
-                  clientName: client?.name || "A client",
-                  amount: Number(invoice.amount).toLocaleString(),
-                  currency: CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency,
-                  invoiceId: invoice.id
-                })
-              }).catch(e => console.error("Alert failed to send:", e));
-            }
           });
         },
         onClose: function() { console.log("Payment window closed."); }
