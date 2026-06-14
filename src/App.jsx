@@ -3054,6 +3054,87 @@ function UpdatePassword({ showToast }) {
 }
 
 // =========================================================
+// SECURITY: 24-Hour Inactivity Auto-Logout
+// =========================================================
+function useIdleLogout(supabaseClient) {
+  useEffect(() => {
+    let timeoutId;
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      // 24 hours in milliseconds (86,400,000 ms)
+      timeoutId = setTimeout(() => {
+        if (supabaseClient) {
+          supabaseClient.auth.signOut().then(() => {
+            window.location.href = '/login';
+          });
+        }
+      }, 86400000); 
+    };
+
+    const events = ['mousemove', 'keydown', 'scroll', 'click'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer(); // Start the clock
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [supabaseClient]);
+}
+
+// =========================================================
+// 15. USER PROFILE & IDENTITY HUB
+// =========================================================
+function ProfileSettings({ user, showToast, onUpdate }) {
+  const [businessName, setBusinessName] = useState(user?.business_name || "");
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!businessName.trim()) return showToast("Action Required", "Business name cannot be empty.", "error");
+
+    setLoading(true);
+    const { error } = await supabase.from('vendors').update({ business_name: businessName }).eq('id', user.id);
+
+    if (error) {
+      showToast("Database Error", error.message, "error");
+    } else {
+      showToast("Profile Updated", "Your business details have been saved.", "success");
+      onUpdate({ ...user, business_name: businessName });
+    }
+    setLoading(false);
+  };
+
+  if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Profile Settings.</div>;
+
+  return (
+    <div style={{ maxWidth: "600px" }}>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Profile Settings</div>
+      <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your identity and account details.</div>
+
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "32px" }}>
+        <form onSubmit={handleSave}>
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Account Email (Unchangeable)</label>
+            <input className="form-input" value={user?.email || ""} disabled style={{ background: "#F1F5F9", color: "#94A3B8", cursor: "not-allowed" }} />
+            <div style={{ fontSize: "11px", color: "#94A3B8", marginTop: "6px" }}>Contact KudiSlip support if you need to migrate your account to a new email address.</div>
+          </div>
+
+          <div style={{ marginBottom: "32px" }}>
+            <label style={{ fontSize: "12px", color: "#64748B", display: "block", marginBottom: "8px", fontWeight: "700" }}>Business Name</label>
+            <input className="form-input" placeholder="Your Business Name" value={businessName} onChange={e => setBusinessName(e.target.value)} required />
+          </div>
+
+          <button className="btn-primary btn-hover" type="submit" disabled={loading} style={{ width: "100%" }}>
+            {loading ? "Saving..." : "Save Profile Details"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
 // MAIN APP ROUTER (THE CLEAN URL INTERCEPTOR - BULLETPROOF)
 // =========================================================
 function AppRouter() {
@@ -3068,6 +3149,9 @@ function AppRouter() {
   const [toast, setToast] = useState(null);
   
   const showToast = (title, message, type = "success") => { setToast({ title, message, type }); setTimeout(() => setToast(null), 5000); };
+
+  // 🎯 SECURITY: Initialize 24-Hour Idle Tracker
+  useIdleLogout(supabase);
 
   // 1. STATE NOW TRACKS CLEAN URL PATHS
   const [currentPath, setCurrentPath] = useState(window.location.pathname || "/");
@@ -3193,7 +3277,6 @@ function AppRouter() {
       return <PublicInvoice invoiceId={cleanId} showToast={showToast} currentUser={user} />;
     }
 
-    // 🎯 NEW PASSWORD RECOVERY ROUTE ADDED HERE!
     if (currentPath === "/update-password") return <UpdatePassword showToast={showToast} />;
     
     if (currentPath === "/terms") return <LegalPage type="terms" />;
@@ -3208,20 +3291,17 @@ function AppRouter() {
    // =========================================================
     // 🎯 THE FIX: BULLETPROOF ROUTE PARSING & FAILSAFE
     // =========================================================
-    // 1. Break the path into clean pieces, ignoring extra slashes
     const pathParts = currentPath.split('/').filter(Boolean);
     const dashboardIndex = pathParts.indexOf('dashboard');
     
-    // 2. Default to 'invoices' automatically
     let activeTab = "invoices"; 
     
-    // 3. Securely grab the exact tab name without trailing slashes
     if (dashboardIndex !== -1 && pathParts.length > dashboardIndex + 1) {
       activeTab = pathParts[dashboardIndex + 1].toLowerCase();
     }
     
-    // 4. THE FAILSAFE: If the browser mangles the URL to something that doesn't exist, force it back to invoices
-    const validTabs = ["invoices", "expenses", "clients", "payouts", "brand", "billing", "support", "admin"];
+    // 🎯 ADDED 'profile' to Valid Tabs array
+    const validTabs = ["invoices", "expenses", "clients", "payouts", "profile", "brand", "billing", "support", "admin"];
     if (!validTabs.includes(activeTab)) {
       activeTab = "invoices";
     }
@@ -3272,6 +3352,10 @@ function AppRouter() {
                 </a>
                 <a href="/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
                 <a href="/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
+                
+                {/* 🎯 NEW PROFILE LINK IN SIDEBAR */}
+                <a href="/dashboard/profile" className={`menu-btn ${activeTab === "profile" ? "active" : ""}`}>Profile Settings</a>
+                
                 <a href="/dashboard/brand" className={`menu-btn ${activeTab === "brand" ? "active" : ""}`}>Brand Settings</a>
                 <a href="/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
               </>
@@ -3323,6 +3407,10 @@ function AppRouter() {
           {activeTab === "expenses" && <ExpensesManager user={user} showToast={showToast} />} 
           {activeTab === "clients" && <ClientsManager user={user} showToast={showToast} />}
           {activeTab === "payouts" && <PayoutSettings user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
+          
+          {/* 🎯 RENDER THE NEW PROFILE HUB */}
+          {activeTab === "profile" && <ProfileSettings user={user} showToast={showToast} onUpdate={(u) => setUser(u)} />}
+          
           {activeTab === "brand" && <BrandSettings user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
           {activeTab === "billing" && <SubscriptionManager user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <SupportDashboard user={user} showToast={showToast} />}
@@ -3330,7 +3418,7 @@ function AppRouter() {
         </div>
       </div>
     );
-  }; // <-- 1. This securely closes the renderView() function
+  }; 
 
   return (
     <>
@@ -3339,13 +3427,13 @@ function AppRouter() {
       </ErrorBoundary>
       <Toast toast={toast} onClose={() => setToast(null)} />
       
-      {/* 🛡️ SECURITY FIX: Explicitly hide the floating button on the update-password route */}
-      {user && user.role === 'vendor' && currentPath !== "/dashboard/support" && !currentPath.startsWith("/pay/") && currentPath !== "/update-password" && (
-        <DraggableSupportButton />
-      )}
+      <div className="no-print">
+        {user && user.role === 'vendor' && currentPath !== "/dashboard/support" && !currentPath.startsWith("/pay/") && currentPath !== "/update-password" && (
+          <DraggableSupportButton />
+        )}
+      </div>
     </>
   );
-} // <-- 2. This securely closes the AppRouter() function
+} 
 
-// 3. Now the export sits safely outside!
 export default AppRouter;
