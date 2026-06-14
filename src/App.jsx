@@ -2416,11 +2416,14 @@ function PayoutSettings({ user, showToast }) {
     } else if (new Date(data.otp_expires_at) < new Date()) {
       showToast("Code Expired", "This code has expired. Please request a new one.", "error");
     } else {
-      // 🔓 SUCCESS! UNLOCK THE FORM
+      // 🔓 SUCCESS! WIPE THE FORM CLEAN AND UNLOCK IT
       setOtpMode(false);
       setIsEditing(true);
       setOtpCode("");
-      showToast("Identity Verified", "You may now update your bank details.", "success");
+      setBankCode(""); // Clears old bank
+      setAccountNumber(""); // Clears old account number
+      setResolvedName(""); // Clears old verified name
+      showToast("Identity Verified", "You may now enter your new bank details.", "success");
     }
     
     setOtpVerifying(false);
@@ -2588,7 +2591,7 @@ function PayoutSettings({ user, showToast }) {
               </button>
               
               {hasLinkedBank && (
-                <button type="button" onClick={() => { setIsEditing(false); setBankCode(user.bank_code); setAccountNumber(user.account_number); }} className="btn-hover" style={{ padding: "16px 24px", background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer" }}>
+                <button type="button" onClick={() => { setIsEditing(false); setBankCode(user.bank_code); setAccountNumber(user.account_number); setResolvedName(user.account_name); }} className="btn-hover" style={{ padding: "16px 24px", background: "#F1F5F9", color: "#64748B", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer" }}>
                   Cancel
                 </button>
               )}
