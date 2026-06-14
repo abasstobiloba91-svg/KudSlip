@@ -2298,7 +2298,7 @@ function ExpensesManager({ user, showToast }) {
 }
 
 // =========================================================
-// 10. PAYOUT SETTINGS (PREMIUM VIRTUAL CARD UI WITH REAL NAME)
+// 10. PAYOUT SETTINGS (WITH OTP SECURITY LOCK)
 // =========================================================
 function PayoutSettings({ user, showToast }) {
   const [bankCode, setBankCode] = useState("");
@@ -2308,7 +2308,12 @@ function PayoutSettings({ user, showToast }) {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Auto-fill if user already has a bank linked
+  // 🛡️ NEW SECURITY STATES
+  const [otpMode, setOtpMode] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+
   useEffect(() => {
     if (user?.bank_code) setBankCode(user.bank_code);
     if (user?.account_number) setAccountNumber(user.account_number);
@@ -2345,9 +2350,7 @@ function PayoutSettings({ user, showToast }) {
     { name: "Zenith Bank", code: "057" }
   ];
 
-  // 🎯 THE MAGIC: Automatically verify name when 10 digits are typed
   useEffect(() => {
-    // Only resolve if we are actively editing/creating, not just loading the saved data
     if (isEditing || !user?.bank_code) {
       if (accountNumber.length === 10 && bankCode) {
         verifyAccount();
@@ -2367,12 +2370,8 @@ function PayoutSettings({ user, showToast }) {
         body: JSON.stringify({ account_number: accountNumber, bank_code: bankCode })
       });
       const data = await response.json();
-      
-      if (response.ok && data.account_name) {
-        setResolvedName(data.account_name);
-      } else {
-        showToast("Verification Failed", data.error || "Could not verify this account number.", "error");
-      }
+      if (response.ok && data.account_name) setResolvedName(data.account_name);
+      else showToast("Verification Failed", data.error || "Could not verify this account number.", "error");
     } catch (err) {
       showToast("Network Error", "Failed to contact bank servers.", "error");
     } finally {
@@ -2380,15 +2379,57 @@ function PayoutSettings({ user, showToast }) {
     }
   };
 
-  const handleLinkBank = async (e) => {
+  // 🛡️ TRIGGER THE OTP EMAIL
+  const handleRequestUpdate = async () => {
+    setOtpSending(true);
+    try {
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, vendorId: user.id, businessName: user.business_name })
+      });
+      if (!res.ok) throw new Error("Failed to send security code.");
+      
+      setOtpMode(true);
+      showToast("Verification Code Sent", "Please check your email for the 6-digit code.", "info");
+    } catch (e) {
+      showToast("Error", e.message, "error");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  // 🛡️ VERIFY THE OTP TO UNLOCK THE FORM
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (!resolvedName) {
-      showToast("Verification Required", "Please wait for your account name to be verified.", "error");
-      return;
+    if (otpCode.length !== 6) return showToast("Invalid Format", "OTP must be exactly 6 digits.", "error");
+    
+    setOtpVerifying(true);
+    
+    // Fetch the stored OTP securely directly from the database
+    const { data, error } = await supabase.from('vendors').select('otp_code, otp_expires_at').eq('id', user.id).single();
+    
+    if (error || !data) {
+      showToast("Security Error", "Could not verify authorization.", "error");
+    } else if (data.otp_code !== otpCode) {
+      showToast("Invalid Code", "The security code you entered is incorrect.", "error");
+    } else if (new Date(data.otp_expires_at) < new Date()) {
+      showToast("Code Expired", "This code has expired. Please request a new one.", "error");
+    } else {
+      // 🔓 SUCCESS! UNLOCK THE FORM
+      setOtpMode(false);
+      setIsEditing(true);
+      setOtpCode("");
+      showToast("Identity Verified", "You may now update your bank details.", "success");
     }
     
+    setOtpVerifying(false);
+  };
+
+  const handleLinkBank = async (e) => {
+    e.preventDefault();
+    if (!resolvedName) return showToast("Verification Required", "Please wait for your account name to be verified.", "error");
     setLoading(true);
-    
     try {
       const response = await fetch('/api/create-subaccount', {
         method: 'POST',
@@ -2401,29 +2442,19 @@ function PayoutSettings({ user, showToast }) {
           percentage_charge: 0 
         })
       });
-
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.error || data.message || "Paystack rejected these details.");
 
-      const subaccountCode = data.subaccount_code;
-
-      // Make sure you have an 'account_name' column in your Supabase 'vendors' table!
-      const { error: dbError } = await supabase
-        .from('vendors')
-        .update({ 
-          bank_code: bankCode, 
-          account_number: accountNumber,
-          account_name: resolvedName, // Saving the verified real name to Supabase
-          paystack_subaccount_code: subaccountCode 
-        })
-        .eq('id', user.id);
+      const { error: dbError } = await supabase.from('vendors').update({ 
+        bank_code: bankCode, 
+        account_number: accountNumber,
+        account_name: resolvedName,
+        paystack_subaccount_code: data.subaccount_code 
+      }).eq('id', user.id);
 
       if (dbError) throw dbError;
-
-      showToast("Bank Verified!", "Paystack securely confirmed your account. Refreshing...", "success");
+      showToast("Bank Updated!", "Your new routing details have been verified and saved.", "success");
       setTimeout(() => window.location.reload(), 1500);
-
     } catch (err) {
       showToast("Link Failed", err.message, "error");
     } finally {
@@ -2434,15 +2465,43 @@ function PayoutSettings({ user, showToast }) {
   const hasLinkedBank = user?.bank_code && user?.account_number;
   const linkedBankName = NIGERIAN_BANKS.find(b => b.code === user?.bank_code)?.name || "Your Linked Bank";
   const maskedAccount = user?.account_number ? `•••• •••• ${user.account_number.slice(-4)}` : "";
-  
-  // 🎯 STRICTLY THE VERIFIED BANK ACCOUNT NAME ONLY (No Business Name)
   const displayAccountName = resolvedName || user?.account_name || "VERIFYING HOLDER...";
-
-  // Repeating Watermark SVG Background
   const watermarkPattern = `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'%3E%3Ctext x='10' y='50' font-family='sans-serif' font-size='14' font-weight='bold' transform='rotate(-45 50 50)'%3EKudiSlip%3C/text%3E%3C/g%3E%3C/svg%3E")`;
 
   return (
     <div style={{ maxWidth: "600px" }}>
+      
+      {/* 🛡️ OTP MODAL OVERLAY */}
+      {otpMode && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center", animation: "toastSlideIn 0.3s ease" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#3B82F6", margin: "0 auto 20px auto" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "12px", color: "#0F172A" }}>Security Verification</h3>
+            <p style={{ color: "#64748B", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px" }}>
+              To protect your money, we sent a 6-digit verification code to <strong>{user.email}</strong>.
+            </p>
+            <form onSubmit={handleVerifyOtp} style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
+              <input 
+                className="form-input" 
+                type="text" 
+                maxLength="6"
+                placeholder="Enter 6-digit code" 
+                value={otpCode} 
+                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ textAlign: "center", fontSize: "24px", letterSpacing: "8px", fontWeight: "900", padding: "16px" }}
+                required 
+              />
+              <button className="btn-primary btn-hover" type="submit" disabled={otpVerifying} style={{ padding: "14px", fontSize: "15px" }}>
+                {otpVerifying ? "Verifying..." : "Verify & Unlock"}
+              </button>
+              <button type="button" className="btn-secondary btn-hover" style={{ padding: "14px", border: "none", color: "#64748B", background: "transparent" }} onClick={() => setOtpMode(false)}>Cancel</button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>Payout Settings</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Manage your automated settlement destination.</div>
       
@@ -2466,34 +2525,16 @@ function PayoutSettings({ user, showToast }) {
               Your automated payout destination is securely linked. All paid invoices will be routed directly to this verified bank account.
             </p>
 
-            {/* =========================================
-                💳 THE PREMIUM VIRTUAL CARD UI
-                ========================================= */}
-            <div style={{ 
-              background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", 
-              backgroundImage: watermarkPattern + ", linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
-              padding: "32px", 
-              borderRadius: "20px", 
-              marginBottom: "32px", 
-              position: "relative", 
-              overflow: "hidden", 
-              color: "#FFF", 
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04)" 
-            }}>
-              
-              {/* EMV Chip & NFC Icon Row */}
+            <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", backgroundImage: watermarkPattern + ", linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", padding: "32px", borderRadius: "20px", marginBottom: "32px", position: "relative", overflow: "hidden", color: "#FFF", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", position: "relative", zIndex: 1 }}>
                 <div style={{ width: "45px", height: "35px", background: "linear-gradient(135deg, #FCD34D 0%, #D97706 100%)", borderRadius: "6px", opacity: 0.9 }}></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
               </div>
               
               <div style={{ position: "relative", zIndex: 1 }}>
-                {/* Account Number */}
                 <div style={{ fontSize: "28px", fontWeight: "900", color: "#FFFFFF", letterSpacing: "4px", fontFamily: "'Courier New', Courier, monospace", marginBottom: "24px", textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
                   {maskedAccount}
                 </div>
-                
-                {/* Name & Bank Footer */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                   <div>
                     <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Account Holder</div>
@@ -2507,8 +2548,10 @@ function PayoutSettings({ user, showToast }) {
               </div>
             </div>
 
-            <button onClick={() => setIsEditing(true)} className="btn-secondary btn-hover" style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-              Update Bank Details
+            {/* 🛡️ THE NEW SECURE UPDATE BUTTON */}
+            <button onClick={handleRequestUpdate} disabled={otpSending} className="btn-secondary btn-hover" style={{ width: "100%", padding: "14px", background: "#F8FAFC", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              {otpSending ? "Securing Session..." : "Securely Update Details"}
             </button>
           </div>
         ) : (
@@ -2525,7 +2568,6 @@ function PayoutSettings({ user, showToast }) {
               <input type="number" className="form-input" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} required placeholder="e.g. 0123456789" />
             </div>
 
-            {/* 🎯 THE RESOLVED NAME BOX */}
             {isResolving && (
               <div style={{ padding: "12px", background: "#F1F5F9", borderRadius: "8px", color: "#64748B", fontSize: "13px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
                 <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line></svg>
