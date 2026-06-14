@@ -1285,46 +1285,26 @@ function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
-      let paystackPayload = {
+            let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
+        // 🎯 THE FIX: Attach the invoice ID securely to the payment data
+        metadata: {
+          invoice_id: invoice.id
+        },
         callback: function(response) {
+          // Keep your existing callback as a fallback for the UI
           supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
             setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
-            
-            if (vendor?.email) {
-              fetch('/api/send-payment-alert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  vendorEmail: vendor.email,
-                  vendorName: vendor?.business_name || "Merchant",
-                  clientName: client?.name || "A client",
-                  amount: Number(invoice.amount).toLocaleString(),
-                  currency: CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency,
-                  invoiceId: invoice.id
-                })
-              }).catch(e => console.error("Alert failed to send:", e));
-            }
+            // ... existing alert logic
           });
         },
         onClose: function() { console.log("Payment window closed."); }
       };
 
-      if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
-        paystackPayload.subaccount = vendor.paystack_subaccount_code;
-        paystackPayload.bearer = "subaccount";
-      }
-
-      const handler = window.PaystackPop.setup(paystackPayload);
-      handler.openIframe();
-    } catch(err) {
-      showToast("Browser Blocked", "Your mobile browser blocked the popup. Please click again or disable shields.", "error");
-    }
-  };
 
   const submitReview = async () => {
     if (rating === 0) return showToast("Action Required", "Please select a star rating first.", "info");
