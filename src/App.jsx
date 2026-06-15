@@ -2429,35 +2429,59 @@ function PayoutSettings({ user, showToast }) {
     setOtpVerifying(false);
   };
 
-  const handleLinkBank = async (e) => {
+const handleLinkBank = async (e) => {
     e.preventDefault();
     if (!resolvedName) return showToast("Verification Required", "Please wait for your account name to be verified.", "error");
     setLoading(true);
+    
     try {
-      const response = await fetch('/api/create-subaccount', {
+      // 🧠 SMART ROUTING: Check if they already have a Paystack Subaccount
+      const isUpdating = !!user.paystack_subaccount_code;
+      const endpoint = isUpdating ? '/api/update-subaccount' : '/api/create-subaccount';
+      
+      const payload = isUpdating 
+        ? {
+            subaccount_code: user.paystack_subaccount_code, // Tell Paystack which one to overwrite
+            account_number: accountNumber,
+            bank_code: bankCode,
+            business_name: user.business_name || "KudiSlip Vendor"
+          }
+        : {
+            account_number: accountNumber,
+            bank_code: bankCode,
+            business_name: user.business_name || "KudiSlip Vendor",
+            vendor_id: user.id,
+            percentage_charge: 0 
+          };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          account_number: accountNumber,
-          bank_code: bankCode,
-          business_name: user.business_name || "KudiSlip Vendor",
-          vendor_id: user.id,
-          percentage_charge: 0 
-        })
+        body: JSON.stringify(payload)
       });
+      
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || data.message || "Paystack rejected these details.");
 
-      const { error: dbError } = await supabase.from('vendors').update({ 
+      // 💾 Save the new bank details to KudiSlip's Database
+      const updateData = {
         bank_code: bankCode, 
         account_number: accountNumber,
-        account_name: resolvedName,
-        paystack_subaccount_code: data.subaccount_code 
-      }).eq('id', user.id);
+        account_name: resolvedName
+      };
 
+      // If we created a BRAND NEW subaccount, save the new code to the database
+      // If we just updated an old one, keep the existing code!
+      if (!isUpdating && data.subaccount_code) {
+        updateData.paystack_subaccount_code = data.subaccount_code;
+      }
+
+      const { error: dbError } = await supabase.from('vendors').update(updateData).eq('id', user.id);
       if (dbError) throw dbError;
+
       showToast("Bank Updated!", "Your new routing details have been verified and saved.", "success");
       setTimeout(() => window.location.reload(), 1500);
+      
     } catch (err) {
       showToast("Link Failed", err.message, "error");
     } finally {
