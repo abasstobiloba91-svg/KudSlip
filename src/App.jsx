@@ -1,10 +1,31 @@
+import React, { useState, useEffect } from "react";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabaseClient";
+
+// Components
+import { BellIcon, AlertIcon } from './components/Icons';
+import Toast from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
+import SupportButton from './components/SupportButton';
+
+// Pages
 import LandingPage from './pages/LandingPage';
-import React, { useState, useEffect, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
+import Auth from './Auth'; // Or './pages/Auth' if you moved it
+import PublicInvoice from './pages/PublicInvoice';
+import LegalPage from './pages/LegalPage';
+import UpdatePassword from './UpdatePassword'; // Or './pages/UpdatePassword'
+
+// Dashboard Tabs (Make sure these match your exports!)
+import Invoices from './dashboard/Invoices';
+import Expenses from './dashboard/Expenses';
+import Clients from './dashboard/Clients';
+import Payouts from './dashboard/Payouts';
+import Profile from './dashboard/Profile';
+import Brand from './dashboard/Brand';
+import Billing from './dashboard/Billing';
+import Support from './dashboard/Support';
+import Admin from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
-import Auth from './Auth';
-import UpdatePassword from './UpdatePassword';
 
 // --- ENVIRONMENTS & ARTIFACTS ---
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
