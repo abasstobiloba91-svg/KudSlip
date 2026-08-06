@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from './supabaseClient'; // Adjust this to your actual supabase import path
 
-export default function VerificationTab({ user, showToast }) {
+export default function VerificationTab({ user, showToast, supabase }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [kycStatus, setKycStatus] = useState(user?.kyc_status || 'unverified');
