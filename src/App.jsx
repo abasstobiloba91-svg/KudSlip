@@ -206,12 +206,12 @@ export default function AppRouter() {
     }
 
     return (
-      <div className="dashboard-layout" style={{ paddingTop: "60px" }}>
+      <div className="dashboard-layout">
         
-        {/* 1. FIXED MOBILE TOP HEADER (Locks to the absolute top) */}
-        <div className="mobile-dashboard-header" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10000, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", height: "60px" }}>
+        {/* 1. FIXED MOBILE TOP HEADER (Taller height, bigger logo) */}
+        <div className="mobile-dashboard-header" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10000, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", height: "80px" }}>
           <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "32px", width: "auto", objectFit: "contain" }} />
+            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "48px", width: "auto", objectFit: "contain" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             
@@ -230,7 +230,7 @@ export default function AppRouter() {
                )}
             </div>
 
-            {/* TOGGLE BUTTON (Changes from ☰ to X) */}
+            {/* TOGGLE BUTTON */}
             <button 
               style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: "#0F172A", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }} 
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -242,16 +242,14 @@ export default function AppRouter() {
 
         <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
-        {/* 2. SIDEBAR (Removed the duplicate logo header inside it!) */}
-        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "60px", height: "calc(100vh - 60px)" }}>
+        {/* 2. SIDEBAR (Adjusted to start below the new 80px header) */}
+        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100vh - 80px)" }}>
           
-         {/* Desktop Logo Header (Hidden on Mobile) */}
          <div className="sidebar-header desktop-only" style={{ padding: "20px 24px", marginBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
             <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
          </div>
           
          <div className="sidebar-menu">
-            {/* ... Keep all your menu links exactly as they were ... */}
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
@@ -278,7 +276,6 @@ export default function AppRouter() {
           </div>
           <div style={{ flex: 1 }} />
           
-          {/* DESKTOP NOTIFICATION BELL */}
           <div style={{ padding: "0 32px", marginBottom: "24px" }}>
             <div style={{ position: "relative", display: "inline-block" }}>
                <div onClick={() => toggleNotifMenu('desktop')} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#64748B", fontWeight: "700", fontSize: "14px" }}>
@@ -289,9 +286,7 @@ export default function AppRouter() {
                    <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
                    <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                      {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
-                      notifs.map(n => (
-                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>{n.message}</div>
-                      ))
+                      notifs.map(n => <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>{n.message}</div>)
                      }
                    </div>
                  </div>
@@ -307,8 +302,8 @@ export default function AppRouter() {
           </div>
         </div>
 
-       {/* MAIN VIEW CONTROLLER PANEL */}
-        <div className="main-content" onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
+       {/* 3. MAIN VIEW CONTROLLER (Added marginTop: "80px" to prevent hiding under header) */}
+        <div className="main-content" style={{ marginTop: "80px" }} onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <Invoices user={user} showToast={showToast} />}
           {activeTab === "verification" && <VerificationTab user={user} showToast={showToast} supabase={supabase} />}
           {activeTab === "tax" && <TaxLedgerTab generateTaxReport={() => showToast("Coming Soon", "Tax export feature will be built next!", "info")} />}
@@ -323,8 +318,7 @@ export default function AppRouter() {
         </div>
       </div>
     );
-  }; 
-
+  };
   return (
     <>
       <ErrorBoundary>
