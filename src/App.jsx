@@ -252,7 +252,7 @@ return (
         {/* SIDEBAR (Uses 100dvh for mobile, scrollable, fixed footer) */}
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100dvh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           
-         <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }}>
+        <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }} onClick={() => setSidebarOpen(false)}>
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
