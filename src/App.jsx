@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase, SUPABASE_URL } from "./supabaseClient";
 
-// Core Components
+// 🎯 CLEAN IMPORTS (NO DUPLICATES)
 import { BellIcon, AlertIcon, ShieldIcon } from './components/Icons';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -9,12 +9,12 @@ import SupportButton from './components/SupportButton';
 
 // Pages
 import LandingPage from './pages/LandingPage';
-import Auth from './Auth'; // If you moved Auth to src/pages/Auth.jsx, change to './pages/Auth'
+import Auth from './Auth';
 import PublicInvoice from './pages/PublicInvoice';
 import LegalPage from './pages/LegalPage';
-import UpdatePassword from './UpdatePassword'; // If moved, change to './pages/UpdatePassword'
+import UpdatePassword from './UpdatePassword';
 
-// Dashboard Tabs
+// Dashboard Components
 import Invoices from './dashboard/Invoices';
 import Expenses from './dashboard/Expenses';
 import Clients from './dashboard/Clients';
@@ -208,10 +208,10 @@ export default function AppRouter() {
     return (
       <div className="dashboard-layout">
         
-        {/* MOBILE HEADER */}
-        <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}>
-          <a href="/dashboard/invoices" style={{ display: "block", textDecoration: "none" }}>
-            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", transform: "scale(2.0)", transformOrigin: "left center" }} />
+        {/* MOBILE TOP HEADER (Fixed Logo Styling) */}
+        <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px" }}>
+          <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "28px", width: "auto", objectFit: "contain" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{ position: "relative" }}>
@@ -236,9 +236,11 @@ export default function AppRouter() {
         <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-          <div className="sidebar-header">
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", transform: "scale(2.2)", transformOrigin: "left center" }} />
-            <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer" }} onClick={() => setSidebarOpen(false)}>×</button>
+          
+          {/* SIDEBAR HEADER (Fixed Logo Styling) */}
+          <div className="sidebar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 24px 16px 24px", marginBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "32px", width: "auto", objectFit: "contain" }} />
+            <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: "#64748B", lineHeight: 1 }} onClick={() => setSidebarOpen(false)}>×</button>
           </div>
           
          <div className="sidebar-menu">
