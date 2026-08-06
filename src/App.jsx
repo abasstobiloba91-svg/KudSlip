@@ -205,17 +205,17 @@ export default function AppRouter() {
       if (!validTabs.includes(activeTab)) activeTab = "invoices";
     }
 
-    return (
+return (
       <div className="dashboard-layout">
         
-        {/* 1. FIXED MOBILE TOP HEADER (Taller height, bigger logo) */}
+        {/* FIXED MOBILE TOP HEADER */}
         <div className="mobile-dashboard-header" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 10000, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", height: "80px" }}>
           <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
             <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "48px", width: "auto", objectFit: "contain" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             
-            {/* Notification Bell */}
+            {/* Header Notification Bell */}
             <div style={{ position: "relative" }}>
                <div onClick={() => toggleNotifMenu('mobile')}><BellIcon count={unreadCount} /></div>
                {activeNotifMenu === 'mobile' && (
@@ -230,7 +230,7 @@ export default function AppRouter() {
                )}
             </div>
 
-            {/* TOGGLE BUTTON */}
+            {/* Toggle Button */}
             <button 
               style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: "#0F172A", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }} 
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -242,21 +242,17 @@ export default function AppRouter() {
 
         <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
-        {/* 2. SIDEBAR (Adjusted to start below the new 80px header) */}
-        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100vh - 80px)" }}>
+        {/* SIDEBAR (Wider, no double logo, no extra notifications, scrollable) */}
+        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100vh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           
-         <div className="sidebar-header desktop-only" style={{ padding: "20px 24px", marginBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
-         </div>
-          
-         <div className="sidebar-menu">
+         <div className="sidebar-menu" style={{ paddingTop: "24px", flex: 1 }}>
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
                 <a href="/dashboard/verification" className={`menu-btn ${activeTab === "verification" ? "active" : ""}`}>Business Verification</a>
                 <a href="/dashboard/tax" className={`menu-btn ${activeTab === "tax" ? "active" : ""}`}>Tax Ledger</a>
-                <a href="/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  Profit Analytics <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px", fontWeight: "800"}}>PRO</span>
+                <a href="/dashboard/expenses" className={`menu-btn ${activeTab === "expenses" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", whiteSpace: "nowrap" }}>
+                  Profit Analytics <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px", fontWeight: "800", marginLeft: "8px"}}>PRO</span>
                 </a>
                 <a href="/dashboard/clients" className={`menu-btn ${activeTab === "clients" ? "active" : ""}`}>Client Directory</a>
                 <a href="/dashboard/payouts" className={`menu-btn ${activeTab === "payouts" ? "active" : ""}`}>Payout Settings</a>
@@ -274,35 +270,17 @@ export default function AppRouter() {
               </a>
             )}
           </div>
-          <div style={{ flex: 1 }} />
           
-          <div style={{ padding: "0 32px", marginBottom: "24px" }}>
-            <div style={{ position: "relative", display: "inline-block" }}>
-               <div onClick={() => toggleNotifMenu('desktop')} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#64748B", fontWeight: "700", fontSize: "14px" }}>
-                 <BellIcon count={unreadCount} /> Notifications
-               </div>
-               {activeNotifMenu === 'desktop' && (
-                 <div style={{ position: "absolute", bottom: "100%", left: "0", width: "300px", background: "#FFF", borderRadius: "12px", border: "1px solid #E2E8F0", boxShadow: "0 -10px 25px -5px rgba(0,0,0,0.1)", zIndex: 1000, overflow: "hidden", marginBottom: "12px" }}>
-                   <div style={{ padding: "12px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>Notifications</div>
-                   <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-                     {notifs.length === 0 ? <div style={{ padding: "24px", textAlign: "center", color: "#64748B", fontSize: "13px" }}>No recent notifications.</div> : 
-                      notifs.map(n => <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F1F5F9", background: n.is_read ? "#FFF" : "#EFF6FF", fontSize: "13px", color: "#0F172A", lineHeight: "1.5" }}>{n.message}</div>)
-                     }
-                   </div>
-                 </div>
-               )}
-            </div>
-          </div>
-
-          <div className="sidebar-footer">
-            <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* SIDEBAR FOOTER */}
+          <div className="sidebar-footer" style={{ padding: "24px" }}>
+            <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "700", marginBottom: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user?.business_name || user?.email}
             </div>
             <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: "#EF4444" }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
           </div>
         </div>
 
-       {/* 3. MAIN VIEW CONTROLLER (Added marginTop: "80px" to prevent hiding under header) */}
+       {/* MAIN VIEW CONTROLLER */}
         <div className="main-content" style={{ marginTop: "80px" }} onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <Invoices user={user} showToast={showToast} />}
           {activeTab === "verification" && <VerificationTab user={user} showToast={showToast} supabase={supabase} />}
