@@ -1,6 +1,3 @@
-// =========================================================
-// UPDATE PASSWORD COMPONENT (SECURE & BRAND ALIGNED)
-// =========================================================
 function UpdatePassword({ showToast }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -128,3 +125,4 @@ function useIdleLogout(supabaseClient) {
     };
   }, [supabaseClient]);
 }
+export default UpdatePassword;
