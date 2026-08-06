@@ -1,69 +1,105 @@
-// api/cron-reminders.js
+// =========================================================
+// API ROUTE: /api/send-whatsapp.js (WITH 3 FREE MONTHLY PINGS)
+// =========================================================
 import { createClient } from '@supabase/supabase-js';
-import twilio from 'twilio';
+
+const supabaseAdmin = createClient(
+  process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
-  // 1. SECURITY: Only allow Vercel's internal cron engine to trigger this
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized access. Invalid Cron Secret.' });
-  }
-
-  // 2. Initialize Supabase (Using Master Key to bypass RLS)
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  
-  // 3. Initialize Twilio
-  const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   try {
-    const today = new Date().toISOString();
+    const { invoiceId, vendorId, customerPhone, customerName, businessName, amount } = req.body;
 
-    // 4. Fetch OVERDUE invoices that belong to PREMIUM users
-    const { data: overdueInvoices, error } = await supabase
+    if (!customerPhone) throw new Error("Customer phone number is missing.");
+
+    // 1. SMART PHONE NUMBER FORMATTER
+    let cleanPhone = customerPhone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '234' + cleanPhone.substring(1);
+    } else if (!cleanPhone.startsWith('234')) {
+      cleanPhone = '234' + cleanPhone;
+    }
+
+    // 2. CHECK VENDOR SUBSCRIPTION STATUS
+    const { data: vendor, error: vendorError } = await supabaseAdmin
+      .from('vendors')
+      .select('subscription_tier')
+      .eq('id', vendorId)
+      .single();
+
+    if (vendorError) throw new Error("Could not verify vendor database profile.");
+
+    const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
+
+    // 🎯 3 FREE PINGS ENFORCER FOR FREE TIER
+    if (isFreeTier) {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // Count how many WhatsApp pings this vendor has sent since the 1st of this month
+      const { count, error: countError } = await supabaseAdmin
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('vendor_id', vendorId)
+        .eq('whatsapp_notified', true)
+        .gte('last_reminded_at', startOfMonth.toISOString());
+
+      if (countError) throw new Error("Error checking trial limits.");
+
+      if (count >= 3) {
+        // Return a 402 Payment Required code with upgrade instructions
+        return res.status(402).json({ 
+          requiresUpgrade: true, 
+          error: "You've used your 3 free WhatsApp reminders for this month. Upgrade to Pro to unlock unlimited tracking!" 
+        });
+      }
+    }
+
+    // 3. THE WHATSAPP API GATEWAY CALL
+    const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY;
+    const WHATSAPP_URL = process.env.WHATSAPP_URL || "https://api.sendchamp.com/api/v1/whatsapp/message/send";
+
+    const invoiceUrl = `https://www.kudislip.com.ng/invoice/${invoiceId}`;
+    const messageBody = `Hello ${customerName || 'Customer'},\n\nThis is a friendly reminder from ${businessName} regarding your pending invoice of ₦${Number(amount).toLocaleString()}.\n\nYou can view and pay your invoice securely here:\n${invoiceUrl}\n\nThank you!`;
+
+    if (WHATSAPP_API_KEY) {
+       const response = await fetch(WHATSAPP_URL, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${WHATSAPP_API_KEY}`
+         },
+         body: JSON.stringify({
+           recipient: cleanPhone,
+           message: messageBody,
+           sender_name: "KudiSlip"
+         })
+       });
+
+       if (!response.ok) {
+         const errorData = await response.json();
+         throw new Error(errorData.message || "WhatsApp Gateway Rejected Message");
+       }
+    } else {
+       console.log("⚠️ WHATSAPP_API_KEY missing. Simulating success for testing.");
+       console.log(`[SIMULATED WHATSAPP TO ${cleanPhone}]:`, messageBody);
+    }
+
+    // 4. LOG THE SUCCESSFUL SEND IN DATABASE
+    await supabaseAdmin
       .from('invoices')
-      .select(`
-        id, amount, currency, 
-        vendors!inner(business_name, subscription_tier), 
-        clients!inner(name, phone)
-      `)
-      .eq('status', 'pending')
-      .lt('due_date', today)
-      .eq('vendors.subscription_tier', 'premium'); // 💰 The Paywall Check
+      .update({ whatsapp_notified: true, last_reminded_at: new Date().toISOString() })
+      .eq('id', invoiceId);
 
-    if (error) throw error;
-    
-    if (!overdueInvoices || overdueInvoices.length === 0) {
-      return res.status(200).json({ message: "Zero overdue premium invoices today. Everyone paid!" });
-    }
+    return res.status(200).json({ success: true, message: "WhatsApp sent successfully." });
 
-    let messagesSent = 0;
-
-    // 5. Loop through and send the WhatsApp messages
-    for (const inv of overdueInvoices) {
-      const phone = inv.clients.phone;
-      if (!phone) continue; // Skip if no phone number
-
-      const amountFormat = `${inv.currency === 'USD' ? '$' : '₦'}${Number(inv.amount).toLocaleString()}`;
-      const paymentLink = `https://kudislip.vercel.app/pay/${inv.id}`;
-      
-      // Format the phone number to ensure it has a + (Twilio requires E.164 format like +234...)
-      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-
-      // 🚀 Send via Twilio WhatsApp API
-      await twilioClient.messages.create({
-        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-        to: `whatsapp:${formattedPhone}`,
-        body: `*Friendly Reminder from ${inv.vendors.business_name}* 👋\n\nHello ${inv.clients.name},\n\nThis is an automated reminder that your invoice for *${amountFormat}* is currently overdue.\n\nYou can easily view and settle this invoice securely using the link below:\n${paymentLink}\n\nThank you for your business! \n_Powered by KudiSlip_`
-      });
-
-      messagesSent++;
-    }
-
-    return res.status(200).json({ success: true, processed: overdueInvoices.length, sent: messagesSent });
-    
-  } catch (err) {
-    console.error("Cron Error:", err);
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("🔴 WhatsApp Send Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }
