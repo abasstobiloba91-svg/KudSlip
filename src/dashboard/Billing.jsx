@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, DESIGN } from '../supabaseClient';
 
 function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
   const [isProcessing, setIsProcessing] = useState(false);
