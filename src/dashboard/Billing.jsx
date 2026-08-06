@@ -1,72 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react';
 
-const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY; 
-
-export default function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
+export default function SubscriptionManager({ user, showToast }) {
   const [loading, setLoading] = useState(false);
-  const [isPaystackReady, setIsPaystackReady] = useState(false);
   const isPremium = user?.subscription_tier === 'premium';
 
-  useEffect(() => {
-    // Check if Paystack is already loaded globally
-    if (window.PaystackPop) {
-      setIsPaystackReady(true);
-      return;
-    }
-    
-    // If not, securely inject the script and WAIT for it to finish downloading
-    const script = document.createElement('script');
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.async = true;
-    script.onload = () => setIsPaystackReady(true); // Tells the app "I'm ready!"
-    script.onerror = () => console.error("Failed to load Paystack script");
-    document.body.appendChild(script);
-  }, []);
-
-  const handleUpgrade = () => {
-    if (!PAYSTACK_KEY) {
-      return showToast("Configuration Error", "Paystack Public Key is missing.", "error");
-    }
-
-    if (!isPaystackReady || !window.PaystackPop) {
-      return showToast("Loading Securely", "Payment gateway is connecting. Please wait one second and try again.", "info");
-    }
-
+  const handleUpgrade = async () => {
     setLoading(true);
-
     try {
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_KEY,
-        email: user.email,
-        amount: 15000 * 100, // Amount in kobo (₦15,000)
-        currency: 'NGN',
-        ref: 'KUDISLIP_PRO_' + Math.floor((Math.random() * 1000000000) + 1),
-        callback: async (response) => {
-          // Payment successful! Update Supabase
-          const { error } = await supabase
-            .from('vendors')
-            .update({ subscription_tier: 'premium' })
-            .eq('id', user.id);
-          
-          if (!error) {
-            onUpgradeSuccess();
-            showToast("Payment Successful!", "You are now a Premium Pro user.", "success");
-          } else {
-            showToast("Error", "Payment succeeded, but failed to update profile.", "error");
-          }
-          setLoading(false);
-        },
-        onClose: () => {
-          showToast("Cancelled", "Payment window closed.", "info");
-          setLoading(false); // Prevents the button from getting stuck!
-        }
+      // Calls your backend to generate the Paystack payment link
+      const res = await fetch('/api/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, vendorId: user.id })
       });
+      const data = await res.json();
 
-      handler.openIframe();
+      if (res.ok && data.authorization_url) {
+        // Redirects the user to Paystack's official payment page
+        window.location.href = data.authorization_url;
+      } else {
+        showToast("Error", data.error || "Could not generate payment link.", "error");
+        setLoading(false);
+      }
     } catch (err) {
-      console.error(err);
-      showToast("Error", "Could not initialize Paystack.", "error");
+      showToast("Error", "Network issue connecting to payment server.", "error");
       setLoading(false);
     }
   };
@@ -92,7 +49,7 @@ export default function SubscriptionManager({ user, onUpgradeSuccess, showToast 
               Upgrade to Premium Pro for ₦15,000/mo to remove KudiSlip branding, calculate foreign exchange rates live, and automatically pass gateway fees to clients.
             </p>
             <button className="btn-primary btn-premium btn-hover" style={{ width: "100%", padding: "14px" }} onClick={handleUpgrade} disabled={loading}>
-              {loading ? "Opening Paystack..." : "Upgrade to Premium Pro (₦15,000/mo)"}
+              {loading ? "Connecting to Paystack..." : "Upgrade to Premium Pro (₦15,000/mo)"}
             </button>
           </div>
         )}
