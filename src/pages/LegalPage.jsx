@@ -1,7 +1,15 @@
-// =========================================================
-// LEGAL PAGES (T&C and Privacy Policy)
-// =========================================================
-function LegalPage({ type }) {
+import React, { useEffect, useRef } from 'react';
+
+// Design tokens used in this view
+const DESIGN = {
+  border: "#E2E8F0",
+  textMuted: "#64748B",
+  textMain: "#0F172A"
+};
+
+const GlobalStyles = () => null;
+
+export default function LegalPage({ type }) {
   const isTerms = type === "terms";
   
   // 1. Create a physical anchor to the top of this component
@@ -122,23 +130,23 @@ function LegalPage({ type }) {
           </>
         )}
       </main>
+      
       {/* SOCIAL PROOF BANNER */}
-        <div style={{ padding: "0 0 80px 0", textAlign: "center", borderBottom: "1px solid #E2E8F0", marginBottom: "80px" }}>
-          <p style={{ fontSize: "12px", fontWeight: "800", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "32px" }}>Trusted by fast-growing merchants and businesses</p>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "48px", flexWrap: "wrap", opacity: 0.5, filter: "grayscale(100%)", transition: "opacity 0.3s ease" }}>
-            
-            {/* Realistic Random Business Names Styled as Logos */}
-            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", fontFamily: "serif" }}>Aura Boutiques</div>
-            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <div style={{ width: "16px", height: "16px", background: "#0F172A", borderRadius: "4px" }}></div>
-              Apex Logistics
-            </div>
-            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", fontStyle: "italic" }}>Lumina Tech</div>
-            <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", textTransform: "uppercase", letterSpacing: "1px" }}>NOVA RETAIL</div>
-            <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", letterSpacing: "2px", border: "2px solid #0F172A", padding: "2px 8px" }}>CREST</div>
-            
+      <div style={{ padding: "0 0 80px 0", textAlign: "center", borderBottom: "1px solid #E2E8F0", marginBottom: "80px" }}>
+        <p style={{ fontSize: "12px", fontWeight: "800", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "32px" }}>Trusted by fast-growing merchants and businesses</p>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "48px", flexWrap: "wrap", opacity: 0.5, filter: "grayscale(100%)", transition: "opacity 0.3s ease" }}>
+          
+          <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", fontFamily: "serif" }}>Aura Boutiques</div>
+          <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", letterSpacing: "-1px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <div style={{ width: "16px", height: "16px", background: "#0F172A", borderRadius: "4px" }}></div>
+            Apex Logistics
           </div>
+          <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", fontStyle: "italic" }}>Lumina Tech</div>
+          <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", textTransform: "uppercase", letterSpacing: "1px" }}>NOVA RETAIL</div>
+          <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", letterSpacing: "2px", border: "2px solid #0F172A", padding: "2px 8px" }}>CREST</div>
+          
         </div>
+      </div>
       
       <footer style={{ borderTop: `1px solid ${DESIGN.border}`, padding: "32px 24px", textAlign: "center", color: DESIGN.textMuted, fontSize: "13px" }}>
         © 2026 KudiSlip Technologies. All rights reserved.
