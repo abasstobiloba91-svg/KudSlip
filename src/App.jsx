@@ -106,7 +106,14 @@ export default function AppRouter() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [currentPath]);
 
-  useEffect(() => { setSidebarOpen(false); }, [currentPath]);
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   useEffect(() => {
     if (!supabase) { setIsLoading(false); return; }
