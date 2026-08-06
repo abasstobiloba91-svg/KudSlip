@@ -249,10 +249,7 @@ return (
 
         <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
-        {/* SIDEBAR (Wider, no double logo, no extra notifications, scrollable) */}
-        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100vh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
-          
-         {/* SIDEBAR (Now uses 100dvh for mobile, scrollable, with fixed footer) */}
+        {/* SIDEBAR (Uses 100dvh for mobile, scrollable, fixed footer) */}
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100dvh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           
          <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }}>
@@ -281,7 +278,7 @@ return (
             )}
           </div>
           
-          {/* SIDEBAR FOOTER (Name on top, Log out directly underneath) */}
+          {/* SIDEBAR FOOTER (Name on top, Log out underneath) */}
           <div className="sidebar-footer" style={{ padding: "24px", marginTop: "auto", borderTop: "1px solid #E2E8F0", background: "#FFFFFF" }}>
             <div style={{ fontSize: "14px", color: "#0F172A", fontWeight: "800", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user?.business_name || user?.email}
@@ -306,7 +303,6 @@ return (
         </div>
       </div>
     );
-  };
   return (
     <>
       <ErrorBoundary>
