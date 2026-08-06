@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-// Ensure you have PAYSTACK_PUBLIC_KEY exported in your supabaseClient.js!
 const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY; 
 
 export default function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
@@ -51,7 +50,7 @@ export default function SubscriptionManager({ user, onUpgradeSuccess, showToast 
         },
         onClose: () => {
           showToast("Cancelled", "Payment window closed.", "info");
-          setLoading(false); // <--- This prevents the button from getting stuck!
+          setLoading(false); // Prevents the button from getting stuck!
         }
       });
 
@@ -61,9 +60,6 @@ export default function SubscriptionManager({ user, onUpgradeSuccess, showToast 
       showToast("Error", "Could not initialize Paystack.", "error");
       setLoading(false);
     }
-  };
-
-    handler.openIframe();
   };
 
   return (
