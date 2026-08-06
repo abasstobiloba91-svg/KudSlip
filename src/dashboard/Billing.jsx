@@ -5,13 +5,22 @@ const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 
 export default function SubscriptionManager({ user, onUpgradeSuccess, showToast }) {
   const [loading, setLoading] = useState(false);
+  const [isPaystackReady, setIsPaystackReady] = useState(false);
   const isPremium = user?.subscription_tier === 'premium';
 
   useEffect(() => {
-    // Load Paystack script securely on mount
+    // Check if Paystack is already loaded globally
+    if (window.PaystackPop) {
+      setIsPaystackReady(true);
+      return;
+    }
+    
+    // If not, securely inject the script and WAIT for it to finish downloading
     const script = document.createElement('script');
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
+    script.onload = () => setIsPaystackReady(true); // Tells the app "I'm ready!"
+    script.onerror = () => console.error("Failed to load Paystack script");
     document.body.appendChild(script);
   }, []);
 
@@ -20,8 +29,8 @@ export default function SubscriptionManager({ user, onUpgradeSuccess, showToast 
       return showToast("Configuration Error", "Paystack Public Key is missing.", "error");
     }
 
-    if (!window.PaystackPop) {
-      return showToast("Error", "Payment gateway is loading. Please refresh the page.", "error");
+    if (!isPaystackReady || !window.PaystackPop) {
+      return showToast("Loading Securely", "Payment gateway is connecting. Please wait one second and try again.", "info");
     }
 
     setLoading(true);
