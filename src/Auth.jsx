@@ -22,10 +22,11 @@ export default function Auth({ onLoginSuccess, initialIsSignUp, showToast }) {
     setError("");
 
     try {
-      const response = await fetch('/api/send-reset-email', {
+      // 1. UPDATED PASSWORD RESET FETCH
+      const response = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email })
+        body: JSON.stringify({ type: 'reset_email', email: email })
       });
 
       const data = await response.json();
@@ -74,10 +75,11 @@ export default function Auth({ onLoginSuccess, initialIsSignUp, showToast }) {
         }]);
         if (dbRes.error) throw dbRes.error;
         
-        await fetch('/api/send-welcome', {
+        // 2. UPDATED WELCOME EMAIL FETCH
+        await fetch('/api/mailer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userEmail: email, businessName: businessName })
+          body: JSON.stringify({ type: 'welcome', userEmail: email, businessName: businessName })
         }).catch(err => console.log(err));
       }
       
