@@ -211,7 +211,7 @@ export default function AppRouter() {
         {/* MOBILE TOP HEADER (Fixed Logo Styling) */}
         <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px" }}>
           <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "28px", width: "auto", objectFit: "contain" }} />
+            <img src="/logo.png" alt="KudiSlip" style={{ height: "88px", width: "auto", objectFit: "contain", margin: "-12px 0" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{ position: "relative" }}>
