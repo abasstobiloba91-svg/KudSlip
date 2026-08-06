@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
+import VerificationTab from './components/VerificationTab';
+import TaxLedgerTab from './components/TaxLedgerTab';
 
 // --- ENVIRONMENTS & ARTIFACTS ---
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
