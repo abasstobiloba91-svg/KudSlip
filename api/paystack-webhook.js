@@ -1,6 +1,6 @@
 // =========================================================
 // API ROUTE: /api/paystack-webhook 
-// (SECURE DATABASE + EMAIL + REALTIME NOTIFICATIONS)
+// (SECURE DATABASE + EMAIL + REALTIME NOTIFICATIONS + SUBSCRIPTIONS)
 // =========================================================
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
@@ -35,9 +35,39 @@ export default async function handler(req, res) {
 
     // 2. Process Successful Charges
     if (event.event === 'charge.success') {
-      const invoiceId = event.data?.metadata?.invoice_id;
-      
-      if (invoiceId) {
+      const metadata = event.data?.metadata || {};
+
+      // ==============================================================
+      // PATH A: PRO SUBSCRIPTION UPGRADE
+      // ==============================================================
+      if (metadata.type === 'subscription_upgrade') {
+        const vendorId = metadata.vendor_id;
+        
+        // Calculate exactly 30 days from right now
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        // Upgrade them to premium and set the 30-day clock using Admin Privileges
+        const { error: upgradeError } = await supabaseAdmin
+          .from('vendors')
+          .update({ 
+            subscription_tier: 'premium',
+            subscription_expires_at: expiresAt 
+          })
+          .eq('id', vendorId);
+
+        if (upgradeError) {
+          console.error("🔴 Failed to upgrade vendor:", upgradeError);
+          return res.status(500).json({ error: "Failed to upgrade vendor" });
+        }
+
+        console.log(`✅ Vendor ${vendorId} upgraded to Premium until ${expiresAt}`);
+      }
+
+      // ==============================================================
+      // PATH B: INVOICE PAYMENT
+      // ==============================================================
+      else if (metadata.invoice_id) {
+        const invoiceId = metadata.invoice_id;
         console.log(`Processing backend updates for Invoice: ${invoiceId}`);
 
         // Fetch all required details natively on the server side
@@ -47,7 +77,7 @@ export default async function handler(req, res) {
         const { data: vendor } = await supabaseAdmin.from('vendors').select('*').eq('id', invoice.vendor_id).single();
         const { data: client } = await supabaseAdmin.from('clients').select('*').eq('id', invoice.client_id).single();
 
-        // 3. Update the Database status to PAID
+        // Update the Database status to PAID
         const { error: updateErr } = await supabaseAdmin
           .from('invoices')
           .update({ status: 'paid', payment_method: 'paystack' })
@@ -62,20 +92,19 @@ export default async function handler(req, res) {
         const symbol = CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency;
         const amountFormatted = Number(invoice.amount).toLocaleString();
 
-        // 4. 🔥 TRIGGER SERVER-SIDE EMAIL
+        // 🔥 TRIGGER SERVER-SIDE EMAIL (NOW USING MASTER MAILER)
         if (vendor?.email) {
-          // Determine the site's base deployment URL dynamically
           const protocol = req.headers['x-forwarded-proto'] || 'https';
           const host = req.headers.host;
           const baseUrl = `${protocol}://${host}`;
 
-          console.log("Triggering server-to-server email alert...");
+          console.log("Triggering server-to-server email alert via Master Mailer...");
           
-          // Call your existing email alert endpoint directly from the backend
-          await fetch(`${baseUrl}/api/send-payment-alert`, {
+          await fetch(`${baseUrl}/api/mailer`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              type: 'payment_alert', // Tells mailer which template to use
               vendorEmail: vendor.email,
               vendorName: vendor?.business_name || "Merchant",
               clientName: client?.name || "A client",
@@ -86,11 +115,10 @@ export default async function handler(req, res) {
           }).catch(e => console.error("Server-side email trigger failed:", e));
         }
 
-        // 5. 🔥 TRIGGER IN-APP REALTIME NOTIFICATION
+        // 🔥 TRIGGER IN-APP REALTIME NOTIFICATION
         if (vendor?.id) {
           console.log("Inserting realtime notification...");
           
-          // We use user_id here so it perfectly matches the logic in AppRouter checking for user_id
           const { error: notifErr } = await supabaseAdmin.from('notifications').insert([{
             user_id: vendor.id, 
             message: `Cha-Ching! ${client?.name || "A client"} just paid ${symbol}${amountFormatted}`,
