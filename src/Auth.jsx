@@ -23,11 +23,11 @@ export default function Auth({ onLoginSuccess, initialIsSignUp, showToast }) {
 
     try {
       // 1. UPDATED PASSWORD RESET FETCH
-      const response = await fetch('/api/mailer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'reset_email', email: email })
-      });
+      await fetch('/api/mailer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'welcome', userEmail: email, businessName: businessName })
+        }).catch(err => console.log(err));
 
       const data = await response.json();
 
