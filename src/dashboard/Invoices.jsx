@@ -142,14 +142,18 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       const symbol = currencySymbols[invoice.currency || 'NGN'] || invoice.currency;
       const amountFormatted = `${symbol}${Number(invoice.amount).toLocaleString()}`;
 
-      // 3. Call the Master Mailer
+      // 3. Smartly extract the client details (handling Supabase nested objects)
+      const targetEmail = invoice.clients?.email || invoice.client?.email || invoice.client_email;
+      const targetName = invoice.clients?.name || invoice.client?.name || invoice.client_name || "Client";
+
+      // 4. Call the Master Mailer
       const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'invoice', // The magic key that tells mailer.js which template to use!
-          clientEmail: invoice.client_email, // Maps your DB column to the mailer
-          clientName: invoice.client_name,
+          type: 'invoice', 
+          clientEmail: targetEmail, // Safely extracted email!
+          clientName: targetName,
           invoiceAmount: amountFormatted,
           invoiceLink: invoiceLink,
           vendorName: user?.business_name || "KudiSlip Merchant",
@@ -167,7 +171,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       
     } catch (err) {
       console.error("Email error:", err);
-      showToast("Network Error", "Something went wrong contacting the mail server.", "error");
+      showToast("Error", "Could not send email. Please try again.", "error");
     }
   };
 
