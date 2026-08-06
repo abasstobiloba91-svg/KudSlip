@@ -130,42 +130,44 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     setLoading(false);
   };
 
-  const handleSendEmail = async (inv) => {
-    if (!inv || !inv.clients?.email) {
-      showToast("Missing Info", "This client doesn't have an email address saved.", "error");
-      return;
-    }
-
-    setSendingEmailId(inv.id);
-    showToast("Sending...", "Dispatching email via Resend...", "info");
-
+ const handleSendEmail = async (invoice) => {
     try {
+      showToast("Sending...", "Preparing email...", "info");
+
+      // 1. Generate the secure payment link
+      const invoiceLink = `https://${window.location.host}/pay/${invoice.id}`;
+      
+      // 2. Format the currency correctly
+      const currencySymbols = { NGN: "₦", USD: "$", GBP: "£" };
+      const symbol = currencySymbols[invoice.currency || 'NGN'] || invoice.currency;
+      const amountFormatted = `${symbol}${Number(invoice.amount).toLocaleString()}`;
+
+      // 3. Call the Master Mailer
       const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'invoice', // <--- THIS IS THE MAGIC WORD WE ADDED
-          clientEmail: clientEmail, 
-          clientName: clientName,
-          invoiceAmount: invoiceAmount,
+          type: 'invoice', // The magic key that tells mailer.js which template to use!
+          clientEmail: invoice.client_email, // Maps your DB column to the mailer
+          clientName: invoice.client_name,
+          invoiceAmount: amountFormatted,
           invoiceLink: invoiceLink,
-          vendorName: vendorName,
-          invoiceId: invoiceId
+          vendorName: user?.business_name || "KudiSlip Merchant",
+          invoiceId: invoice.id
         })
       });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        showToast("Delivered!", `Invoice sent to ${inv.clients.email}`, "success");
-      } else {
-        showToast("Delivery Failed", data.error || "Could not send email.", "error");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send email");
       }
-    } catch (error) {
-      console.error("Email Error:", error);
+
+      showToast("Success", "Invoice emailed successfully!", "success");
+      
+    } catch (err) {
+      console.error("Email error:", err);
       showToast("Network Error", "Something went wrong contacting the mail server.", "error");
-    } finally {
-      setSendingEmailId(null);
     }
   };
 
