@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 function SupportDashboard({ user, showToast }) {
@@ -21,16 +21,16 @@ function VendorChat({ user, showToast }) {
     
     // 1. Listen for Database Messages
     const msgChannel = supabase.channel('vendor_realtime_chat')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user.id}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `vendor_id=eq.${user?.id}` }, (payload) => {
         setHistory(prev => {
           if (prev.find(msg => msg.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
-        setIsSupportTyping(false); // Stop typing animation if message arrives
+        setIsSupportTyping(false);
       }).subscribe();
 
-    // 2. Listen for 'Typing' Broadcasts (Invisible signals)
-    const typeChannel = supabase.channel(`typing_${user.id}`, { config: { broadcast: { ack: false } } })
+    // 2. Listen for 'Typing' Broadcasts
+    const typeChannel = supabase.channel(`typing_${user?.id}`, { config: { broadcast: { ack: false } } })
       .on('broadcast', { event: 'typing' }, (payload) => {
         if (payload.payload.sender === 'support') {
           setIsSupportTyping(true);
@@ -45,18 +45,18 @@ function VendorChat({ user, showToast }) {
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [history, isSupportTyping]);
 
   const fetchMessages = async () => {
-    if (!supabase) return;
+    if (!supabase || !user?.id) return;
     const { data } = await supabase.from('support_messages').select('*').eq('vendor_id', user.id).order('created_at', { ascending: true });
     if (data) setHistory(data);
     setLoading(false);
   };
 
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !user?.id) return;
     const tempMessage = message;
     setMessage(""); 
     
-    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `Ticket Update: ${user.business_name} sent a new message.`, is_read: false }]);
+    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `Ticket Update: ${user.business_name || "Merchant"} sent a new message.`, is_read: false }]);
     const { error } = await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'user', message: tempMessage }]);
     if (error) { showToast("Error", error.message, "error"); setMessage(tempMessage); }
     else { fetchMessages(); }
@@ -64,17 +64,21 @@ function VendorChat({ user, showToast }) {
 
   const handleTyping = (e) => {
     setMessage(e.target.value);
-    supabase.channel(`typing_${user.id}`).send({ type: 'broadcast', event: 'typing', payload: { sender: 'user' } });
+    if (user?.id) {
+      supabase.channel(`typing_${user.id}`).send({ type: 'broadcast', event: 'typing', payload: { sender: 'user' } });
+    }
   };
 
   const handleReopen = async () => {
+    if (!user?.id) return;
     await supabase.from('support_messages').insert([{ vendor_id: user.id, sender: 'system', message: 'TICKET_REOPENED' }]);
-    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `⚠️ ${user.business_name} REOPENED their support ticket.`, is_read: false }]);
+    await supabase.from('notifications').insert([{ user_id: 'SYSTEM_ADMIN', message: `⚠️ ${user.business_name || "Merchant"} REOPENED their support ticket.`, is_read: false }]);
     fetchMessages();
     showToast("Ticket Reopened", "Support has been notified.", "info");
   };
 
   const isClosed = history.length > 0 && history[history.length - 1].message === 'TICKET_CLOSED';
+  const ticketId = user?.id ? user.id.substring(0, 6).toUpperCase() : "000000";
 
   return (
     <div style={{ maxWidth: "800px", height: "100%", display: "flex", flexDirection: "column" }}>
@@ -83,13 +87,13 @@ function VendorChat({ user, showToast }) {
       
       <div style={{ background: "#FFFFFF", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", flexDirection: "column", flex: 1, minHeight: "500px", overflow: "hidden" }}>
          <div style={{ padding: "16px 24px", borderBottom: "1px solid #000000", background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontWeight: "900", fontSize: "16px", color: "#000000", textTransform: "uppercase", letterSpacing: "1px" }}>Ticket #TKT-{user.id.substring(0,6).toUpperCase()}</div>
+            <div style={{ fontWeight: "900", fontSize: "16px", color: "#000000", textTransform: "uppercase", letterSpacing: "1px" }}>Ticket #TKT-{ticketId}</div>
             <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "800", background: isClosed ? "#F1F5F9" : "#000000", color: isClosed ? "#64748B" : "#FFFFFF" }}>{isClosed ? "CLOSED" : "OPEN"}</span>
          </div>
 
          <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ alignSelf: "flex-start", background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "16px", borderRadius: "0 16px 16px 16px", maxWidth: "80%", fontSize: "14px", color: "#000000", lineHeight: "1.6" }}>
-              <strong>KudiSlip Support</strong><br/>Hello {user?.business_name}! Please describe the issue you are facing and an engineer will review it shortly.
+              <strong>KudiSlip Support</strong><br/>Hello {user?.business_name || "there"}! Please describe the issue you are facing and an engineer will review it shortly.
             </div>
             
             {loading && <div style={{ textAlign: "center", color: "#64748B", fontSize: "12px" }}>Loading ticket data...</div>}
@@ -133,9 +137,7 @@ function VendorChat({ user, showToast }) {
     </div>
   );
 }
-// ---------------------------------------------------------
-// 13B. MASTER INBOX (WITH NAMES & TYPING INDICATORS)
-// ---------------------------------------------------------
+
 function AdminSupportInbox({ user, showToast }) {
   const [messages, setMessages] = useState([]);
   const [vendors, setVendors] = useState({});
@@ -156,7 +158,6 @@ function AdminSupportInbox({ user, showToast }) {
     return () => { window.removeEventListener('resize', handleResize); supabase.removeChannel(channel); };
   }, []);
 
-  // Dynamically listen for typing ONLY for the actively selected vendor
   useEffect(() => {
     if (!activeVendorId) return;
     setIsUserTyping(false);
@@ -172,14 +173,13 @@ function AdminSupportInbox({ user, showToast }) {
     return () => supabase.removeChannel(typeChannel);
   }, [activeVendorId]);
 
- const fetchData = async () => {
+  const fetchData = async () => {
     if (!supabase) return;
     const [msgRes, venRes] = await Promise.all([
       supabase.from('support_messages').select('*').order('created_at', { ascending: true }),
       supabase.from('vendors').select('id, business_name, email')
     ]);
     
-    // 🚨 THIS WILL POP UP THE EXACT ERROR 🚨
     if (venRes.error) {
        showToast("Vendor Fetch Error", venRes.error.message, "error");
        console.error("Vendor fetch failed:", venRes.error);
@@ -310,70 +310,5 @@ function AdminSupportInbox({ user, showToast }) {
     </div>
   );
 }
-// =========================================================
-// DRAGGABLE SUPPORT BUTTON COMPONENT (PREMIUM MONOCHROME)
-// =========================================================
-function DraggableSupportButton() {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const hasMoved = useRef(false);
-
-  const handlePointerDown = (e) => {
-    setIsDragging(true);
-    hasMoved.current = false;
-    dragStart.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-    e.target.setPointerCapture(e.pointerId); 
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging) return;
-    hasMoved.current = true;
-    setPos({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
-  };
-
-  const handlePointerUp = (e) => {
-    setIsDragging(false);
-    e.target.releasePointerCapture(e.pointerId);
-  };
-
-  return (
-    <a
-      href="/dashboard/support"
-      onClick={(e) => { 
-        if (hasMoved.current) e.preventDefault(); 
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp} 
-      className="btn-primary btn-hover"
-      style={{ 
-        position: "fixed", 
-        bottom: "24px", 
-        right: "24px", 
-        transform: `translate(${pos.x}px, ${pos.y}px)`, 
-        borderRadius: "50px", 
-        padding: "14px 20px", 
-        display: "flex", 
-        alignItems: "center", 
-        gap: "8px", 
-        zIndex: 9999, 
-        boxShadow: isDragging ? "0 15px 35px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.3)", 
-        textDecoration: "none", 
-        touchAction: "none", 
-        cursor: isDragging ? "grabbing" : "grab",
-        userSelect: "none",
-        color: "#FFFFFF",
-        backgroundColor: "#000000", // 🎯 Updated to Premium Black
-        fontFamily: "inherit"
-      }}
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 
-      <span className="support-text-mobile" style={{ fontWeight: "700" }}>Support</span>
-    </a>
-  );
-}
-
 
 export default SupportDashboard;
