@@ -252,7 +252,10 @@ return (
         {/* SIDEBAR (Wider, no double logo, no extra notifications, scrollable) */}
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100vh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           
-         <div className="sidebar-menu" style={{ paddingTop: "24px", flex: 1 }}>
+         {/* SIDEBAR (Now uses 100dvh for mobile, scrollable, with fixed footer) */}
+        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100dvh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          
+         <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }}>
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
@@ -278,12 +281,12 @@ return (
             )}
           </div>
           
-          {/* SIDEBAR FOOTER */}
-          <div className="sidebar-footer" style={{ padding: "24px" }}>
-            <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "700", marginBottom: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {/* SIDEBAR FOOTER (Name on top, Log out directly underneath) */}
+          <div className="sidebar-footer" style={{ padding: "24px", marginTop: "auto", borderTop: "1px solid #E2E8F0", background: "#FFFFFF" }}>
+            <div style={{ fontSize: "14px", color: "#0F172A", fontWeight: "800", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user?.business_name || user?.email}
             </div>
-            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: "#EF4444" }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
+            <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA" }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
           </div>
         </div>
 
