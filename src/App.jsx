@@ -287,7 +287,7 @@ return (
           </div>
         </div>
 
-       {/* MAIN VIEW CONTROLLER */}
+  
         <div className="main-content" style={{ marginTop: "80px" }} onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <Invoices user={user} showToast={showToast} />}
           {activeTab === "verification" && <VerificationTab user={user} showToast={showToast} supabase={supabase} />}
@@ -303,6 +303,8 @@ return (
         </div>
       </div>
     );
+  };
+  
   return (
     <>
       <ErrorBoundary>
