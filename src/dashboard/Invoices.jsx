@@ -140,16 +140,17 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Sending...", "Dispatching email via Resend...", "info");
 
     try {
-      const response = await fetch('/api/send-invoice', {
+      const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientEmail: inv.clients.email,
-          clientName: inv.clients.name || "Valued Client",
-          invoiceAmount: inv.amount,
-          invoiceLink: `${window.location.origin}/pay/${inv.id}`,
-          vendorName: user.business_name || "KudiSlip Merchant",
-          invoiceId: inv.id 
+          type: 'invoice', // <--- THIS IS THE MAGIC WORD WE ADDED
+          clientEmail: clientEmail, 
+          clientName: clientName,
+          invoiceAmount: invoiceAmount,
+          invoiceLink: invoiceLink,
+          vendorName: vendorName,
+          invoiceId: invoiceId
         })
       });
 
