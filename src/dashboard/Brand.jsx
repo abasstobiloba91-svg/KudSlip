@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react';
+import { supabase, DESIGN } from '../supabaseClient';
+import { PaintIcon, AlertIcon } from '../components/Icons';
 
 function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
