@@ -21,34 +21,47 @@ export default function SubscriptionManager({ user, onUpgradeSuccess, showToast 
       return showToast("Configuration Error", "Paystack Public Key is missing.", "error");
     }
 
+    if (!window.PaystackPop) {
+      return showToast("Error", "Payment gateway is loading. Please refresh the page.", "error");
+    }
+
     setLoading(true);
 
-    const handler = window.PaystackPop.setup({
-      key: PAYSTACK_KEY,
-      email: user.email,
-      amount: 15000 * 100, // Amount in kobo (₦15,000)
-      currency: 'NGN',
-      ref: 'KUDISLIP_' + Math.floor((Math.random() * 1000000000) + 1),
-      callback: async (response) => {
-        // Payment successful! Update Supabase
-        const { error } = await supabase
-          .from('vendors')
-          .update({ subscription_tier: 'premium' })
-          .eq('id', user.id);
-        
-        if (!error) {
-          onUpgradeSuccess();
-          showToast("Payment Successful!", "You are now a Premium Pro user.", "success");
-        } else {
-          showToast("Error", "Payment succeeded, but failed to update profile.", "error");
+    try {
+      const handler = window.PaystackPop.setup({
+        key: PAYSTACK_KEY,
+        email: user.email,
+        amount: 15000 * 100, // Amount in kobo (₦15,000)
+        currency: 'NGN',
+        ref: 'KUDISLIP_PRO_' + Math.floor((Math.random() * 1000000000) + 1),
+        callback: async (response) => {
+          // Payment successful! Update Supabase
+          const { error } = await supabase
+            .from('vendors')
+            .update({ subscription_tier: 'premium' })
+            .eq('id', user.id);
+          
+          if (!error) {
+            onUpgradeSuccess();
+            showToast("Payment Successful!", "You are now a Premium Pro user.", "success");
+          } else {
+            showToast("Error", "Payment succeeded, but failed to update profile.", "error");
+          }
+          setLoading(false);
+        },
+        onClose: () => {
+          showToast("Cancelled", "Payment window closed.", "info");
+          setLoading(false); // <--- This prevents the button from getting stuck!
         }
-        setLoading(false);
-      },
-      onClose: () => {
-        showToast("Cancelled", "Payment window closed.", "info");
-        setLoading(false);
-      }
-    });
+      });
+
+      handler.openIframe();
+    } catch (err) {
+      console.error(err);
+      showToast("Error", "Could not initialize Paystack.", "error");
+      setLoading(false);
+    }
+  };
 
     handler.openIframe();
   };
