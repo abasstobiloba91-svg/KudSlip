@@ -1,3 +1,9 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient'; // Make sure this path points to your actual supabase file!
+
+// (If you have a GlobalStyles import, keep it up here too)
+// import { GlobalStyles } from './SomeFile'; 
+
 function UpdatePassword({ showToast }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,7 +51,8 @@ function UpdatePassword({ showToast }) {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#F8FAFC", fontFamily: "inherit" }}>
-      <GlobalStyles />
+      {/* If GlobalStyles is undefined, just remove the line below */}
+      {/* <GlobalStyles /> */}
       
       <div style={{ height: "60px", marginBottom: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "50px", transform: "scale(2)", transformOrigin: "center center" }} />
@@ -100,7 +107,7 @@ function UpdatePassword({ showToast }) {
 // =========================================================
 // SECURITY: 24-Hour Inactivity Auto-Logout
 // =========================================================
-function useIdleLogout(supabaseClient) {
+export function useIdleLogout(supabaseClient) {
   useEffect(() => {
     let timeoutId;
     const resetTimer = () => {
@@ -125,4 +132,5 @@ function useIdleLogout(supabaseClient) {
     };
   }, [supabaseClient]);
 }
+
 export default UpdatePassword;
