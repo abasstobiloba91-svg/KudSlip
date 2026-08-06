@@ -208,12 +208,13 @@ export default function AppRouter() {
     return (
       <div className="dashboard-layout">
         
-        {/* MOBILE TOP HEADER (Fixed Logo Styling) */}
-        <div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 999, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px" }}>
-          <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "88px", width: "auto", objectFit: "contain", margin: "-12px 0" }} />
-          </a>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+       {/* MOBILE HEADER */}
+<div className="mobile-dashboard-header" style={{ position: "sticky", top: 0, zIndex: 998, background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px" }}>
+  <a href="/dashboard/invoices" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+    <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+  </a>
+  
+  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{ position: "relative" }}>
                <div onClick={() => toggleNotifMenu('mobile')}><BellIcon count={unreadCount} /></div>
                {activeNotifMenu === 'mobile' && (
@@ -237,11 +238,22 @@ export default function AppRouter() {
 
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           
-          {/* SIDEBAR HEADER (Fixed Logo Styling) */}
-          <div className="sidebar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 24px 16px 24px", marginBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
-            <img src="/logo.png" alt="KudiSlip" style={{ height: "32px", width: "auto", objectFit: "contain" }} />
-            <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "28px", cursor: "pointer", color: "#64748B", lineHeight: 1 }} onClick={() => setSidebarOpen(false)}>×</button>
-          </div>
+
+<div className="sidebar-header" style={{
+  position: "sticky",
+  top: 0,
+  background: "#FFFFFF",
+  zIndex: 1001,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "20px 24px 16px 24px",
+  margin: "0 0 16px 0",
+  borderBottom: "1px solid #E2E8F0"
+}}>
+  <img src="/logo.png" alt="KudiSlip" style={{ height: "44px", width: "auto", objectFit: "contain" }} />
+  <button className="mobile-close-btn" style={{ background: "none", border: "none", fontSize: "32px", cursor: "pointer", color: "#0F172A", lineHeight: 1, padding: "4px" }} onClick={() => setSidebarOpen(false)}>×</button>
+</div>
           
          <div className="sidebar-menu">
             {user.role !== 'support' && (
