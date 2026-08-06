@@ -2608,5 +2608,29 @@ function AppRouter() {
     </>
   );
 } 
+// Security Hook
+function useIdleLogout(supabaseClient) {
+  useEffect(() => {
+    let timeoutId;
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (supabaseClient) {
+          supabaseClient.auth.signOut().then(() => {
+            window.location.href = '/login';
+          });
+        }
+      }, 86400000); 
+    };
 
+    const events = ['mousemove', 'keydown', 'scroll', 'click'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer(); 
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [supabaseClient]);
+}
 export default AppRouter;
