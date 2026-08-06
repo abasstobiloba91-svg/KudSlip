@@ -1,4 +1,24 @@
-function PublicInvoice({ invoiceId, showToast, currentUser }) {
+import React, { useState, useEffect } from 'react';
+import { supabase, PAYSTACK_PUBLIC_KEY } from '../supabaseClient';
+import { AlertIcon } from '../components/Icons';
+
+// Helper hook to dynamically inject Paystack inline SDK
+const usePaystack = () => {
+  useEffect(() => {
+    if (!document.getElementById('paystack-inline-js')) {
+      const script = document.createElement('script');
+      script.id = 'paystack-inline-js';
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+};
+
+// Safe fallback for GlobalStyles
+const GlobalStyles = () => null;
+
+export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   usePaystack();
   const [invoice, setInvoice] = useState(null);
   const [vendor, setVendor] = useState(null);
