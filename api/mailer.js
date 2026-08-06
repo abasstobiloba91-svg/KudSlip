@@ -82,7 +82,7 @@ export default async function handler(req, res) {
             <p style="color: #64748B; font-size: 13px; margin: 0 0 12px 0;">
               <a href="https://instagram.com/kudislipp" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">Follow us on Instagram</a>
             </p>
-            <p style="color: #94A3B8; font-size: 12px; margin: 0;">&copy; 2026 KudiSlip Technologies. All rights reserved.</p>
+            <p style="color: #94A3B8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
         break;
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
               </p>
             </div>
             <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
-              <p style="margin: 0; font-size: 12px; color: #94A3B8; font-weight: 700;">© 2026 KudiSlip Technologies</p>
+              <p style="margin: 0; font-size: 12px; color: #94A3B8; font-weight: 700;">© ${new Date().getFullYear()} KudiSlip Technologies</p>
               <p style="margin: 8px 0 0 0; font-size: 12px; color: #94A3B8;">
                 Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #3B82F6; text-decoration: none; font-weight: 700;">@KudiSlip</a>
               </p>
@@ -204,6 +204,31 @@ export default async function handler(req, res) {
           <div style="margin-top: 32px; text-align: center;">
             <a href="https://instagram.com/kudislipp" style="color: #000000; text-decoration: none; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 12px;">Follow us on Instagram @kudislipp</a>
             <div style="color: #64748B; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">&copy; ${new Date().getFullYear()} KudiSlip Technologies.</div>
+          </div>
+        </div>`;
+        break;
+
+      // 6. PRO SUBSCRIPTION WARNING
+      case 'subscription_warning':
+        if (!payload.email || !payload.daysLeft) return res.status(400).json({ error: 'Missing required fields' });
+        from = 'KudiSlip Subscriptions <hello@kudislip.com.ng>';
+        to = payload.email;
+        subject = `⚠️ Action Required: Your KudiSlip Pro plan expires in ${payload.daysLeft} days`;
+        html = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <div style="background: #FEF08A; padding: 24px; text-align: center;">
+            <h2 style="margin: 0; color: #854D0E; font-size: 20px;">Pro Plan Expiring Soon!</h2>
+          </div>
+          <div style="padding: 32px 24px; background: #FFFFFF; text-align: center;">
+            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-top: 0;">Hello <strong>${payload.businessName || 'Merchant'}</strong>,</p>
+            <p style="color: #475569; font-size: 16px; line-height: 1.6;">Your KudiSlip Pro subscription is set to expire in exactly <strong>${payload.daysLeft} days</strong>.</p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 32px;">Don't lose access to your Profit Analytics and premium CRM features! Click below to renew your plan securely and keep your business running smoothly.</p>
+            <div style="text-align: center; margin-bottom: 16px;">
+              <a href="${payload.upgradeLink}" style="background-color: #000000; color: #FFFFFF; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; display: inline-block;">Renew Pro Plan Now</a>
+            </div>
+          </div>
+          <div style="background-color: #F8FAFC; padding: 20px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #94A3B8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
         break;
