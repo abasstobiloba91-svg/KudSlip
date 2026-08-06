@@ -84,10 +84,15 @@ function PayoutSettings({ user, showToast }) {
   const handleRequestUpdate = async () => {
     setOtpSending(true);
     try {
-      const res = await fetch('/api/send-otp', {
+      const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, vendorId: user.id, businessName: user.business_name })
+        body: JSON.stringify({
+          type: 'otp',
+          email: user.email,
+          vendorId: user.id,
+          businessName: user.business_name
+        })
       });
       if (!res.ok) throw new Error("Failed to send security code.");
       
