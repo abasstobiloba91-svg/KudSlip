@@ -23,7 +23,7 @@ import Profile from './dashboard/Profile';
 import Brand from './dashboard/Brand';
 import Billing from './dashboard/Billing';
 import Support from './dashboard/Support';
-import SuperAdminDashboard from './dashboard/SuperAdminDashboard'; // Updated Component Import
+import SuperAdminDashboard from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
 
