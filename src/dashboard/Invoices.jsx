@@ -1,3 +1,4 @@
+import { InvoiceList } from '../components/InvoiceList';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { InfoIcon, AlertIcon } from '../components/Icons';
