@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
 );
 
 export default async function handler(req, res) {
+  // CORS configuration
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
@@ -224,7 +225,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 8. SYSTEM BROADCAST EMAIL (USING KUDISLIP BRAND TEMPLATE)
+      // 8. SYSTEM BROADCAST EMAIL (WITH OPEN TRACKING TAGS)
       case 'broadcast':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
@@ -254,19 +255,78 @@ export default async function handler(req, res) {
           </div>
         </div>`;
 
-        // Send to each recipient individually to protect user privacy (BCC effect)
+        // Send to each recipient individually to protect privacy & tag for webhooks
         const sendPromises = recipientList.map(recipientEmail => 
           resend.emails.send({
             from,
             to: recipientEmail,
             subject,
-            html
+            html,
+            tags: [
+              { name: 'email_type', value: 'broadcast' },
+              { name: 'recipient_email', value: recipientEmail }
+            ]
           })
         );
 
         await Promise.all(sendPromises);
 
         return res.status(200).json({ success: true, message: `Broadcast successfully emailed to ${recipientList.length} users!` });
+
+      // 9. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
+      case 'onboarding_followup':
+        if (!payload.email) return res.status(400).json({ error: 'Email is required' });
+        from = 'KudiSlip <hello@kudislip.com.ng>';
+        to = payload.email;
+        subject = `Need a hand getting started with KudiSlip?`;
+        html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
+          </div>
+
+          <div style="padding: 32px 24px; color: #0F172A;">
+            <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">We’re ready when you are!</h2>
+            
+            <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+              Hello <strong>${payload.businessName || 'Merchant'}</strong>,
+            </p>
+
+            <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+              We noticed you created a KudiSlip account recently, but you haven't sent your first invoice yet. 
+            </p>
+
+            <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+              Whether you hit a quick roadblock, have a question about setting up bank payouts, or simply haven't found the time—our team is standing by to help you get everything set up.
+            </p>
+
+            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 20px; border-radius: 8px; margin: 24px 0;">
+              <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 6px;">💡 Did you know?</div>
+              <div style="font-size: 14px; color: #64748B; line-height: 1.5;">
+                Creating and sending a professional payment link to your client on KudiSlip takes <strong>less than 60 seconds</strong>.
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://kudislip.com.ng" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">
+                Create Your First Invoice
+              </a>
+            </div>
+
+            <p style="font-size: 14px; color: #64748B; line-height: 1.6; margin-bottom: 0;">
+              If you have any questions or need help setting up, <strong>simply reply directly to this email</strong>. We answer every single message!
+            </p>
+          </div>
+
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
+              Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a>
+            </p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
+        </div>`;
+        break;
 
       default:
         return res.status(400).json({ error: 'Invalid email type specified.' });
