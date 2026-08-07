@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase, SUPABASE_URL } from "./supabaseClient";
 
-// 🎯 CLEAN IMPORTS (NO DUPLICATES)
+// 🎯 CLEAN IMPORTS
 import { BellIcon, AlertIcon, ShieldIcon } from './components/Icons';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -23,11 +23,11 @@ import Profile from './dashboard/Profile';
 import Brand from './dashboard/Brand';
 import Billing from './dashboard/Billing';
 import Support from './dashboard/Support';
-import Admin from './dashboard/Admin';
+import SuperAdminDashboard from './dashboard/SuperAdminDashboard'; // Updated Component Import
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
 
-// Security Hook (24-Hour Idle here Logout)
+// Security Hook (24-Hour Idle Logout)
 function useIdleLogout(supabaseClient) {
   useEffect(() => {
     let timeoutId;
@@ -120,6 +120,7 @@ export default function AppRouter() {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        // Fetch full vendor row including role
         supabase.from('vendors').select('*').eq('id', session.user.id).single().then(({ data }) => {
           const combinedUser = { ...session.user, ...data };
           setUser(combinedUser);
@@ -129,7 +130,7 @@ export default function AppRouter() {
           const notifChannel = supabase.channel('realtime_notifications')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
               if ((combinedUser.role === 'vendor' && payload.new.user_id === combinedUser.id) || 
-                  (combinedUser.role === 'admin' && payload.new.user_id === 'SYSTEM_ADMIN')) {
+                  (combinedUser.role !== 'vendor' && payload.new.user_id === 'SYSTEM_ADMIN')) {
                 checkNotifications(combinedUser);
               }
             }).subscribe();
@@ -212,7 +213,9 @@ export default function AppRouter() {
       if (!validTabs.includes(activeTab)) activeTab = "invoices";
     }
 
-return (
+    const isElevatedUser = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'support';
+
+    return (
       <div className="dashboard-layout">
         
         {/* FIXED MOBILE TOP HEADER */}
@@ -249,10 +252,10 @@ return (
 
         <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => { setSidebarOpen(false); setActiveNotifMenu(null); }}></div>
 
-        {/* SIDEBAR (Uses 100dvh for mobile, scrollable, fixed footer) */}
+        {/* SIDEBAR */}
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{ top: "80px", height: "calc(100dvh - 80px)", width: "280px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           
-        <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }} onClick={() => setSidebarOpen(false)}>
+          <div className="sidebar-menu" style={{ paddingTop: "24px", flex: "1 0 auto" }} onClick={() => setSidebarOpen(false)}>
             {user.role !== 'support' && (
               <>
                 <a href="/dashboard/invoices" className={`menu-btn ${activeTab === "invoices" ? "active" : ""}`}>Invoices & CRM</a>
@@ -268,26 +271,32 @@ return (
                 <a href="/dashboard/billing" className={`menu-btn ${activeTab === "billing" ? "active" : ""}`}>Billing & Plan</a>
               </>
             )}
+            
             <a href="/dashboard/support" className={`menu-btn ${activeTab === "support" ? "active" : ""}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                {user.role === 'vendor' ? 'Helpdesk & Ticket' : 'Support Inbox'}
             </a>
-            {user?.role === 'admin' && (
+
+            {/* ADMIN OPERATIONS LINK (Accessible to admin, super_admin, and support) */}
+            {isElevatedUser && (
               <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: "#8B5CF6", borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <ShieldIcon /> Admin Operations
+                <ShieldIcon /> Command Center
               </a>
             )}
           </div>
           
-          {/* SIDEBAR FOOTER (Name on top, Log out underneath) */}
+          {/* SIDEBAR FOOTER */}
           <div className="sidebar-footer" style={{ padding: "24px", marginTop: "auto", borderTop: "1px solid #E2E8F0", background: "#FFFFFF" }}>
-            <div style={{ fontSize: "14px", color: "#0F172A", fontWeight: "800", marginBottom: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: "14px", color: "#0F172A", fontWeight: "800", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user?.business_name || user?.email}
+            </div>
+            <div style={{ fontSize: "11px", color: "#8B5CF6", fontWeight: "800", textTransform: "uppercase", marginBottom: "12px" }}>
+              {user?.role || 'vendor'}
             </div>
             <button className="btn-primary btn-hover" style={{ width: "100%", padding: "12px", background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA" }} onClick={() => supabase.auth.signOut().then(() => { setUser(null); navigateTo("/"); })}>Log Out</button>
           </div>
         </div>
 
-  
+        {/* MAIN CONTENT AREA */}
         <div className="main-content" style={{ paddingTop: "100px", paddingBottom: "60px", minHeight: "100vh" }} onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <Invoices user={user} showToast={showToast} />}
           {activeTab === "verification" && <VerificationTab user={user} showToast={showToast} supabase={supabase} />}
@@ -299,7 +308,7 @@ return (
           {activeTab === "brand" && <Brand user={user} onUpdate={(u) => setUser(u)} showToast={showToast} />}
           {activeTab === "billing" && <Billing user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <Support user={user} showToast={showToast} />}
-          {activeTab === "admin" && <Admin user={user} showToast={showToast} />}
+          {activeTab === "admin" && <SuperAdminDashboard user={user} showToast={showToast} />}
         </div>
       </div>
     );
