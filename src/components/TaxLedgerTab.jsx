@@ -15,10 +15,10 @@ export default function TaxLedgerTab({ user, showToast, supabase }) {
   const fetchLedgerData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch only PAID invoices (Revenue)
+      // 1. Fetch PAID invoices WITH client details
       const { data: invData, error: invError } = await supabase
         .from('invoices')
-        .select('*')
+        .select('*, clients(name)')
         .eq('vendor_id', user.id)
         .eq('status', 'paid')
         .order('created_at', { ascending: false });
@@ -49,39 +49,70 @@ export default function TaxLedgerTab({ user, showToast, supabase }) {
   const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
   const netProfit = totalRevenue - totalExpenses;
   
-  // Calculate tax only on positive profit
   const estimatedTax = netProfit > 0 ? (netProfit * (taxRate / 100)) : 0;
 
-  // --- Export Function ---
+  // --- Advanced Export Function ---
   const handleExportCSV = () => {
     try {
-      // 1. Setup CSV Headers
+      // 1. Setup Detailed Tax-Compliant CSV Headers
       const rows = [
-        ["Date", "Type", "Description", "Amount (NGN)"]
+        ["Date", "Transaction Ref", "Type", "Category", "Client / Payee", "Transaction Details (Items)", "Amount (NGN)"]
       ];
 
-      // 2. Combine & Sort Data
+      // 2. Combine, Format & Sort Data
       const combinedLedger = [
-        ...invoices.map(i => ({ date: new Date(i.created_at), type: "Revenue", desc: `Invoice #${i.id.substring(0, 8)}`, amt: Number(i.amount) })),
-        ...expenses.map(e => ({ date: new Date(e.created_at), type: "Expense", desc: e.description || e.category || "Business Expense", amt: -Number(e.amount) }))
-      ].sort((a, b) => b.date - a.date);
+        ...invoices.map(i => {
+          // Parse invoice items safely to show exactly what was sold
+          let itemDescriptions = "Sales Revenue";
+          try {
+            const parsedItems = typeof i.items === 'string' ? JSON.parse(i.items) : (i.items || []);
+            if (parsedItems.length > 0) {
+              itemDescriptions = parsedItems.map(item => `${item.description} (x${item.quantity})`).join('; ');
+            }
+          } catch(e) {
+            console.error("Could not parse items for invoice", i.id);
+          }
 
-      // 3. Add rows
+          return {
+            date: new Date(i.created_at),
+            ref: `INV-${i.id.substring(0, 8).toUpperCase()}`,
+            type: "Income",
+            category: "Business Revenue",
+            entity: i.clients?.name || "Unknown Client",
+            details: itemDescriptions,
+            amt: Number(i.amount)
+          };
+        }),
+        ...expenses.map(e => ({
+          date: new Date(e.created_at),
+          ref: `EXP-${e.id.substring(0, 8).toUpperCase()}`,
+          type: "Expense",
+          category: e.category || "General Business Expense",
+          entity: "Business Vendor", 
+          details: e.description || "N/A",
+          amt: -Number(e.amount)
+        }))
+      ].sort((a, b) => b.date - a.date); // Sort newest to oldest
+
+      // 3. Add rows (Wrapping text in quotes prevents commas from breaking columns)
       combinedLedger.forEach(item => {
         rows.push([
           item.date.toLocaleDateString(),
+          `"${item.ref}"`,
           item.type,
-          `"${item.desc}"`, // Quotes prevent commas from breaking CSV
+          `"${item.category}"`,
+          `"${item.entity}"`,
+          `"${item.details}"`,
           item.amt
         ]);
       });
 
       // 4. Add Summary Footer
       rows.push([]);
-      rows.push(["", "", "TOTAL REVENUE", totalRevenue]);
-      rows.push(["", "", "TOTAL EXPENSES", totalExpenses]);
-      rows.push(["", "", "NET PROFIT", netProfit]);
-      rows.push(["", "", `ESTIMATED TAX (${taxRate}%)`, estimatedTax]);
+      rows.push(["", "", "", "", "", "TOTAL GROSS REVENUE", totalRevenue]);
+      rows.push(["", "", "", "", "", "TOTAL DEDUCTIBLE EXPENSES", totalExpenses]);
+      rows.push(["", "", "", "", "", "NET TAXABLE PROFIT", netProfit]);
+      rows.push(["", "", "", "", "", `ESTIMATED TAX LIABILITY (${taxRate}%)`, estimatedTax]);
 
       // 5. Trigger Download
       const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
@@ -93,7 +124,7 @@ export default function TaxLedgerTab({ user, showToast, supabase }) {
       link.click();
       document.body.removeChild(link);
       
-      showToast("Report Exported!", "Your tax ledger has been downloaded.", "success");
+      showToast("Report Exported!", "Detailed tax ledger downloaded.", "success");
     } catch (err) {
       console.error(err);
       showToast("Export Failed", "Could not generate the CSV report.", "error");
