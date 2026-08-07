@@ -6,6 +6,7 @@ export default function Admin({ user, showToast }) {
   const [vendors, setVendors] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
+  const [broadcastOpens, setBroadcastOpens] = useState([]); // Analytics state
   const [loadingId, setLoadingId] = useState(null);
 
   // Impersonation / Dashboard Inspection Modal State
@@ -30,6 +31,7 @@ export default function Admin({ user, showToast }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, () => fetchAdminData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchAdminData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, () => fetchAdminData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'broadcast_opens' }, () => fetchAdminData())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -47,6 +49,10 @@ export default function Admin({ user, showToast }) {
     // 3. Fetch Support Messages
     const { data: supportData } = await supabase.from('support_messages').select('*').order('created_at', { ascending: false });
     if (supportData) setSupportMessages(supportData);
+
+    // 4. Fetch Broadcast Opens (Analytics)
+    const { data: openData } = await supabase.from('broadcast_opens').select('*').order('opened_at', { ascending: false }).limit(50);
+    if (openData) setBroadcastOpens(openData);
   };
 
   const getVendorEarnings = (vendorId) => {
@@ -439,7 +445,7 @@ export default function Admin({ user, showToast }) {
       )}
 
       {/* ========================================================= */}
-      {/* TAB 4: SYSTEM BROADCAST EMAILS (NOW EASILY VISIBLE)       */}
+      {/* TAB 4: SYSTEM BROADCAST EMAILS                            */}
       {/* ========================================================= */}
       {activeTab === 'broadcast' && (
         <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "24px 16px" }}>
@@ -488,6 +494,37 @@ export default function Admin({ user, showToast }) {
               <span>{sendingBroadcast ? "Dispatching Broadcast Emails..." : "Send Email Broadcast Now"}</span>
             </button>
           </form>
+
+          {/* --- BROADCAST ANALYTICS SECTION --- */}
+          <div style={{ marginTop: "40px", borderTop: "1px solid #E2E8F0", paddingTop: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "900" }}>Live Read Receipts</h3>
+              <span style={{ fontSize: "12px", fontWeight: "700", background: "#EFF6FF", color: "#2563EB", padding: "4px 10px", borderRadius: "12px" }}>
+                {broadcastOpens.length} Total Opens
+              </span>
+            </div>
+            
+            {broadcastOpens.length === 0 ? (
+              <div style={{ color: "#64748B", fontSize: "13px", padding: "20px", background: "#F8FAFC", borderRadius: "8px", textAlign: "center" }}>
+                No read receipts yet. When users open your broadcasts, they will appear here.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
+                {broadcastOpens.map((log) => (
+                  <div key={log.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", padding: "12px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
+                    <div>
+                      <div style={{ fontWeight: "800", fontSize: "13px", color: "#0F172A" }}>{log.recipient_email}</div>
+                      <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Subject: {log.subject}</div>
+                    </div>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "#10B981", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Opened {new Date(log.opened_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
