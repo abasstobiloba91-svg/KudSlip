@@ -42,6 +42,7 @@ export default async function handler(req, res) {
             </div>
           </div>
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a></p>
             <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
         subject = `Invoice Notification: ${payload.vendorName || 'KudiSlip Merchant'}`;
         tags = [{ name: 'invoiceId', value: payload.invoiceId.toString() }];
         html = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <div style="background-color: #000000; padding: 24px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 1px;">KudiSlip</h1>
           </div>
@@ -68,6 +69,10 @@ export default async function handler(req, res) {
             <div style="margin: 32px 0; text-align: center;">
               <a href="${payload.invoiceLink}" style="background-color: #000000; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 800; display: inline-block; font-size: 16px;">View & Pay Invoice</a>
             </div>
+          </div>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #64748B; font-size: 13px; margin: 0 0 12px 0;"><a href="https://instagram.com/kudislipp" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">Follow us on Instagram</a></p>
+            <p style="color: #94A3B8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
         break;
@@ -89,8 +94,9 @@ export default async function handler(req, res) {
         subject = `${otpCode} is your KudiSlip verification code`;
         html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC; padding: 40px 20px; color: #0F172A;">
-          <div style="max-width: 500px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden;">
+          <div style="max-width: 500px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
             <div style="padding: 32px; text-align: center; border-bottom: 1px solid #E2E8F0;">
+              <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 40px; margin-bottom: 16px;">
               <h2 style="margin: 0; font-size: 20px; font-weight: 800;">Security Verification</h2>
             </div>
             <div style="padding: 32px;">
@@ -110,14 +116,21 @@ export default async function handler(req, res) {
         to = payload.vendorEmail;
         subject = `Payment Confirmation: ${payload.currency}${payload.amount}`;
         html = `
-        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
+          </div>
           <div style="padding: 40px 30px;">
             <h2 style="color: #0f172a; margin-top: 0;">Payment Confirmed</h2>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${payload.vendorName},</p>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName}</strong> paid invoice <strong>#${payload.invoiceId?.substring(0, 8)}</strong>.</p>
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
               <p style="margin: 0; color: #0f172a;"><strong>Amount Paid:</strong> ${payload.currency}${payload.amount}</p>
             </div>
+          </div>
+          <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a></p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
         break;
@@ -138,13 +151,20 @@ export default async function handler(req, res) {
         to = payload.email;
         subject = 'Reset Your KudiSlip Password';
         html = `
-        <div style="font-family: sans-serif; background-color: #F8FAFC; padding: 40px 20px;">
-          <div style="max-width: 500px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; padding: 32px; border: 1px solid #E2E8F0;">
-            <h2 style="color: #000000; font-size: 22px; font-weight: 900; margin-top: 0;">Reset Your Password</h2>
-            <p style="color: #475569; font-size: 15px; line-height: 1.6;">Click below to set a new secure password.</p>
+        <div style="font-family: sans-serif; background-color: #F8FAFC; padding: 40px 20px; text-align: center;">
+          <div style="max-width: 500px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; padding: 32px; border: 1px solid #E2E8F0; text-align: left;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip Logo" style="height: 48px; object-fit: contain;" />
+            </div>
+            <h2 style="color: #000000; font-size: 22px; font-weight: 900; margin-top: 0; text-align: center;">Reset Your Password</h2>
+            <p style="color: #475569; font-size: 15px; line-height: 1.6; text-align: center;">Click below to set a new secure password.</p>
             <div style="text-align: center; margin: 24px 0;">
               <a href="${resetData.properties.action_link}" style="background-color: #000000; color: #FFFFFF; padding: 14px 28px; border-radius: 8px; font-weight: 800; text-decoration: none; display: inline-block;">Securely Reset Password</a>
             </div>
+          </div>
+          <div style="margin-top: 24px; text-align: center;">
+            <a href="https://instagram.com/kudislipp" style="color: #000000; text-decoration: none; font-size: 13px; font-weight: 700;">Follow us on Instagram @kudislipp</a>
+            <div style="color: #64748B; font-size: 12px; margin-top: 6px;">&copy; ${new Date().getFullYear()} KudiSlip Technologies.</div>
           </div>
         </div>`;
         break;
@@ -165,6 +185,9 @@ export default async function handler(req, res) {
             <p style="color: #475569; font-size: 15px;">Your Pro subscription expires in <strong>${payload.daysLeft} days</strong>.</p>
             <a href="${payload.upgradeLink}" style="background-color: #000000; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; display: inline-block; margin-top: 16px;">Renew Pro Plan Now</a>
           </div>
+          <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
         </div>`;
         break;
 
@@ -176,13 +199,14 @@ export default async function handler(req, res) {
         const isApproved = payload.status === 'approved';
         subject = isApproved ? 'Your KudiSlip Account is Officially Verified!' : 'Update Regarding Your Business Verification';
         html = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 550px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-          <div style="background-color: ${isApproved ? '#10B981' : '#EF4444'}; padding: 24px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">
-              ${isApproved ? 'Business Verification Approved' : 'Verification Document Rejected'}
-            </h2>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
+            <h2 style="color: ${isApproved ? '#10B981' : '#EF4444'}; margin-top: 0; font-size: 20px; font-weight: 800;">
+              ${isApproved ? 'Business Verification Approved' : 'Verification Document Rejected'}
+            </h2>
             <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hello <strong>${payload.businessName || 'Merchant'}</strong>,</p>
             <p style="font-size: 15px; color: #475569; line-height: 1.6;">
               ${isApproved 
@@ -193,47 +217,66 @@ export default async function handler(req, res) {
               <a href="https://kudislip.com.ng" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">Open Dashboard</a>
             </div>
           </div>
-          <div style="background-color: #F8FAFC; padding: 20px; text-align: center; border-top: 1px solid #E2E8F0;">
-            <p style="color: #94A3B8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a></p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
         break;
 
-      // 8. ADMIN BROADCAST
+      // 8. SYSTEM BROADCAST EMAIL (USING KUDISLIP BRAND TEMPLATE)
       case 'broadcast':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
         }
-        from = 'KudiSlip Admin <hello@kudislip.com.ng>';
-        // Resend accepts an array of strings in the 'to' field
-        to = Array.isArray(payload.emails) ? payload.emails : [payload.emails];
+
+        const recipientList = Array.isArray(payload.emails) ? payload.emails : [payload.emails];
+        from = 'KudiSlip Announcement <hello@kudislip.com.ng>';
         subject = payload.subject;
+
         html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-          <div style="background-color: #000000; padding: 24px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px;">KudiSlip Announcement</h1>
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
-            <div style="font-size: 15px; color: #334155; line-height: 1.7; white-space: pre-wrap;">${payload.message}</div>
+            <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
+            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px;">${payload.message}</div>
             <div style="text-align: center; margin: 32px 0;">
-              <a href="https://kudislip.com.ng" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">Go to KudiSlip</a>
+              <a href="https://kudislip.com.ng" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">Go to Dashboard</a>
             </div>
           </div>
-          <div style="background-color: #F8FAFC; padding: 20px; text-align: center; border-top: 1px solid #E2E8F0;">
-            <p style="color: #94A3B8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
+              Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a>
+            </p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
-        break;
+
+        // Send to each recipient individually to protect user privacy (BCC effect)
+        const sendPromises = recipientList.map(recipientEmail => 
+          resend.emails.send({
+            from,
+            to: recipientEmail,
+            subject,
+            html
+          })
+        );
+
+        await Promise.all(sendPromises);
+
+        return res.status(200).json({ success: true, message: `Broadcast successfully emailed to ${recipientList.length} users!` });
 
       default:
         return res.status(400).json({ error: 'Invalid email type specified.' });
     }
 
+    // Fire non-broadcast single emails
     const emailConfig = { from, to: Array.isArray(to) ? to : [to], subject, html };
     if (tags) emailConfig.tags = tags;
 
     const { data: resendData, error: resendError } = await resend.emails.send(emailConfig);
-    
     if (resendError) throw resendError;
     
     return res.status(200).json({ success: true, message: 'Email sent successfully!', data: resendData });
