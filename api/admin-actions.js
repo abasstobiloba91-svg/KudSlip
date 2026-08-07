@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   try {
     const { action, targetUserId, newRole } = req.body;
 
-    // 1. ACTION: UPDATE USER ROLE
+    // 1. ACTION: UPDATE USER ROLEi
     if (action === 'update_role') {
       if (!targetUserId || !newRole) {
         return res.status(400).json({ error: 'User ID and Role are required' });
