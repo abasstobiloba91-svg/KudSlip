@@ -9,7 +9,7 @@ export default function SuperAdminDashboard({ user, showToast }) {
   const [supportMessages, setSupportMessages] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
 
-  // Impersonation / Dashboard Inspection Modal State
+  // Impersonationi / Dashboard Inspection Modal State
   const [inspectVendor, setInspectVendor] = useState(null);
 
   // Broadcast State
