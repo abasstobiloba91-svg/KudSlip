@@ -1,9 +1,8 @@
-import { InvoiceList } from '../components/InvoiceList';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { InfoIcon, AlertIcon } from '../components/Icons';
 
-function KudiSlipInvoiceEngine({ user, showToast }) {
+export default function KudiSlipInvoiceEngine({ user, showToast }) {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   
@@ -24,6 +23,10 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
   const [sendingEmailId, setSendingEmailId] = useState(null);
   const [confirmModalData, setConfirmModalData] = useState(null);
 
+  // --- NEW: PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -42,7 +45,12 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       }).subscribe();
 
     return () => { supabase.removeChannel(invoiceChannel); };
-  }, []);
+  }, [user.id]);
+
+  // --- NEW: Reset to page 1 if the user searches or sorts ---
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortOrder]);
 
   const fetchRecentInvoices = async () => {
     const { data } = await supabase.from('invoices').select('*, clients(name, email, phone)').eq('vendor_id', user.id).order('created_at', { ascending: false });
@@ -131,29 +139,24 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     setLoading(false);
   };
 
- const handleSendEmail = async (invoice) => {
+  const handleSendEmail = async (invoice) => {
     try {
+      setSendingEmailId(invoice.id);
       showToast("Sending...", "Preparing email...", "info");
 
-      // 1. Generate the secure payment link
       const invoiceLink = `https://${window.location.host}/pay/${invoice.id}`;
-      
-      // 2. Format the currency correctly
       const currencySymbols = { NGN: "₦", USD: "$", GBP: "£" };
       const symbol = currencySymbols[invoice.currency || 'NGN'] || invoice.currency;
       const amountFormatted = `${symbol}${Number(invoice.amount).toLocaleString()}`;
-
-      // 3. Smartly extract the client details (handling Supabase nested objects)
       const targetEmail = invoice.clients?.email || invoice.client?.email || invoice.client_email;
       const targetName = invoice.clients?.name || invoice.client?.name || invoice.client_name || "Client";
 
-      // 4. Call the Master Mailer
       const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'invoice', 
-          clientEmail: targetEmail, // Safely extracted email!
+          clientEmail: targetEmail,
           clientName: targetName,
           invoiceAmount: amountFormatted,
           invoiceLink: invoiceLink,
@@ -163,16 +166,14 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to send email");
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to send email");
 
       showToast("Success", "Invoice emailed successfully!", "success");
-      
     } catch (err) {
       console.error("Email error:", err);
       showToast("Error", "Could not send email. Please try again.", "error");
+    } finally {
+      setSendingEmailId(null);
     }
   };
 
@@ -195,12 +196,22 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
     return 0;
   });
 
+  // --- NEW: PAGINATION CALCULATIONS ---
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  // This slices out exactly the 5 invoices we want to show on the current page
+  const currentInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
   if (!user?.paystack_subaccount_code) return <div style={{ padding: "20px", background: "#FEF2F2", border: `1px solid #EF4444`, borderRadius: "8px", marginBottom: "24px" }}><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: "800", marginBottom: "6px" }}><h3 style={{ margin: 0 }}>Action Required</h3></div><div style={{ fontSize: "14px" }}>Link a bank account in <a href="/dashboard/payouts" style={{ color: "#EF4444" }}>Payout Settings</a> first.</div></div>;
 
   return (
     <div style={{ maxWidth: "900px", position: "relative" }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
+      {/* Modals remain the same */}
       {confirmModalData && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center" }}>
@@ -234,6 +245,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
         </div>
       )}
 
+      {/* Header & Metrics remain the same */}
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
@@ -245,6 +257,7 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && <RevenueChart invoices={invoices} />}
 
+      {/* Create Invoice Form remains the same */}
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
@@ -353,7 +366,8 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
             </div>
           </div>
           
-          {filteredInvoices.map(inv => {
+          {/* --- NEW: MAP OVER 'currentInvoices' INSTEAD OF 'filteredInvoices' --- */}
+          {currentInvoices.map(inv => {
             const safeInvAmount = Number(inv.amount || 0);
             const invCurrency = inv.currency || "NGN";
             const sym = CURRENCY_SYMBOLS[invCurrency] || "₦";
@@ -440,7 +454,52 @@ function KudiSlipInvoiceEngine({ user, showToast }) {
               </div>
             );
           })}
+
           {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No invoices found matching your search.</div>}
+          
+          {/* --- NEW: PAGINATION FOOTER CONTROLS --- */}
+          {filteredInvoices.length > itemsPerPage && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: "#FFFFFF", borderRadius: "16px", border: "1px solid #E2E8F0", marginTop: "16px" }}>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "#64748B" }}>
+                Showing <strong style={{ color: "#0F172A" }}>{startIndex + 1}</strong> to <strong style={{ color: "#0F172A" }}>{Math.min(startIndex + itemsPerPage, filteredInvoices.length)}</strong> of <strong style={{ color: "#0F172A" }}>{filteredInvoices.length}</strong>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={handlePrev}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: "13px",
+                    fontWeight: "800",
+                    borderRadius: "8px",
+                    border: "1px solid #E2E8F0",
+                    background: currentPage === 1 ? "#F8FAFC" : "#FFFFFF",
+                    color: currentPage === 1 ? "#94A3B8" : "#0F172A",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: "13px",
+                    fontWeight: "800",
+                    borderRadius: "8px",
+                    border: "1px solid #E2E8F0",
+                    background: currentPage === totalPages ? "#F8FAFC" : "#FFFFFF",
+                    color: currentPage === totalPages ? "#94A3B8" : "#0F172A",
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer"
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>
@@ -489,5 +548,3 @@ function RevenueChart({ invoices }) {
     </div>
   );
 }
-
-export default KudiSlipInvoiceEngine;
