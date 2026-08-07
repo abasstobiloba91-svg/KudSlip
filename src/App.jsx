@@ -300,7 +300,7 @@ export default function AppRouter() {
         <div className="main-content" style={{ paddingTop: "100px", paddingBottom: "60px", minHeight: "100vh" }} onClick={() => { if(activeNotifMenu) setActiveNotifMenu(null) }}>
           {activeTab === "invoices" && <Invoices user={user} showToast={showToast} />}
           {activeTab === "verification" && <VerificationTab user={user} showToast={showToast} supabase={supabase} />}
-          {activeTab === "tax" && <TaxLedgerTab generateTaxReport={() => showToast("Coming Soon", "Tax export feature will be built next!", "info")} />}
+          {activeTab === "tax" && <TaxLedgerTab user={user} showToast={showToast} supabase={supabase} />}
           {activeTab === "expenses" && <Expenses user={user} showToast={showToast} />} 
           {activeTab === "clients" && <Clients user={user} showToast={showToast} />}
           {activeTab === "payouts" && <Payouts user={user} onSubaccountLinked={(code) => setUser({ ...user, paystack_subaccount_code: code })} showToast={showToast} />}
