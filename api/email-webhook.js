@@ -25,34 +25,67 @@ export default async function handler(req, res) {
       
       // 🎯 THE BULLETPROOF TAG EXTRACTOR
       let invoiceId = null;
+      let emailType = null;
+      let recipientEmail = null;
+      
       const tags = event.data?.tags;
       
       if (Array.isArray(tags)) {
-        // If Resend sends a list: [ { name: 'invoice_id', value: '123' } ]
-        const foundTag = tags.find(t => t.name === 'invoiceId' || t.name === 'invoice_id');
-        if (foundTag) invoiceId = foundTag.value;
+        // If Resend sends a list: [ { name: 'invoice_id', value: '123' }, { name: 'email_type', value: 'broadcast' } ]
+        const foundInv = tags.find(t => t.name === 'invoiceId' || t.name === 'invoice_id');
+        if (foundInv) invoiceId = foundInv.value;
+
+        const foundType = tags.find(t => t.name === 'email_type');
+        if (foundType) emailType = foundType.value;
+
+        const foundRecipient = tags.find(t => t.name === 'recipient_email');
+        if (foundRecipient) recipientEmail = foundRecipient.value;
+
       } else if (tags && typeof tags === 'object') {
-        // If Resend sends a flat object: { invoice_id: '123' }
+        // If Resend sends a flat object: { invoice_id: '123', email_type: 'broadcast' }
         invoiceId = tags.invoiceId || tags.invoice_id;
+        emailType = tags.email_type;
+        recipientEmail = tags.recipient_email;
       }
 
-      console.log("🔍 Extracted Invoice ID:", invoiceId);
+      console.log(`🔍 Extracted Tags -> Invoice: ${invoiceId || 'N/A'} | Type: ${emailType || 'N/A'} | Recipient: ${recipientEmail || 'N/A'}`);
       
+      // ==========================================
+      // SCENARIO 1: INVOICE WAS OPENED
+      // ==========================================
       if (invoiceId) {
-        // Update the database bypassing RLS
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('invoices')
           .update({ viewed_at: new Date().toISOString() })
-          .eq('id', invoiceId)
-          .select(); 
+          .eq('id', invoiceId); 
           
         if (error) {
-          console.error("❌ Supabase Write Error:", error);
+          console.error("❌ Supabase Invoice Write Error:", error);
         } else {
           console.log("✅ Database successfully updated for invoice:", invoiceId);
         }
-      } else {
-        console.log("⚠️ No invoiceId tag was found in the Resend payload.");
+      } 
+      
+      // ==========================================
+      // SCENARIO 2: ADMIN BROADCAST WAS OPENED
+      // ==========================================
+      else if (emailType === 'broadcast' && recipientEmail) {
+        const subject = event.data?.subject || 'System Broadcast';
+
+        const { error } = await supabase
+          .from('broadcast_opens')
+          .insert([{ recipient_email: recipientEmail, subject: subject }]);
+
+        if (error) {
+          console.error("❌ Supabase Broadcast Write Error:", error);
+        } else {
+          console.log("✅ Database successfully updated for broadcast read receipt:", recipientEmail);
+        }
+      } 
+      
+      // EDGE CASE: NEITHER WAS FOUND
+      else {
+        console.log("⚠️ No actionable tags (invoiceId or broadcast) were found in the Resend payload.");
       }
     }
     
