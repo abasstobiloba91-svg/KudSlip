@@ -27,7 +27,7 @@ import Admin from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
 
-// Security Hook (24-Hour Idle Logout)
+// Security Hook (24-Hour Idle here Logout)
 function useIdleLogout(supabaseClient) {
   useEffect(() => {
     let timeoutId;
