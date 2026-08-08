@@ -26,6 +26,7 @@ import Support from './dashboard/Support';
 import SuperAdminDashboard from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
+import EmailCampaignsTab from './components/EmailCampaignsTab'; // 👈 NEW IMPORT
 
 // Security Hook (24-Hour Idle Logout)
 function useIdleLogout(supabaseClient) {
@@ -207,7 +208,8 @@ export default function AppRouter() {
     const dashboardIndex = pathParts.indexOf('dashboard');
     let activeTab = "invoices"; 
     
-    const validTabs = ["invoices", "expenses", "clients", "payouts", "profile", "brand", "billing", "support", "admin", "verification", "tax"];
+    // 👈 ADDED "emails" TO VALID TABS
+    const validTabs = ["invoices", "expenses", "clients", "payouts", "profile", "brand", "billing", "support", "admin", "verification", "tax", "emails"];
     if (dashboardIndex !== -1 && pathParts.length > dashboardIndex + 1) {
       activeTab = pathParts[dashboardIndex + 1].toLowerCase();
       if (!validTabs.includes(activeTab)) activeTab = "invoices";
@@ -278,9 +280,15 @@ export default function AppRouter() {
 
             {/* ADMIN OPERATIONS LINK (Accessible to admin, super_admin, and support) */}
             {isElevatedUser && (
-              <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: "#8B5CF6", borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <ShieldIcon /> Command Center
-              </a>
+              <>
+                <a href="/dashboard/admin" className={`menu-btn ${activeTab === "admin" ? "active" : ""}`} style={{ color: "#8B5CF6", borderTop: "1px dashed #E2E8F0", marginTop: "12px", paddingTop: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <ShieldIcon /> Command Center
+                </a>
+                {/* 👈 NEW EMAIL CAMPAIGNS BUTTON */}
+                <a href="/dashboard/emails" className={`menu-btn ${activeTab === "emails" ? "active" : ""}`} style={{ color: "#0284C7", marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  ✉️ Email Campaigns
+                </a>
+              </>
             )}
           </div>
           
@@ -309,6 +317,9 @@ export default function AppRouter() {
           {activeTab === "billing" && <Billing user={user} onUpgradeSuccess={() => setUser({ ...user, subscription_tier: 'premium' })} showToast={showToast} />}
           {activeTab === "support" && <Support user={user} showToast={showToast} />}
           {activeTab === "admin" && <SuperAdminDashboard user={user} showToast={showToast} />}
+          
+          {/* 👈 NEW EMAIL CAMPAIGNS TAB RENDER */}
+          {activeTab === "emails" && <EmailCampaignsTab user={user} showToast={showToast} supabase={supabase} />}
         </div>
       </div>
     );
