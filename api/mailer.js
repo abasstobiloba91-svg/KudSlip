@@ -261,9 +261,9 @@ export default async function handler(req, res) {
             to: recipientEmail,
             subject,
             html,
+            // 👈 FIX: Removed invalid 'recipient_email' tag
             tags: [
-              { name: 'email_type', value: 'broadcast' },
-              { name: 'recipient_email', value: recipientEmail }
+              { name: 'email_type', value: 'broadcast' }
             ]
           };
           if (payload.recordId) {
@@ -355,11 +355,12 @@ export default async function handler(req, res) {
           </div>
         </div>`;
 
+        // 👈 FIX: Removed invalid 'recipient_email' tag
         tags = [
-          { name: 'email_type', value: 'campaign' },
-          { name: 'recipient_email', value: payload.emails }
+          { name: 'email_type', value: 'campaign' }
         ];
 
+        // The record ID is a UUID which only contains dashes and alphanumeric chars, so this is perfectly safe for Resend
         if (payload.recordId) {
           tags.push({ name: 'tracking_id', value: payload.recordId });
         }
