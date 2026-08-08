@@ -26,8 +26,7 @@ import Support from './dashboard/Support';
 import SuperAdminDashboard from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
-import EmailCampaignsTab from './components/EmailCampaignsTab'; // 👈 NEW IMPORT
-
+import EmailCampaignsTab from './components/EmailCampaignsTab.jsx';
 // Security Hook (24-Hour Idle Logout)
 function useIdleLogout(supabaseClient) {
   useEffect(() => {
