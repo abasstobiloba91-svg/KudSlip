@@ -1,0 +1,231 @@
+import React, { useState, useEffect } from 'react';
+
+export default function EmailCampaignsTab({ user, showToast, supabase }) {
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  // Form State
+  const [recipient, setRecipient] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  // Extract user role (fallback to 'support' if undefined)
+  const userRole = user?.role || 'support'; 
+
+  useEffect(() => {
+    if (user?.id && supabase) {
+      fetchEmails();
+
+      // Setup Realtime Subscription for instant updates across users
+      const channel = supabase
+        .channel('public:sent_emails')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sent_emails' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setEmails((prev) => [payload.new, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setEmails((prev) => prev.map(item => item.id === payload.new.id ? payload.new : item));
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, supabase]);
+
+  const fetchEmails = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sent_emails')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEmails(data || []);
+    } catch (err) {
+      console.error("Error fetching sent emails:", err);
+      showToast("Error", "Could not load email history.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Send Email Handler ---
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    if (!recipient || !subject || !body) {
+      showToast("Missing Fields", "Please fill in recipient, subject, and body.", "error");
+      return;
+    }
+
+    setSending(true);
+    try {
+      // 1. Insert record into database (In production, trigger an Edge Function here to send via Resend/SendGrid)
+      const { error } = await supabase.from('sent_emails').insert({
+        sender_id: user.id,
+        sender_role: userRole,
+        sender_email: user.email || 'system@kudislip.com',
+        recipient_email: recipient,
+        subject: subject,
+        body: body,
+        status: 'sent'
+      });
+
+      if (error) throw error;
+
+      showToast("Email Dispatched", `Successfully sent to ${recipient}`, "success");
+      setRecipient('');
+      setSubject('');
+      setBody('');
+    } catch (err) {
+      console.error("Send Error:", err);
+      showToast("Failed", "Could not dispatch email.", "error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // --- Role Visibility Enforcement ---
+  const filteredEmails = emails.filter((item) => {
+    if (userRole === 'super_admin') {
+      return true; // Super admin sees all mails (Super Admin, Admin, Support)
+    }
+    if (userRole === 'admin') {
+      // Admin sees Admin and Support mails (Hidden: Super Admin mails)
+      return item.sender_role === 'admin' || item.sender_role === 'support';
+    }
+    if (userRole === 'support') {
+      // Support sees Admin and Support mails (Hidden: Super Admin mails)
+      return item.sender_role === 'admin' || item.sender_role === 'support';
+    }
+    return false;
+  });
+
+  return (
+    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 12px 40px" }}>
+      
+      {/* Header */}
+      <div style={{ marginBottom: "32px" }}>
+        <div style={{ fontSize: "28px", fontWeight: "900", color: "#0F172A", marginBottom: "8px" }}>Internal Email Dispatch & Tracking</div>
+        <div style={{ color: "#64748B", fontSize: "15px" }}>Send tracked outreach directly from KudiSlip with real-time open verification. Role: <strong style={{ textTransform: "uppercase", color: "#2563EB" }}>{userRole}</strong></div>
+      </div>
+
+      {/* Compose Section */}
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "16px", padding: "24px", marginBottom: "40px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+        <div style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", marginBottom: "16px" }}>Compose Outbound Email</div>
+        
+        <form onSubmit={handleSendEmail} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#475569", marginBottom: "6px" }}>Recipient Email Address</label>
+            <input 
+              type="email" 
+              placeholder="client@company.com" 
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "14px", fontWeight: "600" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#475569", marginBottom: "6px" }}>Subject Line</label>
+            <input 
+              type="text" 
+              placeholder="Partnership proposal with KudiSlip" 
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "14px", fontWeight: "600" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#475569", marginBottom: "6px" }}>Email Body Message</label>
+            <textarea 
+              rows="4"
+              placeholder="Type your message here..." 
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "14px", fontWeight: "600", fontFamily: "inherit" }}
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={sending}
+            style={{ padding: "14px 24px", background: "#000000", color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "14px", cursor: "pointer", alignSelf: "flex-start" }}
+          >
+            {sending ? "Dispatching..." : "Send Tracked Email"}
+          </button>
+        </form>
+      </div>
+
+      {/* Outboundu Feed & Tracking Table */}
+      <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A" }}>Live Email Tracking Stream</div>
+          <div style={{ fontSize: "12px", color: "#64748B", background: "#F1F5F9", padding: "6px 12px", borderRadius: "6px", fontWeight: "700" }}>
+            Showing {filteredEmails.length} accessible logs
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "30px", color: "#64748B", fontWeight: "600" }}>Syncing live emails...</div>
+        ) : filteredEmails.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "30px", color: "#94A3B8", fontSize: "14px" }}>No email activity recorded within your permission level.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #E2E8F0", color: "#475569" }}>
+                  <th style={{ padding: "12px" }}>Recipient</th>
+                  <th style={{ padding: "12px" }}>Subject</th>
+                  <th style={{ padding: "12px" }}>Sender Role</th>
+                  <th style={{ padding: "12px" }}>Status / Tracking</th>
+                  <th style={{ padding: "12px" }}>Date Sent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmails.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                    <td style={{ padding: "14px", fontWeight: "700", color: "#0F172A" }}>{item.recipient_email}</td>
+                    <td style={{ padding: "14px", color: "#334155" }}>{item.subject}</td>
+                    <td style={{ padding: "14px" }}>
+                      <span style={{ 
+                        padding: "4px 8px", 
+                        borderRadius: "4px", 
+                        fontSize: "11px", 
+                        fontWeight: "800",
+                        textTransform: "uppercase",
+                        background: item.sender_role === 'super_admin' ? '#FEE2E2' : item.sender_role === 'admin' ? '#DBEAFE' : '#F1F5F9',
+                        color: item.sender_role === 'super_admin' ? '#991B1B' : item.sender_role === 'admin' ? '#1E40AF' : '#475569'
+                      }}>
+                        {item.sender_role}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px" }}>
+                      {item.status === 'opened' ? (
+                        <span style={{ color: "#10B981", fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
+                          🟢 Opened 👀
+                        </span>
+                      ) : (
+                        <span style={{ color: "#F59E0B", fontWeight: "700" }}>
+                          📨 Sent (Unopened)
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: "14px", color: "#64748B" }}>
+                      {new Date(item.created_at).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
