@@ -63,7 +63,8 @@ export default function EmailTab({ user, showToast, supabase }) {
 
     setSending(true);
     try {
-      const { error } = await supabase.from('sent_emails').insert({
+      // 1. Save it to the Supabase tracking table
+      const { data, error } = await supabase.from('sent_emails').insert({
         sender_id: user.id,
         sender_role: userRole,
         sender_email: user.email || 'system@kudislip.com',
@@ -71,9 +72,30 @@ export default function EmailTab({ user, showToast, supabase }) {
         subject: subject,
         body: body,
         status: 'sent'
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // 2. TRIGGER YOUR MAILER API
+      const response = await fetch('/api/mailer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'broadcast',
+          emails: recipient,
+          subject: subject,
+          message: body,
+          recordId: data.id // 👈 THIS IS THE CRITICAL ADDITION
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send via Resend API');
+      }
 
       showToast("Email Dispatched", `Successfully sent to ${recipient}`, "success");
       setRecipient('');
@@ -81,7 +103,7 @@ export default function EmailTab({ user, showToast, supabase }) {
       setBody('');
     } catch (err) {
       console.error("Send Error:", err);
-      showToast("Failed", "Could not dispatch email.", "error");
+      showToast("Failed", "Could not dispatch email. Check console.", "error");
     } finally {
       setSending(false);
     }
