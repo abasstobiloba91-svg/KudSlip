@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function EmailCampaignsTab({ user, showToast, supabase }) {
+export default function EmailTab({ user, showToast, supabase }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -63,7 +63,6 @@ export default function EmailCampaignsTab({ user, showToast, supabase }) {
 
     setSending(true);
     try {
-      // 1. Insert record into database (In production, trigger an Edge Function here to send via Resend/SendGrid)
       const { error } = await supabase.from('sent_emails').insert({
         sender_id: user.id,
         sender_role: userRole,
@@ -91,14 +90,12 @@ export default function EmailCampaignsTab({ user, showToast, supabase }) {
   // --- Role Visibility Enforcement ---
   const filteredEmails = emails.filter((item) => {
     if (userRole === 'super_admin') {
-      return true; // Super admin sees all mails (Super Admin, Admin, Support)
+      return true; 
     }
     if (userRole === 'admin') {
-      // Admin sees Admin and Support mails (Hidden: Super Admin mails)
       return item.sender_role === 'admin' || item.sender_role === 'support';
     }
     if (userRole === 'support') {
-      // Support sees Admin and Support mails (Hidden: Super Admin mails)
       return item.sender_role === 'admin' || item.sender_role === 'support';
     }
     return false;
@@ -161,7 +158,7 @@ export default function EmailCampaignsTab({ user, showToast, supabase }) {
         </form>
       </div>
 
-      {/* Outboundu Feed & Tracking Table */}
+      {/* Outbound Feed & Tracking Table */}
       <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <div style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A" }}>Live Email Tracking Stream</div>
@@ -207,11 +204,11 @@ export default function EmailCampaignsTab({ user, showToast, supabase }) {
                     <td style={{ padding: "14px" }}>
                       {item.status === 'opened' ? (
                         <span style={{ color: "#10B981", fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
-                          🟢 Opened 👀
+                          Opened
                         </span>
                       ) : (
                         <span style={{ color: "#F59E0B", fontWeight: "700" }}>
-                          📨 Sent (Unopened)
+                          Sent (Unopened)
                         </span>
                       )}
                     </td>
