@@ -26,7 +26,7 @@ import Support from './dashboard/Support';
 import SuperAdminDashboard from './dashboard/Admin';
 import VerificationTab from './components/VerificationTab';
 import TaxLedgerTab from './components/TaxLedgerTab';
-import EmailCampaignsTab from './components/EmailTab'; // 👈 NEW BYPASS IMPORT
+import EmailCampaignsTab from './components/EmailTab'; //
 
 // Security Hook (24-Hour Idle Logout)
 function useIdleLogout(supabaseClient) {
