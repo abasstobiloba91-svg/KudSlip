@@ -9,6 +9,8 @@ export default function EmailTab({ user, showToast, supabase }) {
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [ctaText, setCtaText] = useState('Visit KudiSlip');
+  const [ctaLink, setCtaLink] = useState('https://kudislip.com.ng');
 
   // Extract user role (fallback to 'support' if undefined)
   const userRole = user?.role || 'support'; 
@@ -63,7 +65,7 @@ export default function EmailTab({ user, showToast, supabase }) {
 
     setSending(true);
     try {
-      // 1. Save it to the Supabase tracking table
+      // 1. Save record to Supabase
       const { data, error } = await supabase.from('sent_emails').insert({
         sender_id: user.id,
         sender_role: userRole,
@@ -76,17 +78,19 @@ export default function EmailTab({ user, showToast, supabase }) {
 
       if (error) throw error;
 
-      // 2. TRIGGER YOUR MAILER API
+      // 2. Trigger Mailer API with CTA parameters
       const response = await fetch('/api/mailer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'campaign', // 👈 Targets the new campaign block in mailer.js
+          type: 'campaign',
           emails: recipient,
           subject: subject,
           message: body,
+          ctaText: ctaText,
+          ctaLink: ctaLink,
           recordId: data.id 
         }),
       });
@@ -103,7 +107,7 @@ export default function EmailTab({ user, showToast, supabase }) {
       setBody('');
     } catch (err) {
       console.error("Send Error:", err);
-      showToast("Failed", err.message || "Could not dispatch email. Check console.", "error");
+      showToast("Failed", err.message || "Could not dispatch email.", "error");
     } finally {
       setSending(false);
     }
@@ -168,6 +172,30 @@ export default function EmailTab({ user, showToast, supabase }) {
               onChange={(e) => setBody(e.target.value)}
               style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "14px", fontWeight: "600", fontFamily: "inherit" }}
             />
+          </div>
+
+          {/* CTA Configuration Controls */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", background: "#F8FAFC", padding: "16px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#475569", marginBottom: "4px" }}>CTA Button Text (Optional)</label>
+              <input 
+                type="text" 
+                placeholder="e.g., View Partner Program" 
+                value={ctaText}
+                onChange={(e) => setCtaText(e.target.value)}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "13px", fontWeight: "600" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#475569", marginBottom: "4px" }}>CTA Link Target (Optional)</label>
+              <input 
+                type="text" 
+                placeholder="https://kudislip.com.ng" 
+                value={ctaLink}
+                onChange={(e) => setCtaLink(e.target.value)}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "13px", fontWeight: "600" }}
+              />
+            </div>
           </div>
 
           <button 
