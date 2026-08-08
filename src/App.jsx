@@ -284,7 +284,7 @@ export default function AppRouter() {
                   <ShieldIcon /> Command Center
                 </a>
                 <a href="/dashboard/emails" className={`menu-btn ${activeTab === "emails" ? "active" : ""}`} style={{ color: "#0284C7", marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  ✉️ Email Campaigns
+                  Email Campaigns
                 </a>
               </>
             )}
