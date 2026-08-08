@@ -225,7 +225,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 8. SYSTEM BROADCAST EMAIL (WITH OPEN TRACKING TAGS)
+      // 8. SYSTEM BROADCAST EMAIL
       case 'broadcast':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
@@ -255,7 +255,6 @@ export default async function handler(req, res) {
           </div>
         </div>`;
 
-        // 👈 TAGGING LOGIC UPDATED HERE TO PASS RECORD ID
         const sendPromises = recipientList.map(recipientEmail => {
           const emailParams = {
             from,
@@ -267,11 +266,9 @@ export default async function handler(req, res) {
               { name: 'recipient_email', value: recipientEmail }
             ]
           };
-
           if (payload.recordId) {
             emailParams.tags.push({ name: 'tracking_id', value: payload.recordId });
           }
-
           return resend.emails.send(emailParams);
         });
 
@@ -334,18 +331,68 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
+      // 10. DIRECT EMAIL CAMPAIGN (FROM INTERNAL DASHBOARD)
+      case 'campaign':
+        if (!payload.emails || !payload.subject || !payload.message) {
+          return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
+        }
+
+        from = 'KudiSlip <hello@kudislip.com.ng>';
+        to = payload.emails;
+        subject = payload.subject;
+
+        html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
+          </div>
+          <div style="padding: 32px 24px; color: #0F172A;">
+            <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
+            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px;">${payload.message}</div>
+          </div>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
+        </div>`;
+
+        tags = [
+          { name: 'email_type', value: 'campaign' },
+          { name: 'recipient_email', value: payload.emails }
+        ];
+
+        if (payload.recordId) {
+          tags.push({ name: 'tracking_id', value: payload.recordId });
+        }
+
+        const { data: campaignData, error: campaignError } = await resend.emails.send({
+          from,
+          to,
+          subject,
+          html,
+          tags
+        });
+
+        if (campaignError) {
+          console.error("Resend Campaign Error:", campaignError);
+          return res.status(500).json({ error: campaignError.message }); 
+        }
+
+        return res.status(200).json({ success: true, data: campaignData });
+
       default:
         return res.status(400).json({ error: 'Invalid email type specified.' });
     }
 
-    // Fire non-broadcast single emails
-    const emailConfig = { from, to: Array.isArray(to) ? to : [to], subject, html };
-    if (tags) emailConfig.tags = tags;
+    // Fire non-broadcast single emails (for cases 1-7, 9)
+    if (type !== 'broadcast' && type !== 'campaign') {
+      const emailConfig = { from, to: Array.isArray(to) ? to : [to], subject, html };
+      if (tags) emailConfig.tags = tags;
 
-    const { data: resendData, error: resendError } = await resend.emails.send(emailConfig);
-    if (resendError) throw resendError;
-    
-    return res.status(200).json({ success: true, message: 'Email sent successfully!', data: resendData });
+      const { data: resendData, error: resendError } = await resend.emails.send(emailConfig);
+      if (resendError) throw resendError;
+      
+      return res.status(200).json({ success: true, message: 'Email sent successfully!', data: resendData });
+    }
 
   } catch (error) {
     console.error("Mailer Error:", error);
