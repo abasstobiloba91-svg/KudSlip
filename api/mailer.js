@@ -255,9 +255,9 @@ export default async function handler(req, res) {
           </div>
         </div>`;
 
-        // Send to each recipient individually to protect privacy & tag for webhooks
-        const sendPromises = recipientList.map(recipientEmail => 
-          resend.emails.send({
+        // 👈 TAGGING LOGIC UPDATED HERE TO PASS RECORD ID
+        const sendPromises = recipientList.map(recipientEmail => {
+          const emailParams = {
             from,
             to: recipientEmail,
             subject,
@@ -266,8 +266,14 @@ export default async function handler(req, res) {
               { name: 'email_type', value: 'broadcast' },
               { name: 'recipient_email', value: recipientEmail }
             ]
-          })
-        );
+          };
+
+          if (payload.recordId) {
+            emailParams.tags.push({ name: 'tracking_id', value: payload.recordId });
+          }
+
+          return resend.emails.send(emailParams);
+        });
 
         await Promise.all(sendPromises);
 
