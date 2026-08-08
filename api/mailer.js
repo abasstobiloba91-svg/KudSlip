@@ -331,7 +331,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 10. DIRECT EMAIL CAMPAIGN (FROM INTERNAL DASHBOARD)
+            // 10. DIRECT EMAIL CAMPAIGN (FROM INTERNAL DASHBOARD WITH OPTIONAL CTA)
       case 'campaign':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
@@ -341,26 +341,39 @@ export default async function handler(req, res) {
         to = payload.emails;
         subject = payload.subject;
 
+        // Render dynamic CTA button if link and text are provided
+        const ctaButtonHtml = payload.ctaLink && payload.ctaText ? `
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${payload.ctaLink}" target="_blank" style="background-color: #000000; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 15px; display: inline-block;">
+              ${payload.ctaText}
+            </a>
+          </div>
+        ` : '';
+
         html = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
           <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
             <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
             <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
-            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px;">${payload.message}</div>
+            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 16px;">${payload.message}</div>
+            
+            ${ctaButtonHtml}
+            
           </div>
           <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
+              Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a>
+            </p>
             <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
           </div>
         </div>`;
 
-        // 👈 FIX: Removed invalid 'recipient_email' tag
         tags = [
           { name: 'email_type', value: 'campaign' }
         ];
 
-        // The record ID is a UUID which only contains dashes and alphanumeric chars, so this is perfectly safe for Resend
         if (payload.recordId) {
           tags.push({ name: 'tracking_id', value: payload.recordId });
         }
@@ -379,6 +392,7 @@ export default async function handler(req, res) {
         }
 
         return res.status(200).json({ success: true, data: campaignData });
+
 
       default:
         return res.status(400).json({ error: 'Invalid email type specified.' });
