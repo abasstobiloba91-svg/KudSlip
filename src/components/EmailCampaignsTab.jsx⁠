@@ -161,7 +161,7 @@ export default function EmailCampaignsTab({ user, showToast, supabase }) {
         </form>
       </div>
 
-      {/* Outbound Feed & Tracking Table */}
+      {/* Outboundu Feed & Tracking Table */}
       <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <div style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A" }}>Live Email Tracking Stream</div>
