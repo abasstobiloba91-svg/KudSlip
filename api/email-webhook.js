@@ -27,11 +27,12 @@ export default async function handler(req, res) {
       let invoiceId = null;
       let emailType = null;
       let recipientEmail = null;
+      let trackingId = null; // 👈 NEW: Added variable for internal campaign tracking
       
       const tags = event.data?.tags;
       
       if (Array.isArray(tags)) {
-        // If Resend sends a list: [ { name: 'invoice_id', value: '123' }, { name: 'email_type', value: 'broadcast' } ]
+        // If Resend sends a list
         const foundInv = tags.find(t => t.name === 'invoiceId' || t.name === 'invoice_id');
         if (foundInv) invoiceId = foundInv.value;
 
@@ -41,14 +42,19 @@ export default async function handler(req, res) {
         const foundRecipient = tags.find(t => t.name === 'recipient_email');
         if (foundRecipient) recipientEmail = foundRecipient.value;
 
+        // 👈 NEW: Extract tracking_id
+        const foundTracking = tags.find(t => t.name === 'tracking_id');
+        if (foundTracking) trackingId = foundTracking.value;
+
       } else if (tags && typeof tags === 'object') {
-        // If Resend sends a flat object: { invoice_id: '123', email_type: 'broadcast' }
+        // If Resend sends a flat object
         invoiceId = tags.invoiceId || tags.invoice_id;
         emailType = tags.email_type;
         recipientEmail = tags.recipient_email;
+        trackingId = tags.tracking_id; // 👈 NEW
       }
 
-      console.log(`Extracted Tags -> Invoice: ${invoiceId || 'N/A'} | Type: ${emailType || 'N/A'} | Recipient: ${recipientEmail || 'N/A'}`);
+      console.log(`Extracted Tags -> Invoice: ${invoiceId || 'N/A'} | Type: ${emailType || 'N/A'} | Recipient: ${recipientEmail || 'N/A'} | Tracking ID: ${trackingId || 'N/A'}`);
       
       // ==========================================
       // SCENARIO 1: INVOICE WAS OPENED
@@ -67,9 +73,28 @@ export default async function handler(req, res) {
       } 
       
       // ==========================================
-      // SCENARIO 2: ADMIN BROADCAST WAS OPENED
+      // SCENARIO 2: EMAIL CAMPAIGN WAS OPENED (NEW)
       // ==========================================
-      else if (emailType === 'broadcast' && recipientEmail) {
+      if (trackingId) {
+        const { error } = await supabase
+          .from('sent_emails')
+          .update({ 
+            status: 'opened',
+            opened_at: new Date().toISOString()
+          })
+          .eq('id', trackingId);
+
+        if (error) {
+          console.error("Supabase Campaign Tracker Write Error:", error);
+        } else {
+          console.log("Database successfully updated for internal campaign tracking:", trackingId);
+        }
+      }
+      
+      // ==========================================
+      // SCENARIO 3: ADMIN BROADCAST WAS OPENED
+      // ==========================================
+      if (emailType === 'broadcast' && recipientEmail) {
         const subject = event.data?.subject || 'System Broadcast';
 
         const { error } = await supabase
@@ -83,9 +108,9 @@ export default async function handler(req, res) {
         }
       } 
       
-      // EDGE CASE: NEITHER WAS FOUND
-      else {
-        console.log("No actionable tags (invoiceId or broadcast) were found in the Resend payload.");
+      // EDGE CASE: NONE WERE FOUND
+      if (!invoiceId && !trackingId && !(emailType === 'broadcast' && recipientEmail)) {
+        console.log("No actionable tags were found in the Resend payload.");
       }
     }
     
