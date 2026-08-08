@@ -83,11 +83,11 @@ export default function EmailTab({ user, showToast, supabase }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'broadcast',
+          type: 'campaign', // 👈 Targets the new campaign block in mailer.js
           emails: recipient,
           subject: subject,
           message: body,
-          recordId: data.id // 👈 THIS IS THE CRITICAL ADDITION
+          recordId: data.id 
         }),
       });
 
@@ -103,7 +103,7 @@ export default function EmailTab({ user, showToast, supabase }) {
       setBody('');
     } catch (err) {
       console.error("Send Error:", err);
-      showToast("Failed", "Could not dispatch email. Check console.", "error");
+      showToast("Failed", err.message || "Could not dispatch email. Check console.", "error");
     } finally {
       setSending(false);
     }
