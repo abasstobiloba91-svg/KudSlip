@@ -36,7 +36,7 @@ export default function LandingPage() {
           height: 32px;
           margin: 0 48px;
           opacity: 0.4;
-          /* THIS IS THE MAGIC BULLET: Forces every logo to be a pure black silhouette */
+          /* Forces every logo to be a pure black silhouette to solve visibility issues */
           filter: contrast(0) brightness(0);
           transition: all 0.3s ease;
           object-fit: contain;
@@ -44,15 +44,16 @@ export default function LandingPage() {
 
         .trusted-logo:hover {
           opacity: 1;
-          /* Keeps it black on hover so white logos don't disappear */
           filter: contrast(0) brightness(0);
         }
 
-        /* Fallback utility classes */
+        /* Essential utility classes */
         .btn-hover { transition: opacity 0.2s, transform 0.2s; }
         .btn-hover:hover { opacity: 0.9; transform: translateY(-1px); }
         .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 20px -10px rgba(0,0,0,0.1); }
+        
+        /* Your brand colors */
         .btn-primary { background: #8B5CF6; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; text-align: center; }
         .btn-secondary { background: white; color: #0F172A; border: 1px solid #E2E8F0; border-radius: 8px; text-decoration: none; font-weight: 600; text-align: center; }
         
@@ -74,8 +75,8 @@ export default function LandingPage() {
             <img src="/logo.png" alt="KudiSlip Logo" style={{ height: "40px", transform: "scale(2.5)", transformOrigin: "left center" }} />
           </div>
           <div className="nav-buttons-desktop" style={{ display: "flex", gap: "16px" }}>
-            <a href="/login" className="btn-secondary btn-hover" style={{ padding: "10px 20px" }}>Log In</a>
-            <a href="/signup" className="btn-primary btn-hover" style={{ padding: "10px 20px" }}>Get Started Free</a>
+            <a href="/login" className="btn-secondary btn-hover" style={{ padding: "10px 20px", display: "inline-block" }}>Log In</a>
+            <a href="/signup" className="btn-primary btn-hover" style={{ padding: "10px 20px", display: "inline-block" }}>Get Started Free</a>
           </div>
           <button 
             className="mobile-menu-toggle" 
@@ -89,8 +90,8 @@ export default function LandingPage() {
         {/* MOBILE MENU */}
         {mobileMenuOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 0", borderBottom: "1px solid #E2E8F0" }}>
-            <a href="/login" className="btn-secondary btn-hover" style={{ padding: "12px", width: "100%", boxSizing: "border-box" }}>Log In</a>
-            <a href="/signup" className="btn-primary btn-hover" style={{ padding: "12px", width: "100%", boxSizing: "border-box" }}>Get Started Free</a>
+            <a href="/login" className="btn-secondary btn-hover" style={{ padding: "12px", width: "100%", boxSizing: "border-box", textAlign: "center" }}>Log In</a>
+            <a href="/signup" className="btn-primary btn-hover" style={{ padding: "12px", width: "100%", boxSizing: "border-box", textAlign: "center" }}>Get Started Free</a>
           </div>
         )}
         
@@ -116,30 +117,24 @@ export default function LandingPage() {
           <div className="logo-ticker-container">
             <div className="logo-ticker-track">
               
-              {/* GROUP 1 */}
+              {/* GROUP 1: Updated to capital .PNG */}
               <div style={{ display: "flex", alignItems: "center" }}>
-                <img src="/ozinna-logo.png" alt="Ozinna" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <img src="/zayith-logo.png" alt="Zayith Foods" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>AFRICA TECH EXPO</span>
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", display: "flex", alignItems: "center", fontStyle: "italic", whiteSpace: "nowrap" }}>Nómaada</span>
-                <span className="trusted-logo" style={{ fontSize: "20px", fontWeight: "700", color: "#0F172A", display: "flex", alignItems: "center", letterSpacing: "1px", whiteSpace: "nowrap" }}>SPARK & PARTNERS</span>
-                <img src="/famoustechplay-logo.png" alt="FamousTechPlay" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", display: "flex", alignItems: "center", letterSpacing: "-0.5px", whiteSpace: "nowrap" }}>FamousTechPlay</span>
-                <img src="/hyvestudio-logo.png" alt="Hyve Studio" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>HYVE STUDIO</span>
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
               </div>
 
-              {/* GROUP 2 (Duplicate for seamless loop) */}
+              {/* GROUP 2: Exact Duplicate for seamless loop */}
               <div style={{ display: "flex", alignItems: "center" }}>
-                <img src="/ozinna-logo.png" alt="Ozinna" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <img src="/zayith-logo.png" alt="Zayith Foods" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>AFRICA TECH EXPO</span>
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", display: "flex", alignItems: "center", fontStyle: "italic", whiteSpace: "nowrap" }}>Nómaada</span>
-                <span className="trusted-logo" style={{ fontSize: "20px", fontWeight: "700", color: "#0F172A", display: "flex", alignItems: "center", letterSpacing: "1px", whiteSpace: "nowrap" }}>SPARK & PARTNERS</span>
-                <img src="/famoustechplay-logo.png" alt="FamousTechPlay" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", display: "flex", alignItems: "center", letterSpacing: "-0.5px", whiteSpace: "nowrap" }}>FamousTechPlay</span>
-                <img src="/hyvestudio-logo.png" alt="Hyve Studio" className="trusted-logo" onError={(e) => { e.target.style.display = 'none' }} />
-                <span className="trusted-logo" style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>HYVE STUDIO</span>
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
               </div>
 
             </div>
