@@ -108,7 +108,7 @@ export default function LandingPage() {
           </div>
         </main>
 
-        {/* --- NEW TRUSTED BY SECTION --- */}
+                {/* --- NEW TRUSTED BY SECTION --- */}
         <div style={{ padding: "20px 0 80px", width: "100vw", position: "relative", left: "50%", right: "50%", marginLeft: "-50vw", marginRight: "-50vw", background: "#FFFFFF" }}>
           <p style={{ textAlign: "center", fontSize: "13px", fontWeight: "700", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "32px" }}>
             Trusted by growing African brands
@@ -117,24 +117,24 @@ export default function LandingPage() {
           <div className="logo-ticker-container">
             <div className="logo-ticker-track">
               
-              {/* GROUP 1: Updated to capital .PNG */}
+              {/* GROUP 1: Applied scaling to Hyve Studio to fix the size difference */}
               <div style={{ display: "flex", alignItems: "center" }}>
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
               </div>
 
               {/* GROUP 2: Exact Duplicate for seamless loop */}
               <div style={{ display: "flex", alignItems: "center" }}>
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
                 <img src="/famoustechplay-logo.PNG" alt="FamousTechPlay" className="trusted-logo" />
-                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" />
+                <img src="/hyvestudio-logo.PNG" alt="Hyve Studio" className="trusted-logo" style={{ transform: "scale(1.8)" }} />
               </div>
 
             </div>
