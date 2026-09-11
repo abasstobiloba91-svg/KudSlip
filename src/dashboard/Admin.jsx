@@ -6,7 +6,7 @@ export default function Admin({ user, showToast }) {
   const [vendors, setVendors] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
-  const [broadcastOpens, setBroadcastOpens] = useState([]); // Analytics state
+  const [broadcastOpens, setBroadcastOpens] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
 
   // Impersonation / Dashboard Inspection Modal State
@@ -17,7 +17,8 @@ export default function Admin({ user, showToast }) {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
-  const userRole = user?.role || 'super_admin'; // Fallback ensures admin views retain privileges
+  // 🔒 STRICT ROLE ACCESS CONTROLS (FIXED ROLE FALLBACK VULNERABILITY)
+  const userRole = user?.role || 'vendor'; 
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || isSuperAdmin;
   const isSupport = userRole === 'support' || isAdmin;
@@ -61,7 +62,15 @@ export default function Admin({ user, showToast }) {
       .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
   };
 
-  const handleRoleChange = async (targetUserId, newRole) => {
+  const handleRoleChange = async (targetUserId, targetCurrentRole, newRole) => {
+    // 🔒 SUPER ADMIN PROTECTION
+    if (!isSuperAdmin) {
+      return showToast("Access Denied", "Only the Super Admin can modify user roles.", "error");
+    }
+    if (targetCurrentRole === 'super_admin') {
+      return showToast("Action Blocked", "Super Admin accounts cannot have their roles demoted here.", "error");
+    }
+
     setLoadingId(targetUserId);
     try {
       const res = await fetch('/api/admin-actions', {
@@ -82,6 +91,14 @@ export default function Admin({ user, showToast }) {
   };
 
   const handleDeleteUser = async (vendor) => {
+    // 🔒 SUPER ADMIN PROTECTION
+    if (!isSuperAdmin) {
+      return showToast("Access Denied", "Only the Super Admin can delete user accounts.", "error");
+    }
+    if (vendor.role === 'super_admin') {
+      return showToast("Action Blocked", "Super Admin accounts cannot be deleted.", "error");
+    }
+
     if (!window.confirm(`Are you sure you want to permanently delete ${vendor.business_name || vendor.email}? This action cannot be undone.`)) return;
 
     setLoadingId(vendor.id);
@@ -161,6 +178,10 @@ export default function Admin({ user, showToast }) {
     }
   };
 
+  if (!isSupport) {
+    return <div style={{ padding: "40px", textAlign: "center", color: "#EF4444", fontWeight: "700" }}>Access Denied. You do not have permission to view the Command Center.</div>;
+  }
+
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0 12px 40px" }}>
       
@@ -238,29 +259,31 @@ export default function Admin({ user, showToast }) {
           Support & Messages ({supportMessages.length})
         </button>
 
-        <button 
-          onClick={() => setActiveTab('broadcast')}
-          style={{ 
-            padding: "10px 16px", 
-            fontWeight: "800", 
-            fontSize: "13px", 
-            border: "none", 
-            borderRadius: "8px",
-            background: activeTab === 'broadcast' ? "#F3E8FF" : "transparent", 
-            color: activeTab === 'broadcast' ? "#7E22CE" : "#64748B",
-            whiteSpace: "nowrap",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px"
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-          </svg>
-          <span>Broadcast Emails</span>
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setActiveTab('broadcast')}
+            style={{ 
+              padding: "10px 16px", 
+              fontWeight: "800", 
+              fontSize: "13px", 
+              border: "none", 
+              borderRadius: "8px",
+              background: activeTab === 'broadcast' ? "#F3E8FF" : "transparent", 
+              color: activeTab === 'broadcast' ? "#7E22CE" : "#64748B",
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <span>Broadcast Emails</span>
+          </button>
+        )}
       </div>
 
       {/* ========================================================= */}
@@ -293,30 +316,42 @@ export default function Admin({ user, showToast }) {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px", marginTop: "4px" }}>
-                  <button 
-                    onClick={() => setInspectVendor(v)}
-                    style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    <span>Inspect Data</span>
-                  </button>
+                  
+                  {/* 🔒 ONLY SUPER ADMIN CAN INSPECT CONFIDENTIAL DATA */}
+                  {isSuperAdmin && (
+                    <button 
+                      onClick={() => setInspectVendor(v)}
+                      style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <span>Inspect Data</span>
+                    </button>
+                  )}
 
-                  <select 
-                    value={v.role || 'vendor'} 
-                    onChange={(e) => handleRoleChange(v.id, e.target.value)}
-                    disabled={loadingId === v.id}
-                    style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "12px", fontWeight: "700", background: "#F8FAFC", cursor: "pointer", width: "100%" }}
-                  >
-                    <option value="vendor">Role: Vendor</option>
-                    <option value="support">Role: Support</option>
-                    <option value="admin">Role: Admin</option>
-                    <option value="super_admin">Role: Super Admin</option>
-                  </select>
+                  {/* 🔒 ONLY SUPER ADMIN CAN CHANGE ROLES */}
+                  {isSuperAdmin ? (
+                    <select 
+                      value={v.role || 'vendor'} 
+                      onChange={(e) => handleRoleChange(v.id, v.role, e.target.value)}
+                      disabled={loadingId === v.id || v.role === 'super_admin'}
+                      style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "12px", fontWeight: "700", background: "#F8FAFC", cursor: "pointer", width: "100%" }}
+                    >
+                      <option value="vendor">Role: Vendor</option>
+                      <option value="support">Role: Support</option>
+                      <option value="admin">Role: Admin</option>
+                      <option value="super_admin">Role: Super Admin</option>
+                    </select>
+                  ) : (
+                    <div style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "12px", fontWeight: "700", background: "#F1F5F9", color: "#64748B", textAlign: "center" }}>
+                      Role: {v.role || 'vendor'}
+                    </div>
+                  )}
 
-                  {v.id !== user?.id && (
+                  {/* 🔒 ONLY SUPER ADMIN CAN DELETE USERS */}
+                  {isSuperAdmin && v.id !== user?.id && v.role !== 'super_admin' && (
                     <button 
                       onClick={() => handleDeleteUser(v)}
                       disabled={loadingId === v.id}
@@ -447,7 +482,7 @@ export default function Admin({ user, showToast }) {
       {/* ========================================================= */}
       {/* TAB 4: SYSTEM BROADCAST EMAILS                            */}
       {/* ========================================================= */}
-      {activeTab === 'broadcast' && (
+      {activeTab === 'broadcast' && isAdmin && (
         <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "24px 16px" }}>
           <div style={{ marginBottom: "20px" }}>
             <h3 style={{ margin: "0 0 6px 0", fontSize: "20px", fontWeight: "900" }}>Broadcast Announcement</h3>
@@ -528,8 +563,8 @@ export default function Admin({ user, showToast }) {
         </div>
       )}
 
-      {/* CONFIDENTIAL VENDOR INSPECTION MODAL */}
-      {inspectVendor && (
+      {/* 🔒 CONFIDENTIAL VENDOR INSPECTION MODAL (SUPER ADMIN ONLY) */}
+      {inspectVendor && isSuperAdmin && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "16px" }}>
           <div style={{ background: "#FFFFFF", borderRadius: "16px", padding: "24px 16px", width: "100%", maxWidth: "550px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
             
