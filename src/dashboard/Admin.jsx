@@ -17,7 +17,7 @@ export default function Admin({ user, showToast }) {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
-  // 🔒 STRICT ROLE ACCESS CONTROLS (FIXED ROLE FALLBACK VULNERABILITY)
+  // 🔒 STRICT ROLE ACCESS CONTROLS
   const userRole = user?.role || 'vendor'; 
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || isSuperAdmin;
@@ -44,7 +44,7 @@ export default function Admin({ user, showToast }) {
     if (vendorData) setVendors(vendorData);
 
     // 2. Fetch Invoices for Revenue Analytics
-    const { data: invoiceData } = await supabase.from('invoices').select('id, vendor_id, amount, status, created_at');
+    const { data: invoiceData } = await supabase.from('invoices').select('id, vendor_id, amount, currency, status, created_at');
     if (invoiceData) setInvoices(invoiceData);
 
     // 3. Fetch Support Messages
@@ -62,8 +62,16 @@ export default function Admin({ user, showToast }) {
       .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
   };
 
+  // 💰 SUPER ADMIN REVENUE METRICS
+  const calculateTotalRevenueByCurrency = (curr = 'NGN') => {
+    return invoices
+      .filter(i => i.status === 'paid' && (i.currency === curr || (!i.currency && curr === 'NGN')))
+      .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+  };
+
+  const totalPaidInvoicesCount = invoices.filter(i => i.status === 'paid').length;
+
   const handleRoleChange = async (targetUserId, targetCurrentRole, newRole) => {
-    // 🔒 SUPER ADMIN PROTECTION
     if (!isSuperAdmin) {
       return showToast("Access Denied", "Only the Super Admin can modify user roles.", "error");
     }
@@ -91,7 +99,6 @@ export default function Admin({ user, showToast }) {
   };
 
   const handleDeleteUser = async (vendor) => {
-    // 🔒 SUPER ADMIN PROTECTION
     if (!isSuperAdmin) {
       return showToast("Access Denied", "Only the Super Admin can delete user accounts.", "error");
     }
@@ -290,85 +297,111 @@ export default function Admin({ user, showToast }) {
       {/* TAB 1: VENDORS, EARNINGS & ROLE ASSIGNMENTS               */}
       {/* ========================================================= */}
       {activeTab === 'vendors' && (
-        <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
-          {vendors.map(v => {
-            const earnings = getVendorEarnings(v.id);
-            const userInvoices = invoices.filter(i => i.vendor_id === v.id);
-
-            return (
-              <div key={v.id} style={{ padding: "20px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: "14px" }}>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-                  <div>
-                    <div style={{ fontWeight: "900", fontSize: "16px", color: "#0F172A", wordBreak: "break-word" }}>
-                      {v.business_name || "Unnamed Business"}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "#64748B", marginTop: "2px", wordBreak: "break-all" }}>{v.email}</div>
-                  </div>
-                  
-                  <span style={{ fontSize: "10px", fontWeight: "900", padding: "4px 8px", borderRadius: "6px", background: "#F1F5F9", color: "#475569", textTransform: "uppercase", flexShrink: 0 }}>
-                    {v.role || 'vendor'}
-                  </span>
-                </div>
-
-                <div style={{ fontSize: "13px", fontWeight: "700", color: "#10B981", background: "#ECFDF5", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
-                  Total Earned: ₦{earnings.toLocaleString()} <span style={{ color: "#047857", fontWeight: "500" }}>({userInvoices.length} invoices)</span>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px", marginTop: "4px" }}>
-                  
-                  {/* 🔒 ONLY SUPER ADMIN CAN INSPECT CONFIDENTIAL DATA */}
-                  {isSuperAdmin && (
-                    <button 
-                      onClick={() => setInspectVendor(v)}
-                      style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      <span>Inspect Data</span>
-                    </button>
-                  )}
-
-                  {/* 🔒 ONLY SUPER ADMIN CAN CHANGE ROLES */}
-                  {isSuperAdmin ? (
-                    <select 
-                      value={v.role || 'vendor'} 
-                      onChange={(e) => handleRoleChange(v.id, v.role, e.target.value)}
-                      disabled={loadingId === v.id || v.role === 'super_admin'}
-                      style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "12px", fontWeight: "700", background: "#F8FAFC", cursor: "pointer", width: "100%" }}
-                    >
-                      <option value="vendor">Role: Vendor</option>
-                      <option value="support">Role: Support</option>
-                      <option value="admin">Role: Admin</option>
-                      <option value="super_admin">Role: Super Admin</option>
-                    </select>
-                  ) : (
-                    <div style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "12px", fontWeight: "700", background: "#F1F5F9", color: "#64748B", textAlign: "center" }}>
-                      Role: {v.role || 'vendor'}
-                    </div>
-                  )}
-
-                  {/* 🔒 ONLY SUPER ADMIN CAN DELETE USERS */}
-                  {isSuperAdmin && v.id !== user?.id && v.role !== 'super_admin' && (
-                    <button 
-                      onClick={() => handleDeleteUser(v)}
-                      disabled={loadingId === v.id}
-                      style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                      <span>Delete User</span>
-                    </button>
-                  )}
-                </div>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          
+          {/* 💎 TOTAL PLATFORM GENERATED REVENUE (SUPER ADMIN EXCLUSIVE) */}
+          {isSuperAdmin && (
+            <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", borderRadius: "16px", padding: "24px", color: "#FFFFFF", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: "#94A3B8", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+                Total Revenue Processed Across Platform
               </div>
-            );
-          })}
+              <div style={{ fontSize: "36px", fontWeight: "900", color: "#34D399", letterSpacing: "-0.5px" }}>
+                ₦{calculateTotalRevenueByCurrency('NGN').toLocaleString()}
+              </div>
+              <div style={{ fontSize: "13px", color: "#CBD5E1", marginTop: "4px" }}>
+                Generated from <strong style={{ color: "#FFF" }}>{totalPaidInvoicesCount} successfully paid</strong> transactions.
+              </div>
+
+              {/* Multi-currency breakdown if USD or GBP exist */}
+              {(calculateTotalRevenueByCurrency('USD') > 0 || calculateTotalRevenueByCurrency('GBP') > 0) && (
+                <div style={{ display: "flex", gap: "16px", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "13px" }}>
+                  {calculateTotalRevenueByCurrency('USD') > 0 && <div>USD Total: <strong style={{ color: "#60A5FA" }}>${calculateTotalRevenueByCurrency('USD').toLocaleString()}</strong></div>}
+                  {calculateTotalRevenueByCurrency('GBP') > 0 && <div>GBP Total: <strong style={{ color: "#F472B6" }}>£{calculateTotalRevenueByCurrency('GBP').toLocaleString()}</strong></div>}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
+            {vendors.map(v => {
+              const earnings = getVendorEarnings(v.id);
+              const userInvoices = invoices.filter(i => i.vendor_id === v.id);
+
+              return (
+                <div key={v.id} style={{ padding: "20px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: "14px" }}>
+                  
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+                    <div>
+                      <div style={{ fontWeight: "900", fontSize: "16px", color: "#0F172A", wordBreak: "break-word" }}>
+                        {v.business_name || "Unnamed Business"}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#64748B", marginTop: "2px", wordBreak: "break-all" }}>{v.email}</div>
+                    </div>
+                    
+                    <span style={{ fontSize: "10px", fontWeight: "900", padding: "4px 8px", borderRadius: "6px", background: "#F1F5F9", color: "#475569", textTransform: "uppercase", flexShrink: 0 }}>
+                      {v.role || 'vendor'}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "#10B981", background: "#ECFDF5", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+                    Total Earned: ₦{earnings.toLocaleString()} <span style={{ color: "#047857", fontWeight: "500" }}>({userInvoices.length} invoices)</span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px", marginTop: "4px" }}>
+                    
+                    {/* 🔒 ONLY SUPER ADMIN CAN INSPECT CONFIDENTIAL DATA */}
+                    {isSuperAdmin && (
+                      <button 
+                        onClick={() => setInspectVendor(v)}
+                        style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span>Inspect Data</span>
+                      </button>
+                    )}
+
+                    {/* 🔒 ONLY SUPER ADMIN CAN CHANGE ROLES */}
+                    {isSuperAdmin ? (
+                      <select 
+                        value={v.role || 'vendor'} 
+                        onChange={(e) => handleRoleChange(v.id, v.role, e.target.value)}
+                        disabled={loadingId === v.id || v.role === 'super_admin'}
+                        style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "12px", fontWeight: "700", background: "#F8FAFC", cursor: "pointer", width: "100%" }}
+                      >
+                        <option value="vendor">Role: Vendor</option>
+                        <option value="support">Role: Support</option>
+                        <option value="admin">Role: Admin</option>
+                        <option value="super_admin">Role: Super Admin</option>
+                      </select>
+                    ) : (
+                      <div style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "12px", fontWeight: "700", background: "#F1F5F9", color: "#64748B", textAlign: "center" }}>
+                        Role: {v.role || 'vendor'}
+                      </div>
+                    )}
+
+                    {/* 🔒 ONLY SUPER ADMIN CAN DELETE USERS */}
+                    {isSuperAdmin && v.id !== user?.id && v.role !== 'super_admin' && (
+                      <button 
+                        onClick={() => handleDeleteUser(v)}
+                        disabled={loadingId === v.id}
+                        style={{ padding: "10px 12px", fontSize: "12px", fontWeight: "700", background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Delete User</span>
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
