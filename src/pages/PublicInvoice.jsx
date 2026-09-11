@@ -85,7 +85,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
 
-      // 🎯 SECURE PAYSTACK PAYLOAD (CLEANED UP FOR BACKEND WEBHOOK)
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
@@ -192,7 +191,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           .print-card { padding: 24px; }
         }
         
-        /* 🖨️ THE FIX: Forces perfect margins on every computer */
         @media print {
           @page { margin: 0; } 
           body, html, .invoice-page-wrapper { 
@@ -263,9 +261,15 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   </div>
                 )}
               </div>
+
+              {/* 🎯 KUD-INV-XXXX DISPLAY */}
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>Status</div>
-                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
+                <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "6px", letterSpacing: "0.5px" }}>
+                  {invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`}
+                </div>
+                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase" }}>
+                  {invoice.status || 'PENDING'}
+                </div>
               </div>
             </div>
             
