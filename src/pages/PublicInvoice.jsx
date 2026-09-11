@@ -222,8 +222,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         <div className="invoice-max-width">
           
           <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid #E2E8F0`, padding: "10px 20px", borderRadius: "8px", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <button onClick={triggerPDFCompilation} className="btn-hover" style={{ background: "#FFFFFF", color: "#0F172A", border: `1px solid #E2E8F0`, padding: "12px 24px", borderRadius: "8px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                  <path d="M3 17v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
                  <polyline points="8 12 12 16 16 12"></polyline>
                  <line x1="12" y1="2" x2="12" y2="16"></line>
@@ -234,15 +234,15 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           
           {isFreeTier && (
             <div style={{ textAlign: "center", marginBottom: "-8px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
-              <img src="/logo.png" alt="KudiSlip" style={{ height: "24px", transform: "scale(1.5)" }} />
+              <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "8px" }}>Powered By</div>
+              <img src="/logo.png" alt="KudiSlip" style={{ height: "28px", transform: "scale(1.5)" }} />
             </div>
           )}
 
           <div className="print-card card-hover">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
               <div>
-                <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Billed By</div>
                 {vendor?.logo_url ? (
                   <img 
                     src={vendor.logo_url} 
@@ -258,69 +258,69 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
-                    <div style={{ fontSize: "18px", fontWeight: "900", color: "#0F172A" }}>{vendor?.business_name || "Verified Merchant"}</div>
+                    <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "28px", objectFit: "contain" }} />
+                    <div style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A" }}>{vendor?.business_name || "Verified Merchant"}</div>
                   </div>
                 )}
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Status</div>
-                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>Status</div>
+                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: "800", textTransform: "uppercase", marginTop: "4px" }}>{invoice.status || 'PENDING'}</div>
               </div>
             </div>
             
-            <div style={{ borderTop: `1px solid #E2E8F0`, borderBottom: `1px solid #E2E8F0`, padding: "24px 0", marginBottom: "32px", display: "flex", justifyContent: "space-between" }}>
+            <div style={{ borderTop: `1px solid #E2E8F0`, borderBottom: `1px solid #E2E8F0`, padding: "28px 0", marginBottom: "36px", display: "flex", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Billed To</div>
-                <div style={{ fontWeight: "700", fontSize: "15px", color: "#0F172A", marginTop: "4px" }}>{client?.name || "Client"}</div>
-                <div style={{ fontSize: "14px", color: "#64748B", marginTop: "2px" }}>{client?.email || "No email"}</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>Billed To</div>
+                <div style={{ fontWeight: "800", fontSize: "17px", color: "#0F172A", marginTop: "6px" }}>{client?.name || "Client"}</div>
+                <div style={{ fontSize: "15px", color: "#64748B", marginTop: "4px" }}>{client?.email || "No email"}</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Due Date</div>
-                <div style={{ fontWeight: "700", fontSize: "15px", color: "#0F172A", marginTop: "4px" }}>{safeDate}</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>Due Date</div>
+                <div style={{ fontWeight: "800", fontSize: "17px", color: "#0F172A", marginTop: "6px" }}>{safeDate}</div>
               </div>
             </div>
             
             <div style={{ marginBottom: "40px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px", paddingBottom: "12px", borderBottom: `1px solid #E2E8F0` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "16px", paddingBottom: "12px", borderBottom: `1px solid #E2E8F0` }}>
                 <div style={{ flex: 1 }}>Description</div>
-                <div style={{ width: "60px", textAlign: "center" }}>Qty</div>
-                <div style={{ width: "120px", textAlign: "right" }}>Amount</div>
+                <div style={{ width: "80px", textAlign: "center" }}>Qty</div>
+                <div style={{ width: "140px", textAlign: "right" }}>Amount</div>
               </div>
               
               {safeItems.map((item, idx) => (
-                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px dashed #E2E8F0" }}>
-                  <div style={{ flex: 1, fontWeight: "600", fontSize: "14px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px" }}>{item.description}</div>
-                  <div style={{ width: "60px", textAlign: "center", fontSize: "14px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
-                  <div style={{ width: "120px", textAlign: "right", fontWeight: "800", fontSize: "14px", color: "#0F172A" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
+                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px dashed #E2E8F0" }}>
+                  <div style={{ flex: 1, fontWeight: "600", fontSize: "16px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px" }}>{item.description}</div>
+                  <div style={{ width: "80px", textAlign: "center", fontSize: "16px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
+                  <div style={{ width: "140px", textAlign: "right", fontWeight: "800", fontSize: "16px", color: "#0F172A" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
                 </div>
               ))}
             </div>
             
-            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
-              <div style={{ fontSize: "14px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
-              <div style={{ fontSize: "28px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
+              <div style={{ fontSize: "15px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
+              <div style={{ fontSize: "32px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
             </div>
             
             <div className="no-print">
               {invoice.status === 'pending' ? (
-                <button className="btn-hover" style={{ width: "100%", padding: "18px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "16px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
+                <button className="btn-hover" style={{ width: "100%", padding: "20px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "17px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
                   Proceed to Secure Payment
                 </button>
               ) : (
-                <div style={{ textAlign: "center", padding: "20px", background: invoice.payment_method === 'manual' ? "#F8FAFC" : "#ECFDF5", borderRadius: "12px", border: invoice.payment_method === 'manual' ? "1px dashed #94A3B8" : "1px solid #A7F3D0" }}>
-                  <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : "#10B981", fontWeight: "900", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <div style={{ textAlign: "center", padding: "24px", background: invoice.payment_method === 'manual' ? "#F8FAFC" : "#ECFDF5", borderRadius: "12px", border: invoice.payment_method === 'manual' ? "1px dashed #94A3B8" : "1px solid #A7F3D0" }}>
+                  <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : "#10B981", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                      {invoice.payment_method === 'manual' ? "Marked as Paid (Manual)" : "Payment Complete"}
                   </div>
-                  <div style={{ fontSize: "14px", color: "#0F172A", fontWeight: "600", marginBottom: "12px" }}>{thankYouMessage}</div>
+                  <div style={{ fontSize: "16px", color: "#0F172A", fontWeight: "600", marginBottom: "12px" }}>{thankYouMessage}</div>
                   
                   {invoice.payment_method === 'manual' && (
-                    <div style={{ fontSize: "12px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "8px 12px", borderRadius: "6px", display: "inline-block", border: "1px solid #FECACA" }}>
+                    <div style={{ fontSize: "13px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "10px 14px", borderRadius: "6px", display: "inline-block", border: "1px solid #FECACA" }}>
                       ⚠️ Logged via Cash/Direct Transfer. Not verified by KudiSlip.
                     </div>
                   )}
                   {invoice.payment_method === 'paystack' && (
-                    <div style={{ fontSize: "12px", color: "#10B981", fontWeight: "800" }}>
+                    <div style={{ fontSize: "13px", color: "#10B981", fontWeight: "800" }}>
                       🔒 Securely Verified by Paystack
                     </div>
                   )}
@@ -328,16 +328,16 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               )}
               
               {currentUser?.id === vendor?.id && (
-                <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "16px", marginTop: "16px", display: "block", textAlign: "center" }}>Return to Dashboard</a>
+                <a href="/dashboard/invoices" className="btn-secondary btn-hover" style={{ width: "100%", boxSizing: "border-box", padding: "18px", marginTop: "16px", display: "block", textAlign: "center", fontSize: "15px" }}>Return to Dashboard</a>
               )}
             </div>
           </div>
 
           {/* Review Component */}
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
-            <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid #E2E8F0`, padding: "32px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
-              <p style={{ fontSize: "14px", color: "#64748B", marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
+            <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid #E2E8F0`, padding: "36px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+              <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
+              <p style={{ fontSize: "15px", color: "#64748B", marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
               
               <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
                 {starsArray.map(star => (
@@ -353,15 +353,15 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               
               {rating > 0 && (
                 <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
-                  <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical" }} />
-                  <button className="btn-primary btn-hover" style={{ width: "100%" }} onClick={submitReview}>Submit Feedback</button>
+                  <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical", fontSize: "15px" }} />
+                  <button className="btn-primary btn-hover" style={{ width: "100%", padding: "16px", fontSize: "15px" }} onClick={submitReview}>Submit Feedback</button>
                 </div>
               )}
             </div>
           )}
 
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
-             <a href="/" className="btn-secondary btn-hover no-print" style={{ width: "100%", boxSizing: "border-box", padding: "16px", background: "#FFFFFF", textAlign: "center", borderRadius: "12px", display: "block" }}>Return to KudiSlip Home</a>
+             <a href="/" className="btn-secondary btn-hover no-print" style={{ width: "100%", boxSizing: "border-box", padding: "18px", background: "#FFFFFF", textAlign: "center", borderRadius: "12px", display: "block", fontSize: "15px" }}>Return to KudiSlip Home</a>
           )}
 
         </div>
