@@ -11,8 +11,11 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploadPercent, setUploadPercent] = useState(0);
 
   const handleLogoUpload = async (e) => {
-    const file = e.target.files;
-    if (!file) return;
+    // 1. FIXED: Grab the actual file object, not the FileList array
+    const file = e.target.files[0]; 
+    
+    // 2. FIXED: Add safety check to ensure it has a name before proceeding
+    if (!file || !file.name) return; 
     
     if (file.size > 5242880) {
       showToast("File Too Large", "Logos must be smaller than 5MB.", "error");
@@ -93,12 +96,12 @@ function BrandSettings({ user, onUpdate, showToast }) {
       
       <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", overflow: "hidden" }}>
         
-   {/* 🎯 THE UPGRADED GLASSMORPHISM PAYWALL */}
+        {/* 🎯 THE UPGRADED GLASSMORPHISM PAYWALL (Text Fixed) */}
         {!isPremium && (
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(8px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
              <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", border: `1px solid ${DESIGN.premium}` }}>💎 PREMIUM FEATURE</div>
-             <h3 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", margin: "0 0 12px 0" }}>Unlock Profit Analytics</h3>
-             <p style={{ color: "#475569", fontSize: "15px", marginBottom: "28px", maxWidth: "320px", lineHeight: "1.6", fontWeight: "500" }}>Log business expenses to automatically calculate your true net profit.</p>
+             <h3 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", margin: "0 0 12px 0" }}>Unlock Custom Branding</h3>
+             <p style={{ color: "#475569", fontSize: "15px", marginBottom: "28px", maxWidth: "320px", lineHeight: "1.6", fontWeight: "500" }}>Upload your own logo, set custom brand colors, and personalize your client experience.</p>
              <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ padding: "16px 32px", fontSize: "15px", boxShadow: "0 10px 15px -3px rgba(139, 92, 246, 0.3)" }}>Upgrade to Premium</a>
           </div>
         )}
