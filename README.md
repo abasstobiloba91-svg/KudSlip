@@ -19,7 +19,6 @@ Welcome to the KudiSlip repository! KudiSlip is a robust, real-time web applicat
 *    **Brand Customization:** Premium users can upload custom logos to their payment pages.
 
 ### For Admins (Command Center)
-*    **Complete Oversight:** Inspect vendor performance, earnings, and platform metrics.
 *    **KYC/Compliance Management:** Review and approve/reject CAC document uploads directly.
 *    **Broadcast Engine:** Send branded mass emails to all vendors simultaneously.
 *    **Live Broadcast Analytics:** Track who opens admin announcements in real-time.
