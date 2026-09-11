@@ -244,7 +244,18 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               <div>
                 <div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>Billed By</div>
                 {vendor?.logo_url ? (
-                  <img src={vendor.logo_url} alt={vendor.business_name} style={{ maxHeight: "40px", objectFit: "contain" }} />
+                  <img 
+                    src={vendor.logo_url} 
+                    alt={vendor.business_name} 
+                    style={{ 
+                      maxWidth: "140px", 
+                      maxHeight: "65px", 
+                      width: "auto", 
+                      height: "auto", 
+                      objectFit: "contain",
+                      marginTop: "8px"
+                    }} 
+                  />
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <img src="/logo.png" alt="KudiSlip Default" style={{ maxHeight: "24px", objectFit: "contain" }} />
