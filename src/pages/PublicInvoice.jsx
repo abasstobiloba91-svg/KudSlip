@@ -248,8 +248,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                     src={vendor.logo_url} 
                     alt={vendor.business_name} 
                     style={{ 
-                      maxWidth: "140px", 
-                      maxHeight: "65px", 
+                      maxWidth: "200px", 
+                      maxHeight: "90px", 
                       width: "auto", 
                       height: "auto", 
                       objectFit: "contain",
