@@ -78,21 +78,32 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 3. SECURE OTP
+      // 3. SECURE OTP / SECURITY CODE (HANDLES BOTH 'otp' AND 'security_otp')
       case 'otp':
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 15 * 60000).toISOString();
+      case 'security_otp':
+      case 'security_code':
+        const targetEmail = payload.email || payload.userEmail;
+        if (!targetEmail) return res.status(400).json({ error: 'Recipient email is required.' });
 
-        const { error: dbError } = await supabaseAdmin
-          .from('vendors')
-          .update({ otp_code: otpCode, otp_expires_at: expiresAt })
-          .eq('id', payload.vendorId);
+        // Use pre-provided code or generate a fresh 6-digit code
+        let displayOtpCode = payload.code || payload.otp || payload.message;
+        
+        if (!displayOtpCode || typeof displayOtpCode !== 'string' || displayOtpCode.length !== 6) {
+          displayOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        }
 
-        if (dbError) throw new Error(`Database error: ${dbError.message}`);
+        // If vendorId is provided, store in Supabase for verification
+        if (payload.vendorId) {
+          const expiresAt = new Date(Date.now() + 15 * 60000).toISOString();
+          await supabaseAdmin
+            .from('vendors')
+            .update({ otp_code: displayOtpCode, otp_expires_at: expiresAt })
+            .eq('id', payload.vendorId);
+        }
 
         from = 'KudiSlip Security <support@kudislip.com.ng>';
-        to = payload.email;
-        subject = `${otpCode} is your KudiSlip verification code`;
+        to = targetEmail;
+        subject = `${displayOtpCode} is your KudiSlip verification code`;
         html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC; padding: 40px 20px; color: #0F172A;">
           <div style="max-width: 500px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
@@ -102,9 +113,11 @@ export default async function handler(req, res) {
             </div>
             <div style="padding: 32px;">
               <p style="margin-top: 0; font-size: 15px; color: #64748B;">Hello ${payload.businessName || 'Merchant'},</p>
-              <div style="background-color: #F1F5F9; border-radius: 12px; padding: 24px; text-align: center; margin: 32px 0;">
-                <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #000000;">${otpCode}</div>
+              <p style="font-size: 14px; color: #64748B;">Use the verification code below to authorize your action on KudiSlip:</p>
+              <div style="background-color: #F1F5F9; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #000000;">${displayOtpCode}</div>
               </div>
+              <p style="color: #94A3B8; font-size: 12px; margin: 0; text-align: center;">This code expires in 15 minutes. If you did not request this, please ignore this email.</p>
             </div>
           </div>
         </div>`;
@@ -261,7 +274,6 @@ export default async function handler(req, res) {
             to: recipientEmail,
             subject,
             html,
-            // 👈 FIX: Removed invalid 'recipient_email' tag
             tags: [
               { name: 'email_type', value: 'broadcast' }
             ]
@@ -331,7 +343,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-            // 10. DIRECT EMAIL CAMPAIGN (FROM INTERNAL DASHBOARD WITH OPTIONAL CTA)
+      // 10. DIRECT EMAIL CAMPAIGN
       case 'campaign':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
@@ -341,7 +353,6 @@ export default async function handler(req, res) {
         to = payload.emails;
         subject = payload.subject;
 
-        // Render dynamic CTA button if link and text are provided
         const ctaButtonHtml = payload.ctaLink && payload.ctaText ? `
           <div style="text-align: center; margin: 32px 0;">
             <a href="${payload.ctaLink}" target="_blank" style="background-color: #000000; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 15px; display: inline-block;">
@@ -358,9 +369,7 @@ export default async function handler(req, res) {
           <div style="padding: 32px 24px; color: #0F172A;">
             <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
             <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 16px;">${payload.message}</div>
-            
             ${ctaButtonHtml}
-            
           </div>
           <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
             <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">
@@ -370,13 +379,8 @@ export default async function handler(req, res) {
           </div>
         </div>`;
 
-        tags = [
-          { name: 'email_type', value: 'campaign' }
-        ];
-
-        if (payload.recordId) {
-          tags.push({ name: 'tracking_id', value: payload.recordId });
-        }
+        tags = [{ name: 'email_type', value: 'campaign' }];
+        if (payload.recordId) tags.push({ name: 'tracking_id', value: payload.recordId });
 
         const { data: campaignData, error: campaignError } = await resend.emails.send({
           from,
@@ -393,12 +397,11 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, data: campaignData });
 
-
       default:
-        return res.status(400).json({ error: 'Invalid email type specified.' });
+        return res.status(400).json({ error: `Invalid email type '${type}' specified.` });
     }
 
-    // Fire non-broadcast single emails (for cases 1-7, 9)
+    // Fire single emails
     if (type !== 'broadcast' && type !== 'campaign') {
       const emailConfig = { from, to: Array.isArray(to) ? to : [to], subject, html };
       if (tags) emailConfig.tags = tags;
