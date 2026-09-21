@@ -46,12 +46,12 @@ export default async function handler(req, res) {
         // Calculate exactly 30 days from right now
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-        // Upgrade them to premium and set the 30-day clock using Admin Privileges
+        // 🔧 FIXED: Use 'pro_expires_at' to match your Supabase schema
         const { error: upgradeError } = await supabaseAdmin
           .from('vendors')
           .update({ 
-            subscription_tier: 'premium',
-            subscription_expires_at: expiresAt 
+            subscription_tier: 'pro',
+            pro_expires_at: expiresAt 
           })
           .eq('id', vendorId);
 
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: "Failed to upgrade vendor" });
         }
 
-        console.log(`✅ Vendor ${vendorId} upgraded to Premium until ${expiresAt}`);
+        console.log(`✅ Vendor ${vendorId} upgraded to Pro until ${expiresAt}`);
       }
 
       // ==============================================================
