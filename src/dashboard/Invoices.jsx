@@ -108,6 +108,31 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     setLoading(false);
   };
 
+  // 🛡️ NEW: SAFE VOID / CANCEL FUNCTIONALITY
+  const triggerCancelConfirm = (inv) => {
+    if (inv.status === 'paid') {
+      return showToast("Action Denied", "Paid invoices are locked for accounting purposes.", "error");
+    }
+    setConfirmModalData({
+      title: "Cancel Invoice",
+      message: "Are you sure you want to cancel this invoice? The client will no longer be able to pay it, but it will remain in your records.",
+      onConfirm: () => handleCancelInvoice(inv.id)
+    });
+  };
+
+  const handleCancelInvoice = async (invId) => {
+    setConfirmModalData(null);
+    setLoading(true);
+    const { error } = await supabase.from('invoices').update({ status: 'cancelled' }).eq('id', invId);
+    if (error) {
+      showToast("Database Error", error.message, "error");
+    } else {
+      showToast("Invoice Cancelled", "The invoice has been voided.", "success");
+      fetchRecentInvoices(); 
+    }
+    setLoading(false);
+  };
+
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     
@@ -184,8 +209,10 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
   if (user?.role === 'support') return <div style={{ padding: "40px", color: "#64748B" }}>Support accounts cannot access Invoices.</div>;
 
-  const totalBilled = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  // 🛡️ EXCLUDE CANCELLED INVOICES FROM METRICS
+  const activeInvoices = invoices.filter(inv => inv.status !== 'cancelled');
+  const totalBilled = activeInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
+  const totalPaid = activeInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPending = totalBilled - totalPaid;
 
   const filteredInvoices = invoices.filter(inv => {
@@ -223,8 +250,10 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
             <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "12px", color: "#0F172A" }}>{confirmModalData.title}</h3>
             <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px" }}>{confirmModalData.message}</p>
             <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-              <button className="btn-primary btn-hover" style={{ padding: "14px", fontSize: "15px" }} onClick={confirmModalData.onConfirm}>Yes, Mark as Paid</button>
-              <button className="btn-secondary btn-hover" style={{ padding: "14px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B" }} onClick={() => setConfirmModalData(null)}>Cancel</button>
+              <button className="btn-primary btn-hover" style={{ padding: "14px", fontSize: "15px", background: confirmModalData.title.includes('Cancel') ? "#EF4444" : undefined }} onClick={confirmModalData.onConfirm}>
+                {confirmModalData.title.includes('Cancel') ? 'Yes, Cancel Invoice' : 'Yes, Mark as Paid'}
+              </button>
+              <button className="btn-secondary btn-hover" style={{ padding: "14px", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B" }} onClick={() => setConfirmModalData(null)}>Keep Invoice</button>
             </div>
           </div>
         </div>
@@ -394,9 +423,31 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                       {inv.clients?.phone && <div>{inv.clients.phone}</div>}
                     </div>
                   </div>
-                  <span style={{ fontSize: "11px", fontWeight: "900", padding: "6px 12px", borderRadius: "20px", background: inv.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: inv.status === 'pending' ? "#D97706" : "#10B981", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
-                    {inv.status}
-                  </span>
+
+                  {/* 🛡️ INVOICE STATUS & CANCEL BUTTON */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                    <span style={{ 
+                      fontSize: "11px", fontWeight: "900", padding: "6px 12px", borderRadius: "20px", 
+                      background: inv.status === 'pending' ? "#FEF3C7" : inv.status === 'paid' ? "#ECFDF5" : "#F1F5F9", 
+                      color: inv.status === 'pending' ? "#D97706" : inv.status === 'paid' ? "#10B981" : "#64748B", 
+                      textTransform: "uppercase", letterSpacing: "0.5px" 
+                    }}>
+                      {inv.status}
+                    </span>
+                    
+                    {inv.status === 'pending' && (
+                      <button 
+                        onClick={() => triggerCancelConfirm(inv)}
+                        className="btn-hover"
+                        style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}
+                        title="Cancel Invoice"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ background: "#F8FAFC", padding: "12px 16px", borderRadius: "8px", fontSize: "13px", color: "#0F172A", fontWeight: "500", border: "1px solid #F1F5F9" }}>
@@ -404,7 +455,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
-                  <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", opacity: inv.status === 'cancelled' ? 0.5 : 1 }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   
