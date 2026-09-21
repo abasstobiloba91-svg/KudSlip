@@ -2,7 +2,16 @@ import React, { useState } from 'react';
 
 export default function SubscriptionManager({ user, showToast }) {
   const [loading, setLoading] = useState(false);
-  const isPremium = user?.subscription_tier === 'premium';
+
+  // 👑 ROBUST PRO / PREMIUM CHECK WITH EXPIRATION VALIDATION
+  const isProTier = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const hasNotExpired = !user?.pro_expires_at || new Date(user.pro_expires_at) > new Date();
+  const isPremium = isProTier && hasNotExpired;
+
+  // Format expiration date for UI display
+  const expirationDate = user?.pro_expires_at 
+    ? new Date(user.pro_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -40,8 +49,13 @@ export default function SubscriptionManager({ user, showToast }) {
         </div>
 
         {isPremium ? (
-          <div style={{ background: "#F3E8FF", color: "#7E22CE", padding: "16px", borderRadius: "8px", fontWeight: "700", fontSize: "14px" }}>
-            Your Premium Pro plan is active. Enjoy custom branding, zero watermarks, automated reminders, and foreign currency calculations!
+          <div style={{ background: "#F3E8FF", color: "#7E22CE", padding: "20px", borderRadius: "8px", fontWeight: "700", fontSize: "14px", lineHeight: "1.6" }}>
+            <div>Your Premium Pro plan is active. Enjoy custom branding, zero watermarks, automated reminders, and foreign currency calculations!</div>
+            {expirationDate && (
+              <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #E9D5FF", fontSize: "13px", color: "#6B21A8" }}>
+                ⏳ <strong>Access valid until:</strong> {expirationDate}
+              </div>
+            )}
           </div>
         ) : (
           <div>
