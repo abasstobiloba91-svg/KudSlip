@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, DESIGN } from '../supabaseClient';
-import { PaintIcon, AlertIcon } from '../components/Icons';
+import { PaintIcon } from '../components/Icons';
 
 function BrandSettings({ user, onUpdate, showToast }) {
   const [logoUrl, setLogoUrl] = useState(user?.logo_url || "");
@@ -10,11 +10,13 @@ function BrandSettings({ user, onUpdate, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
 
+  // 👑 ROBUST PRO / PREMIUM CHECK
+  const isProTier = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const hasNotExpired = !user?.pro_expires_at || new Date(user.pro_expires_at) > new Date();
+  const isPremium = Boolean(isProTier && hasNotExpired);
+
   const handleLogoUpload = async (e) => {
-    // 1. FIXED: Grab the actual file object, not the FileList array
     const file = e.target.files[0]; 
-    
-    // 2. FIXED: Add safety check to ensure it has a name before proceeding
     if (!file || !file.name) return; 
     
     if (file.size > 5242880) {
@@ -44,7 +46,7 @@ function BrandSettings({ user, onUpdate, showToast }) {
         setTimeout(() => reject(new Error("Database connection timed out. Check your RLS target or network status.")), 8000)
       );
 
-      const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
+      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
       clearInterval(progressInterval);
 
@@ -57,8 +59,13 @@ function BrandSettings({ user, onUpdate, showToast }) {
       
       setUploadPercent(100);
       const { data: urlData } = supabase.storage.from('LOGOS').getPublicUrl(fileName);
+      
+      // Auto-save logo URL to database
+      await supabase.from('vendors').update({ logo_url: urlData.publicUrl }).eq('id', user.id);
+
       setLogoUrl(urlData.publicUrl);
-      showToast("Logo Uploaded", "Image ready! Remember to click Save below.", "success");
+      onUpdate({ ...user, logo_url: urlData.publicUrl });
+      showToast("Logo Uploaded & Saved", "Your brand logo is updated across all public invoices.", "success");
       
       setTimeout(() => {
         setUploading(false);
@@ -77,8 +84,9 @@ function BrandSettings({ user, onUpdate, showToast }) {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.from('vendors').update({ logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou }).eq('id', user.id);
-    if (error) { showToast("Database Error", error.message, "error"); }
-    else {
+    if (error) { 
+      showToast("Database Error", error.message, "error"); 
+    } else {
       showToast("Brand Updated", "Your custom brand settings have been saved successfully.", "success");
       onUpdate({ ...user, logo_url: logoUrl, brand_color: brandColor, custom_thank_you: customThankYou });
     }
@@ -87,8 +95,6 @@ function BrandSettings({ user, onUpdate, showToast }) {
 
   if (user?.role === 'support') return <div style={{ padding: "40px", color: DESIGN.textMuted }}>Support accounts cannot access Brand Settings.</div>;
 
-  const isPremium = user?.subscription_tier === 'premium';
-
   return (
     <div style={{ maxWidth: "600px" }}>
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}><PaintIcon /> Branding & Assets</div>
@@ -96,13 +102,13 @@ function BrandSettings({ user, onUpdate, showToast }) {
       
       <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid ${DESIGN.border}`, borderRadius: 12, padding: "32px", overflow: "hidden" }}>
         
-        {/* 🎯 THE UPGRADED GLASSMORPHISM PAYWALL (Text Fixed) */}
+        {/* 🎯 GLASSMORPHISM PAYWALL FOR NON-PRO USERS */}
         {!isPremium && (
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(8px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
              <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", border: `1px solid ${DESIGN.premium}` }}>💎 PREMIUM FEATURE</div>
              <h3 style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", margin: "0 0 12px 0" }}>Unlock Custom Branding</h3>
              <p style={{ color: "#475569", fontSize: "15px", marginBottom: "28px", maxWidth: "320px", lineHeight: "1.6", fontWeight: "500" }}>Upload your own logo, set custom brand colors, and personalize your client experience.</p>
-             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ padding: "16px 32px", fontSize: "15px", boxShadow: "0 10px 15px -3px rgba(139, 92, 246, 0.3)" }}>Upgrade to Premium</a>
+             <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover" style={{ padding: "16px 32px", fontSize: "15px", boxShadow: "0 10px 15px -3px rgba(139, 92, 246, 0.3)" }}>Upgrade to Premium Pro</a>
           </div>
         )}
 
