@@ -143,9 +143,15 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
   const safeAmount = Number(invoice.amount || 0);
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
-  const isFreeTier = !vendor?.subscription_tier || vendor.subscription_tier === 'free';
+  
+  // 👑 ROBUST PRO CHECK (Replaces the flawed isFreeTier check)
+  const isProTier = vendor?.subscription_tier === 'pro' || vendor?.subscription_tier === 'premium';
+  const hasNotExpired = !vendor?.pro_expires_at || new Date(vendor.pro_expires_at) > new Date();
+  const isPro = Boolean(isProTier && hasNotExpired);
+  const isFreeTier = !isPro;
+
   const customColor = vendor?.brand_color || "#000000";
-  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor.custom_thank_you || `Thank you for your payment! ${vendor.business_name} cares.`);
+  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor?.custom_thank_you || `Thank you for your payment! ${vendor?.business_name || 'Merchant'} cares.`);
   
   const invoiceCurrency = invoice.currency || "NGN";
   const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
