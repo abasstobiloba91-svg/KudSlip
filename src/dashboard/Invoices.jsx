@@ -23,11 +23,16 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
   const [sendingEmailId, setSendingEmailId] = useState(null);
   const [confirmModalData, setConfirmModalData] = useState(null);
 
-  // --- NEW: PAGINATION STATE ---
+  // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
+
+  // 👑 ROBUST PRO / PREMIUM CHECK
+  const isProTier = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const hasNotExpired = !user?.pro_expires_at || new Date(user.pro_expires_at) > new Date();
+  const isPro = Boolean(isProTier && hasNotExpired);
 
   useEffect(() => {
     if (!supabase) return;
@@ -36,7 +41,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     supabase.from('clients').select('*').eq('vendor_id', user.id).then(({ data }) => setClients(data || []));
     fetchRecentInvoices();
 
-    // 2. 🚀 THE MAGIC: Real-Time WebSocket Listener
+    // 2. Real-Time WebSocket Listener
     const invoiceChannel = supabase.channel('realtime_invoices')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invoices', filter: `vendor_id=eq.${user.id}` }, (payload) => {
         setInvoices(prevInvoices => 
@@ -47,7 +52,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     return () => { supabase.removeChannel(invoiceChannel); };
   }, [user.id]);
 
-  // --- NEW: Reset to page 1 if the user searches or sorts ---
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortOrder]);
@@ -106,7 +110,8 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
   const handleGenerateInvoice = async (force = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
-    if (user.subscription_tier === 'premium' && !user.logo_url && force !== true) {
+    
+    if (isPro && !user.logo_url && force !== true) {
       setShowLogoWarning(true);
       return;
     }
@@ -196,10 +201,8 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     return 0;
   });
 
-  // --- NEW: PAGINATION CALCULATIONS ---
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  // This slices out exactly the 5 invoices we want to show on the current page
   const currentInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -211,7 +214,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     <div style={{ maxWidth: "900px", position: "relative" }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
-      {/* Modals remain the same */}
       {confirmModalData && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center" }}>
@@ -235,7 +237,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
               <AlertIcon />
             </div>
             <h3 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "12px", color: "#0F172A", textAlign: "center" }}>Missing Brand Logo</h3>
-            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px", textAlign: "center" }}>You are a Premium user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
+            <p style={{ color: "#64748B", fontSize: "15px", lineHeight: "1.6", marginBottom: "32px", textAlign: "center" }}>You are a Premium Pro user, but you haven't uploaded a custom logo yet! The default KudiSlip logo will be used on this invoice.</p>
             <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
               <a href="/dashboard/brand" className="btn-primary btn-premium btn-hover" style={{ textAlign: "center", padding: "14px", textDecoration: "none", fontSize: "15px" }} onClick={() => setShowLogoWarning(false)}>Upload Logo Now</a>
               <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(true)} style={{ padding: "14px", border: "none", background: "#F1F5F9", fontSize: "15px", color: "#0F172A" }}>Ignore & Generate</button>
@@ -245,7 +247,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
         </div>
       )}
 
-      {/* Header & Metrics remain the same */}
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
@@ -257,7 +258,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && <RevenueChart invoices={invoices} />}
 
-      {/* Create Invoice Form remains the same */}
       <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
         <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Invoice</h3>
         
@@ -309,7 +309,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#D97706", display: "block", marginBottom: "8px" }}>Billing Frequency (Premium)</label>
-            <select className="form-input" value={invoiceType} onChange={e => setInvoiceType(e.target.value)} disabled={user?.subscription_tier !== 'premium'} style={{ border: user?.subscription_tier === 'premium' ? "1px solid #FCD34D" : "1px solid #E2E8F0" }}>
+            <select className="form-input" value={invoiceType} onChange={e => setInvoiceType(e.target.value)} disabled={!isPro} style={{ border: isPro ? "1px solid #FCD34D" : "1px solid #E2E8F0" }}>
               <option value="one-time">One-time Invoice</option>
               <option value="monthly">Monthly Recurring</option>
               <option value="weekly">Weekly Recurring</option>
@@ -319,7 +319,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
         <div style={{ marginBottom: "24px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "12px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
-            <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={user?.subscription_tier !== 'premium'} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+            <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={!isPro} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
             Pass Paystack Transaction Fees to Client <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px"}}>PRO</span>
           </label>
         </div>
@@ -366,7 +366,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
             </div>
           </div>
           
-          {/* --- NEW: MAP OVER 'currentInvoices' INSTEAD OF 'filteredInvoices' --- */}
           {currentInvoices.map(inv => {
             const safeInvAmount = Number(inv.amount || 0);
             const invCurrency = inv.currency || "NGN";
@@ -445,7 +444,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                           )}
                         </button>
                         
-                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from ${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp Alert</a>
+                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Just a reminder that your invoice for ${sym}${safeInvAmount.toLocaleString()} from${user.business_name || "us"} is due. You can pay securely here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp Alert</a>
                       </>
                     )}
                   </div>
@@ -457,7 +456,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
           {filteredInvoices.length === 0 && <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>No invoices found matching your search.</div>}
           
-          {/* --- NEW: PAGINATION FOOTER CONTROLS --- */}
           {filteredInvoices.length > itemsPerPage && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: "#FFFFFF", borderRadius: "16px", border: "1px solid #E2E8F0", marginTop: "16px" }}>
               <div style={{ fontSize: "13px", fontWeight: "600", color: "#64748B" }}>
