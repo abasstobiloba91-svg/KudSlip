@@ -144,7 +144,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const safeAmount = Number(invoice.amount || 0);
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
   
-  // 👑 ROBUST PRO CHECK (Replaces the flawed isFreeTier check)
+  // 👑 ROBUST PRO CHECK
   const isProTier = vendor?.subscription_tier === 'pro' || vendor?.subscription_tier === 'premium';
   const hasNotExpired = !vendor?.pro_expires_at || new Date(vendor.pro_expires_at) > new Date();
   const isPro = Boolean(isProTier && hasNotExpired);
@@ -268,12 +268,21 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 )}
               </div>
 
-              {/* 🎯 KUD-INV-XXXX DISPLAY */}
+              {/* 🎯 KUD-INV-XXXX DISPLAY & UPDATED CANCEL BADGE */}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "6px", letterSpacing: "0.5px" }}>
                   {invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`}
                 </div>
-                <div style={{ display: "inline-block", background: invoice.status === 'pending' ? "#FEF3C7" : "#ECFDF5", color: invoice.status === 'pending' ? "#D97706" : "#10B981", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: "800", textTransform: "uppercase" }}>
+                <div style={{ 
+                  display: "inline-block", 
+                  background: invoice.status === 'pending' ? "#FEF3C7" : invoice.status === 'cancelled' ? "#F1F5F9" : "#ECFDF5", 
+                  color: invoice.status === 'pending' ? "#D97706" : invoice.status === 'cancelled' ? "#64748B" : "#10B981", 
+                  padding: "6px 14px", 
+                  borderRadius: "20px", 
+                  fontSize: "12px", 
+                  fontWeight: "800", 
+                  textTransform: "uppercase" 
+                }}>
                   {invoice.status || 'PENDING'}
                 </div>
               </div>
@@ -299,25 +308,34 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               </div>
               
               {safeItems.map((item, idx) => (
-                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px dashed #E2E8F0" }}>
-                  <div style={{ flex: 1, fontWeight: "600", fontSize: "16px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px" }}>{item.description}</div>
+                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px dashed #E2E8F0", opacity: invoice.status === 'cancelled' ? 0.6 : 1 }}>
+                  <div style={{ flex: 1, fontWeight: "600", fontSize: "16px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{item.description}</div>
                   <div style={{ width: "80px", textAlign: "center", fontSize: "16px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
-                  <div style={{ width: "140px", textAlign: "right", fontWeight: "800", fontSize: "16px", color: "#0F172A" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
+                  <div style={{ width: "140px", textAlign: "right", fontWeight: "800", fontSize: "16px", color: "#0F172A", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
                 </div>
               ))}
             </div>
             
             <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
               <div style={{ fontSize: "15px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
-              <div style={{ fontSize: "32px", fontWeight: "900", color: customColor, textAlign: "right", wordBreak: "break-word" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+              <div style={{ fontSize: "32px", fontWeight: "900", color: invoice.status === 'cancelled' ? "#64748B" : customColor, textAlign: "right", wordBreak: "break-word", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
             </div>
             
             <div className="no-print">
-              {invoice.status === 'pending' ? (
+              {/* 🛡️ CANCELLED STATE LOCKOUT */}
+              {invoice.status === 'cancelled' && (
+                <div style={{ textAlign: "center", padding: "24px", background: "#F8FAFC", borderRadius: "12px", border: "1px dashed #94A3B8", color: "#475569", fontWeight: "700" }}>
+                  🚫 This invoice has been cancelled by the merchant and is no longer payable.
+                </div>
+              )}
+
+              {invoice.status === 'pending' && (
                 <button className="btn-hover" style={{ width: "100%", padding: "20px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "17px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
                   Proceed to Secure Payment
                 </button>
-              ) : (
+              )}
+
+              {invoice.status === 'paid' && (
                 <div style={{ textAlign: "center", padding: "24px", background: invoice.payment_method === 'manual' ? "#F8FAFC" : "#ECFDF5", borderRadius: "12px", border: invoice.payment_method === 'manual' ? "1px dashed #94A3B8" : "1px solid #A7F3D0" }}>
                   <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : "#10B981", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                      {invoice.payment_method === 'manual' ? "Marked as Paid (Manual)" : "Payment Complete"}
@@ -343,7 +361,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             </div>
           </div>
 
-          {/* Review Component */}
+          {/* Review Component (Will NOT show for cancelled invoices) */}
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
             <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid #E2E8F0`, padding: "36px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
               <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
