@@ -9,6 +9,11 @@ function ExpensesManager({ user, showToast }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // 👑 ROBUST PRO / PREMIUM CHECK WITH EXPIRATION VALIDATION
+  const isProTier = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const hasNotExpired = !user?.pro_expires_at || new Date(user.pro_expires_at) > new Date();
+  const isPremium = Boolean(isProTier && hasNotExpired);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -27,7 +32,7 @@ function ExpensesManager({ user, showToast }) {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    if (user?.subscription_tier !== 'premium') {
+    if (!isPremium) {
       return showToast("Premium Required", "Please upgrade to log expenses and track net profit.", "info");
     }
     if (!description || !amount) return;
@@ -53,14 +58,14 @@ function ExpensesManager({ user, showToast }) {
   const totalGross = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
   const netProfit = totalGross - totalExpenses;
-  
-  const isPremium = user?.subscription_tier === 'premium';
 
   if (loading) return <div style={{ color: "#64748B", fontWeight: "600" }}>Loading Ledger...</div>;
 
   return (
     <div style={{ maxWidth: "900px" }}>
-      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}>Profit Analytics <span style={{fontSize: "12px", background: "#FEF08A", color: "#854D0E", padding: "4px 8px", borderRadius: "6px", verticalAlign: "middle"}}>PRO</span></div>
+      <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
+        Profit Analytics <span style={{fontSize: "12px", background: "#FEF08A", color: "#854D0E", padding: "4px 8px", borderRadius: "6px", verticalAlign: "middle"}}>PRO</span>
+      </div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Track your actual business margins.</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "40px" }}>
@@ -80,10 +85,10 @@ function ExpensesManager({ user, showToast }) {
 
       <div style={{ position: "relative", background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px", overflow: "hidden" }}>
         
-        {/* 🎯 THE GLASSMORPHISM PAYWALL */}
+        {/* 🎯 GLASSMORPHISM PAYWALL FOR NON-PRO USERS */}
         {!isPremium && (
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.5)", backdropFilter: "blur(4px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
-             <div style={{ background: "#F5F3FF", color: DESIGN.premium, padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>PREMIUM FEATURE</div>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(8px)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center" }}>
+             <div style={{ background: "#F5F3FF", color: DESIGN?.premium || "#8B5CF6", padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "900", marginBottom: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>PREMIUM FEATURE</div>
              <h3 style={{ fontSize: "20px", fontWeight: "900", color: "#0F172A", margin: "0 0 8px 0" }}>Unlock Profit Analytics</h3>
              <p style={{ color: "#64748B", fontSize: "14px", marginBottom: "24px", maxWidth: "320px", lineHeight: "1.5" }}>Log business expenses to automatically calculate your true net profit.</p>
              <a href="/dashboard/billing" className="btn-primary btn-premium btn-hover">Upgrade to Premium</a>
