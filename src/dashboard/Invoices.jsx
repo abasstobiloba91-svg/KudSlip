@@ -13,7 +13,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("date-desc");
   
-  // Updated to track whether the user intended to create a Quote or Invoice
   const [logoWarning, setLogoWarning] = useState({ show: false, asQuote: false });
   
   const [invoiceType, setInvoiceType] = useState("one-time");
@@ -130,7 +129,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     setLoading(false);
   };
 
-  // Handles BOTH standard invoices and price quotes natively
   const handleGenerateInvoice = async (force = false, asQuote = false) => {
     if (!selectedClient || !dueDate) return showToast("Missing Fields", "Please select a client and a due date.", "error");
     
@@ -156,7 +154,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       fee_passed_on: passFees,
       is_recurring: invoiceType !== "one-time", 
       recurring_frequency: invoiceType !== "one-time" ? invoiceType : null,
-      status: asQuote ? 'quote' : 'pending' // Quote injection
+      status: asQuote ? 'quote' : 'pending'
     }]).select().single();
     
     if (error) { showToast("Database Error", error.message, "error"); } 
@@ -211,7 +209,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
   const activeInvoices = invoices.filter(inv => inv.status !== 'cancelled' && inv.status !== 'quote_declined' && inv.status !== 'quote');
   const totalBilled = activeInvoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-  // Add partial payments to total collection logic
   const totalPartiallyPaid = invoices.filter(i => i.status === 'partially_paid').reduce((sum, inv) => sum + Number(inv.amount_paid || 0), 0);
   const absoluteTotalCollected = totalPaid + totalPartiallyPaid;
   const totalPending = totalBilled - absoluteTotalCollected;
@@ -347,10 +344,14 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
 
+        {/* Pass Paystack Transaction Fees Row - Clean Responsive Alignment */}
         <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "12px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
-            <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={!isPro} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-            Pass Paystack Transaction Fees to Client <span style={{fontSize: "10px", background: "#FEF08A", color: "#854D0E", padding: "2px 6px", borderRadius: "4px"}}>PRO</span>
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "14px 16px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <input type="checkbox" checked={passFees} onChange={(e) => setPassFees(e.target.checked)} disabled={!isPro} style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#000000" }} />
+              <span>Pass Paystack Transaction Fees to Client</span>
+            </div>
+            <span style={{ fontSize: "10px", fontWeight: "800", background: "#FEF08A", color: "#854D0E", padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.5px" }}>PRO</span>
           </label>
         </div>
 
@@ -375,13 +376,51 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
 
+        {/* Action Buttons & Totals - Sleek Responsive Layout */}
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-          <div style={{ fontSize: "20px", fontWeight: "900" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button className="btn-secondary btn-hover" onClick={() => handleGenerateInvoice(false, true)} disabled={loading || clients.length === 0} style={{ padding: "12px 20px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569", fontWeight: "800", borderRadius: "8px", fontSize: "14px" }}>
-              {loading ? "Saving..." : "Save as Price Quote"}
+          <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
+          
+          <div style={{ display: "flex", gap: "12px", flex: "1 1 280px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <button 
+              className="btn-secondary btn-hover" 
+              onClick={() => handleGenerateInvoice(false, true)} 
+              disabled={loading || clients.length === 0} 
+              style={{ 
+                flex: "1 1 130px", 
+                padding: "14px 18px", 
+                background: "#FFFFFF", 
+                border: "1px solid #CBD5E1", 
+                color: "#0F172A", 
+                fontWeight: "800", 
+                borderRadius: "10px", 
+                fontSize: "14px", 
+                whiteSpace: "nowrap", 
+                cursor: "pointer",
+                textAlign: "center"
+              }}
+            >
+              {loading ? "Saving..." : "Save as Quote"}
             </button>
-            <button className="btn-primary btn-hover" onClick={() => handleGenerateInvoice(false, false)} disabled={loading || clients.length === 0} style={{ padding: "12px 20px", fontSize: "14px" }}>
+            
+            <button 
+              className="btn-primary btn-hover" 
+              onClick={() => handleGenerateInvoice(false, false)} 
+              disabled={loading || clients.length === 0} 
+              style={{ 
+                flex: "1 1 130px", 
+                padding: "14px 18px", 
+                background: "#0F172A", 
+                color: "#FFFFFF", 
+                fontWeight: "800", 
+                borderRadius: "10px", 
+                fontSize: "14px", 
+                whiteSpace: "nowrap", 
+                border: "none", 
+                cursor: "pointer",
+                textAlign: "center",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+              }}
+            >
               {loading ? "Generating..." : "Generate Invoice"}
             </button>
           </div>
@@ -412,7 +451,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
             try { parsedItems = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) { parsedItems = []; }
             const itemSummary = parsedItems.map(i => `${i.description} (x${i.quantity})`).join(', ');
 
-            // Badge Color Logic Map
             let badgeBg = "#F1F5F9";
             let badgeColor = "#64748B";
             
@@ -577,7 +615,6 @@ function RevenueChart({ invoices }) {
   }
 
   invoices.forEach(inv => {
-    // Collect both fully paid and partially paid amounts in the chart
     if (inv.status === 'paid' || inv.status === 'partially_paid') {
       const date = new Date(inv.created_at);
       const match = months.find(m => m.month === date.getMonth() && m.year === date.getFullYear());
