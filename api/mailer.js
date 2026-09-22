@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       case 'payment_alert':
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
         
-        const isPartialAlert = payload.balanceDue && Number(payload.balanceDue) > 0;
+        const isPartialAlert = payload.balanceDue && Number(payload.balanceDue.replace(/,/g, '')) > 0;
         
         from = 'KudiSlip Billing <invoices@kudislip.com.ng>';
         to = payload.vendorEmail;
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
           <div style="padding: 40px 30px;">
             <h2 style="color: #0f172a; margin-top: 0;">${isPartialAlert ? 'Partial Payment Logged' : 'Payment Confirmed'}</h2>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${payload.vendorName},</p>
-            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName}</strong> paid invoice <strong>#${payload.invoiceId?.substring(0, 8)}</strong>.</p>
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName}</strong> paid invoice <strong>${payload.invoiceNumber}</strong>.</p>
             <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
               <p style="margin: 0; color: #0f172a;"><strong>Amount Paid:</strong> ${payload.currency}${payload.amount}</p>
               ${isPartialAlert ? `<p style="margin: 12px 0 0 0; padding-top: 12px; border-top: 1px dashed #cbd5e1; color: #ef4444;"><strong>Balance Remaining:</strong> ${payload.currency}${payload.balanceDue}</p>` : ''}
@@ -158,7 +158,7 @@ export default async function handler(req, res) {
       case 'client_receipt':
         if (!payload.clientEmail) return res.status(400).json({ error: 'Client email is required' });
         
-        const isPartialReceipt = payload.balanceDue && Number(payload.balanceDue) > 0;
+        const isPartialReceipt = payload.balanceDue && Number(payload.balanceDue.replace(/,/g, '')) > 0;
         
         from = 'KudiSlip Receipts <receipts@kudislip.com.ng>';
         to = payload.clientEmail;
