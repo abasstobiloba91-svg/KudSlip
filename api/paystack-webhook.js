@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         console.log(`Vendor ${vendorId} upgraded to Pro until ${expiresAt}`);
       }
 
-      // PATH B: INVOICE PAYMENT (Now with Partial Payment Math)
+      // PATH B: INVOICE PAYMENT
       else if (metadata.invoice_id) {
         const invoiceId = metadata.invoice_id;
         console.log(`Processing backend updates for Invoice: ${invoiceId}`);
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         const { data: vendor } = await supabaseAdmin.from('vendors').select('*').eq('id', invoice.vendor_id).single();
         const { data: client } = await supabaseAdmin.from('clients').select('*').eq('id', invoice.client_id).single();
 
-        // 1. Calculate Partial Payment Math
+        // Calculate Partial Payment Math
         const intendedAmount = Number(metadata.intended_amount) || (event.data.amount / 100);
         const newAmountPaid = Number(invoice.amount_paid || 0) + intendedAmount;
         const isFullyPaid = newAmountPaid >= Number(invoice.amount);
@@ -84,19 +84,19 @@ export default async function handler(req, res) {
         if (updateErr) throw new Error(`Database update failed: ${updateErr.message}`);
         console.log(`Database status successfully marked as ${newStatus.toUpperCase()}`);
 
-        // 2. Prepare formatting for emails
         const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
         const invoiceCurrency = invoice.currency || "NGN";
         const symbol = CURRENCY_SYMBOLS[invoiceCurrency] || invoiceCurrency;
         
         const amountPaidFormatted = intendedAmount.toLocaleString();
         const balanceDueFormatted = currentBalance > 0 ? currentBalance.toLocaleString() : null;
+        const formattedInvoiceNumber = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
 
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const host = req.headers.host;
         const baseUrl = `${protocol}://${host}`;
 
-        // 3. Email 1: Alert to Merchant (Vendor)
+        // Email 1: Alert to Merchant (Vendor)
         if (vendor?.email) {
           console.log("Triggering merchant payment alert...");
           fetch(`${baseUrl}/api/mailer`, {
@@ -107,15 +107,16 @@ export default async function handler(req, res) {
               vendorEmail: vendor.email,
               vendorName: vendor?.business_name || "Merchant",
               clientName: client?.name || "A client",
-              amount: amountPaidFormatted, // Only the amount paid today
-              balanceDue: balanceDueFormatted, // Triggers partial payment text if > 0
+              amount: amountPaidFormatted,
+              balanceDue: balanceDueFormatted, 
               currency: symbol,
-              invoiceId: invoice.id
+              invoiceId: invoice.id,
+              invoiceNumber: formattedInvoiceNumber
             })
           }).catch(e => console.error("Merchant email failed:", e));
         }
 
-        // 4. Email 2: Official Receipt to Payer (Client)
+        // Email 2: Official Receipt to Payer (Client)
         if (client?.email) {
           console.log("Triggering client receipt...");
           fetch(`${baseUrl}/api/mailer`, {
@@ -126,17 +127,17 @@ export default async function handler(req, res) {
               clientEmail: client.email,
               clientName: client.name || "Valued Client",
               vendorName: vendor?.business_name || "Merchant",
-              amount: amountPaidFormatted, // Only the amount paid today
-              balanceDue: balanceDueFormatted, // Triggers partial payment text if > 0
+              amount: amountPaidFormatted,
+              balanceDue: balanceDueFormatted, 
               currency: symbol,
               invoiceId: invoice.id,
-              invoiceNumber: invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`,
+              invoiceNumber: formattedInvoiceNumber,
               paymentMethod: "Paystack Secure"
             })
           }).catch(e => console.error("Client receipt failed:", e));
         }
 
-        // 5. Realtime In-App Notification
+        // Realtime In-App Notification
         if (vendor?.id) {
           console.log("Inserting realtime notification...");
           const { error: notifErr } = await supabaseAdmin.from('notifications').insert([{
