@@ -124,20 +124,27 @@ export default async function handler(req, res) {
       // 4. PAYMENT ALERT (SENT TO MERCHANT)
       case 'payment_alert':
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
+        
+        const isPartialAlert = payload.balanceDue && Number(payload.balanceDue) > 0;
+        
         from = 'KudiSlip Billing <invoices@kudislip.com.ng>';
         to = payload.vendorEmail;
-        subject = `Payment Confirmation: ${payload.currency}${payload.amount}`;
+        subject = isPartialAlert 
+          ? `Partial Payment Received: ${payload.currency}${payload.amount}` 
+          : `Payment Confirmation: ${payload.currency}${payload.amount}`;
+          
         html = `
         <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
           <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
             <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
           </div>
           <div style="padding: 40px 30px;">
-            <h2 style="color: #0f172a; margin-top: 0;">Payment Confirmed</h2>
+            <h2 style="color: #0f172a; margin-top: 0;">${isPartialAlert ? 'Partial Payment Logged' : 'Payment Confirmed'}</h2>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${payload.vendorName},</p>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName}</strong> paid invoice <strong>#${payload.invoiceId?.substring(0, 8)}</strong>.</p>
             <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
               <p style="margin: 0; color: #0f172a;"><strong>Amount Paid:</strong> ${payload.currency}${payload.amount}</p>
+              ${isPartialAlert ? `<p style="margin: 12px 0 0 0; padding-top: 12px; border-top: 1px dashed #cbd5e1; color: #ef4444;"><strong>Balance Remaining:</strong> ${payload.currency}${payload.balanceDue}</p>` : ''}
             </div>
           </div>
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
@@ -147,25 +154,31 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 🌟 NEW 11: OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
+      // 5. OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
       case 'client_receipt':
         if (!payload.clientEmail) return res.status(400).json({ error: 'Client email is required' });
+        
+        const isPartialReceipt = payload.balanceDue && Number(payload.balanceDue) > 0;
+        
         from = 'KudiSlip Receipts <receipts@kudislip.com.ng>';
         to = payload.clientEmail;
-        subject = `Receipt for your payment to ${payload.vendorName}`;
+        subject = isPartialReceipt 
+          ? `Partial Payment Receipt - ${payload.vendorName}`
+          : `Receipt for your payment to ${payload.vendorName}`;
+          
         html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
           <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
             <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
-            <h2 style="color: #0F172A; text-align: center; margin-top: 0; font-size: 24px; font-weight: 800;">Payment Receipt</h2>
+            <h2 style="color: #0F172A; text-align: center; margin-top: 0; font-size: 24px; font-weight: 800;">${isPartialReceipt ? 'Partial Payment Receipt' : 'Payment Receipt'}</h2>
             <p style="font-size: 16px; color: #475569; line-height: 1.6;">Hello <strong>${payload.clientName}</strong>,</p>
             <p style="font-size: 16px; color: #475569; line-height: 1.6;">Thank you for your payment to <strong>${payload.vendorName}</strong>. Your transaction was successful.</p>
 
             <div style="background-color: #ECFDF5; border: 1px solid #A7F3D0; padding: 24px; border-radius: 8px; margin: 24px 0; text-align: center;">
               <div style="margin: 0; color: #065F46; font-size: 32px; font-weight: 900;">${payload.currency}${payload.amount}</div>
-              <div style="margin: 8px 0 0 0; color: #10B981; font-weight: 800; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">Paid Successfully</div>
+              <div style="margin: 8px 0 0 0; color: #10B981; font-weight: 800; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">${isPartialReceipt ? 'Partial Payment Received' : 'Paid Successfully'}</div>
             </div>
 
             <table style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 24px; font-size: 15px;">
@@ -178,9 +191,15 @@ export default async function handler(req, res) {
                 <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
               </tr>
               <tr>
-                <th style="padding: 12px 0; color: #64748B; font-weight: normal;">Payment Method</th>
-                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A;">${payload.paymentMethod}</td>
+                <th style="padding: 12px 0; color: #64748B; font-weight: normal; ${isPartialReceipt ? 'border-bottom: 1px solid #E2E8F0;' : ''}">Payment Method</th>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A; ${isPartialReceipt ? 'border-bottom: 1px solid #E2E8F0;' : ''}">${payload.paymentMethod}</td>
               </tr>
+              ${isPartialReceipt ? `
+              <tr>
+                <th style="padding: 12px 0; color: #64748B; font-weight: normal;">Remaining Balance</th>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #EF4444;">${payload.currency}${payload.balanceDue}</td>
+              </tr>
+              ` : ''}
             </table>
           </div>
           <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
@@ -190,7 +209,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 5. RESET EMAIL
+      // 6. RESET EMAIL
       case 'reset_email':
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         
@@ -224,16 +243,16 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 6. PRO SUBSCRIPTION WARNING
+      // 7. PRO SUBSCRIPTION WARNING
       case 'subscription_warning':
         if (!payload.email || !payload.daysLeft) return res.status(400).json({ error: 'Missing required fields' });
         from = 'KudiSlip Subscriptions <hello@kudislip.com.ng>';
         to = payload.email;
-        subject = `⚠️ Action Required: Your KudiSlip Pro plan expires in ${payload.daysLeft} days`;
+        subject = `Action Required: Your KudiSlip Pro plan expires in ${payload.daysLeft} days`;
         html = `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
           <div style="background: #FEF08A; padding: 20px; text-align: center;">
-            <h2 style="margin: 0; color: #854D0E; font-size: 18px;">Pro Plan Expiring Soon!</h2>
+            <h2 style="margin: 0; color: #854D0E; font-size: 18px;">Pro Plan Expiring Soon</h2>
           </div>
           <div style="padding: 24px; background: #FFFFFF; text-align: center;">
             <p style="color: #475569; font-size: 15px;">Hello <strong>${payload.businessName || 'Merchant'}</strong>,</p>
@@ -246,7 +265,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 7. KYC STATUS NOTIFICATION
+      // 8. KYC STATUS NOTIFICATION
       case 'kyc_status':
         if (!payload.email || !payload.status) return res.status(400).json({ error: 'Email and status required' });
         from = 'KudiSlip Verification <compliance@kudislip.com.ng>';
@@ -279,7 +298,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 8. SYSTEM BROADCAST EMAIL
+      // 9. SYSTEM BROADCAST EMAIL
       case 'broadcast':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
@@ -329,7 +348,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, message: `Broadcast successfully emailed to ${recipientList.length} users!` });
 
-      // 9. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
+      // 10. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
       case 'onboarding_followup':
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         from = 'KudiSlip <hello@kudislip.com.ng>';
@@ -358,7 +377,7 @@ export default async function handler(req, res) {
             </p>
 
             <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 20px; border-radius: 8px; margin: 24px 0;">
-              <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 6px;">💡 Did you know?</div>
+              <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 6px;">Did you know?</div>
               <div style="font-size: 14px; color: #64748B; line-height: 1.5;">
                 Creating and sending a professional payment link to your client on KudiSlip takes <strong>less than 60 seconds</strong>.
               </div>
@@ -384,7 +403,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 10. DIRECT EMAIL CAMPAIGN
+      // 11. DIRECT EMAIL CAMPAIGN
       case 'campaign':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
