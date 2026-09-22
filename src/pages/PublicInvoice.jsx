@@ -15,7 +15,6 @@ const usePaystack = () => {
   }, []);
 };
 
-// Safe fallback for GlobalStyles
 const GlobalStyles = () => null;
 
 export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
@@ -32,7 +31,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const starsArray = Array.from({ length: 5 }, function(_, i) { return i + 1; });
+  const starsArray = [1, 2, 3, 4, 5];
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
 
   useEffect(() => {
@@ -47,14 +46,12 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
         setVendor(venData); setClient(cliData);
       } else { setDebugError("Invoice row empty."); }
-      loading === true && setLoading(false);
+      setLoading(false);
     }
     fetchData();
   }, [invoiceId]);
 
-  const triggerPDFCompilation = () => {
-    window.print();
-  };
+  const triggerPDFCompilation = () => { window.print(); };
 
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
@@ -74,22 +71,19 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         } else {
           const calculatedWithFees = (baseAmount + 100) / 0.985;
           const totalFeeCharged = calculatedWithFees - baseAmount;
-          
-          if (totalFeeCharged > 2000) {
-            finalAmount = baseAmount + 2000;
-          } else {
-            finalAmount = calculatedWithFees;
-          }
+          finalAmount = totalFeeCharged > 2000 ? baseAmount + 2000 : calculatedWithFees;
         }
       }
 
       const safeAmountInKobo = Math.round(finalAmount * 100);
+      const formattedInvoiceNumber = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
 
       let paystackPayload = {
         key: PAYSTACK_PUBLIC_KEY,
         email: client?.email || "customer@kudislip.com",
         amount: safeAmountInKobo, 
         currency: invoiceCurrency,
+        reference: `${formattedInvoiceNumber}_${Date.now()}`,
         metadata: {
           invoice_id: invoice.id
         },
@@ -99,7 +93,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
           });
         },
-        onClose: function() { console.log("Payment window closed."); }
+        onClose: function() {
+          showToast("Payment Incomplete", "The payment window was closed before completing the transaction. You can try again whenever you're ready.", "info");
+        }
       };
 
       if (invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
@@ -144,7 +140,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const safeAmount = Number(invoice.amount || 0);
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
   
-  // 👑 ROBUST PRO CHECK
+  // Robust Pro Check
   const isProTier = vendor?.subscription_tier === 'pro' || vendor?.subscription_tier === 'premium';
   const hasNotExpired = !vendor?.pro_expires_at || new Date(vendor.pro_expires_at) > new Date();
   const isPro = Boolean(isProTier && hasNotExpired);
@@ -268,7 +264,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 )}
               </div>
 
-              {/* 🎯 KUD-INV-XXXX DISPLAY & UPDATED CANCEL BADGE */}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "6px", letterSpacing: "0.5px" }}>
                   {invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`}
@@ -322,7 +317,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             </div>
             
             <div className="no-print">
-              {/* 🛡️ CANCELLED STATE LOCKOUT */}
               {invoice.status === 'cancelled' && (
                 <div style={{ textAlign: "center", padding: "24px", background: "#F8FAFC", borderRadius: "12px", border: "1px dashed #94A3B8", color: "#475569", fontWeight: "700" }}>
                   🚫 This invoice has been cancelled by the merchant and is no longer payable.
@@ -361,7 +355,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             </div>
           </div>
 
-          {/* Review Component (Will NOT show for cancelled invoices) */}
           {invoice.status === 'paid' && currentUser?.id !== vendor?.id && !reviewSubmitted && (
             <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid #E2E8F0`, padding: "36px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
               <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
