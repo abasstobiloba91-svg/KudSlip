@@ -78,21 +78,19 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 3. SECURE OTP / SECURITY CODE (HANDLES BOTH 'otp' AND 'security_otp')
+      // 3. SECURE OTP / SECURITY CODE
       case 'otp':
       case 'security_otp':
       case 'security_code':
         const targetEmail = payload.email || payload.userEmail;
         if (!targetEmail) return res.status(400).json({ error: 'Recipient email is required.' });
 
-        // Use pre-provided code or generate a fresh 6-digit code
         let displayOtpCode = payload.code || payload.otp || payload.message;
         
         if (!displayOtpCode || typeof displayOtpCode !== 'string' || displayOtpCode.length !== 6) {
           displayOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
         }
 
-        // If vendorId is provided, store in Supabase for verification
         if (payload.vendorId) {
           const expiresAt = new Date(Date.now() + 15 * 60000).toISOString();
           await supabaseAdmin
@@ -123,7 +121,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 4. PAYMENT ALERT
+      // 4. PAYMENT ALERT (SENT TO MERCHANT)
       case 'payment_alert':
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
         from = 'KudiSlip Billing <invoices@kudislip.com.ng>';
@@ -145,6 +143,49 @@ export default async function handler(req, res) {
           <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
             <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a></p>
             <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
+        </div>`;
+        break;
+
+      // 🌟 NEW 11: OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
+      case 'client_receipt':
+        if (!payload.clientEmail) return res.status(400).json({ error: 'Client email is required' });
+        from = 'KudiSlip Receipts <receipts@kudislip.com.ng>';
+        to = payload.clientEmail;
+        subject = `Receipt for your payment to ${payload.vendorName}`;
+        html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
+          </div>
+          <div style="padding: 32px 24px; color: #0F172A;">
+            <h2 style="color: #0F172A; text-align: center; margin-top: 0; font-size: 24px; font-weight: 800;">Payment Receipt</h2>
+            <p style="font-size: 16px; color: #475569; line-height: 1.6;">Hello <strong>${payload.clientName}</strong>,</p>
+            <p style="font-size: 16px; color: #475569; line-height: 1.6;">Thank you for your payment to <strong>${payload.vendorName}</strong>. Your transaction was successful.</p>
+
+            <div style="background-color: #ECFDF5; border: 1px solid #A7F3D0; padding: 24px; border-radius: 8px; margin: 24px 0; text-align: center;">
+              <div style="margin: 0; color: #065F46; font-size: 32px; font-weight: 900;">${payload.currency}${payload.amount}</div>
+              <div style="margin: 8px 0 0 0; color: #10B981; font-weight: 800; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">Paid Successfully</div>
+            </div>
+
+            <table style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 24px; font-size: 15px;">
+              <tr>
+                <th style="padding: 12px 0; color: #64748B; font-weight: normal; border-bottom: 1px solid #E2E8F0;">Invoice Number</th>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${payload.invoiceNumber}</td>
+              </tr>
+              <tr>
+                <th style="padding: 12px 0; color: #64748B; font-weight: normal; border-bottom: 1px solid #E2E8F0;">Date Paid</th>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+              </tr>
+              <tr>
+                <th style="padding: 12px 0; color: #64748B; font-weight: normal;">Payment Method</th>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #0F172A;">${payload.paymentMethod}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #64748B; font-size: 13px; margin: 0 0 8px 0;">Securely processed via Paystack</p>
+            <p style="color: #94A3B8; font-size: 12px; margin: 0;">Generated by KudiSlip Technologies</p>
           </div>
         </div>`;
         break;
