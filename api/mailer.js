@@ -127,6 +127,14 @@ export default async function handler(req, res) {
             <h2 style="color: ${isApprovedQuote ? '#10b981' : '#ef4444'}; margin-top: 0;">${isApprovedQuote ? 'Quote Approved' : 'Quote Declined'}</h2>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${payload.vendorName || 'Merchant'},</p>
             <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName || 'Client'}</strong> has <strong>${isApprovedQuote ? 'approved' : 'declined'}</strong> price quote <strong>${payload.invoiceNumber}</strong>.</p>
+            
+            ${payload.declineReason ? `
+            <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 18px; border-radius: 8px; margin: 20px 0; color: #991b1b;">
+              <strong style="display: block; margin-bottom: 4px; font-size: 14px;">Reason Provided by Client:</strong>
+              <span style="font-size: 15px;">"${payload.declineReason}"</span>
+            </div>
+            ` : ''}
+
             <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
               <p style="margin: 0; color: #0f172a;"><strong>Quote Amount:</strong> ${payload.currency || '₦'}${payload.amount}</p>
               <p style="margin: 8px 0 0 0; color: ${isApprovedQuote ? '#10b981' : '#ef4444'}; font-weight: 700;">Status: ${isApprovedQuote ? 'Converted to Payable Invoice' : 'Declined by Client'}</p>
