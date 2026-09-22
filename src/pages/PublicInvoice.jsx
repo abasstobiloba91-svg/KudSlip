@@ -25,6 +25,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
+  // 🌟 NEW: Partial Payment State
+  const [customPayAmount, setCustomPayAmount] = useState("");
+
   // Review System State
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -42,6 +45,11 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       if (invData) {
         setInvoice(invData);
+        
+        // 🌟 NEW: Set default payment input to the remaining balance
+        const balance = Number(invData.amount || 0) - Number(invData.amount_paid || 0);
+        setCustomPayAmount(balance.toString());
+
         const { data: venData } = await supabase.from('vendors').select('*').eq('id', invData.vendor_id).single();
         const { data: cliData } = await supabase.from('clients').select('*').eq('id', invData.client_id).single();
         setVendor(venData); setClient(cliData);
@@ -57,21 +65,26 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
-    const baseAmount = Number(invoice?.amount || 0);
     const invoiceCurrency = invoice?.currency || "NGN";
     
-    if (baseAmount <= 0) return showToast("Invalid Amount", "Cannot process payment. The invoice amount must be greater than 0.", "error");
+    // 🌟 NEW: Calculate exactly what they are paying right now
+    const balanceDue = Number(invoice?.amount || 0) - Number(invoice?.amount_paid || 0);
+    const amountToPay = Number(customPayAmount);
+    
+    if (amountToPay <= 0) return showToast("Invalid Amount", "Payment amount must be greater than 0.", "error");
+    if (amountToPay > balanceDue) return showToast("Overpayment", "You cannot pay more than the remaining balance.", "error");
 
     try {
-      let finalAmount = baseAmount;
+      let finalAmount = amountToPay;
       
+      // Calculate Paystack fees based on the PARTIAL amount, not the total
       if (invoice?.fee_passed_on && invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
-        if (baseAmount < 2500) {
-          finalAmount = baseAmount / 0.985;
+        if (amountToPay < 2500) {
+          finalAmount = amountToPay / 0.985;
         } else {
-          const calculatedWithFees = (baseAmount + 100) / 0.985;
-          const totalFeeCharged = calculatedWithFees - baseAmount;
-          finalAmount = totalFeeCharged > 2000 ? baseAmount + 2000 : calculatedWithFees;
+          const calculatedWithFees = (amountToPay + 100) / 0.985;
+          const totalFeeCharged = calculatedWithFees - amountToPay;
+          finalAmount = totalFeeCharged > 2000 ? amountToPay + 2000 : calculatedWithFees;
         }
       }
 
@@ -85,12 +98,19 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         currency: invoiceCurrency,
         reference: `${formattedInvoiceNumber}_${Date.now()}`,
         metadata: {
-          invoice_id: invoice.id
+          invoice_id: invoice.id,
+          intended_amount: amountToPay // 🌟 NEW: Send intended amount so webhook avoids logging fees as overpayment
         },
         callback: function(response) {
-          supabase.from('invoices').update({ status: 'paid', payment_method: 'paystack' }).eq('id', invoice.id).then(() => {
-            setInvoice({ ...invoice, status: 'paid', payment_method: 'paystack' });
-            showToast("Payment Successful", "Your secure payment has been processed and your receipt is saved.", "success");
+          // 🌟 NEW: Calculate new balance on the frontend
+          const newAmountPaid = Number(invoice.amount_paid || 0) + amountToPay;
+          const isFullyPaid = newAmountPaid >= Number(invoice.amount);
+          const newStatus = isFullyPaid ? 'paid' : 'partially_paid';
+
+          supabase.from('invoices').update({ status: newStatus, payment_method: 'paystack', amount_paid: newAmountPaid }).eq('id', invoice.id).then(() => {
+            setInvoice({ ...invoice, status: newStatus, payment_method: 'paystack', amount_paid: newAmountPaid });
+            setCustomPayAmount((Number(invoice.amount) - newAmountPaid).toString());
+            showToast("Payment Successful", `Your secure payment of ${CURRENCY_SYMBOLS[invoiceCurrency]}${amountToPay.toLocaleString()} has been processed.`, "success");
           });
         },
         onClose: function() {
@@ -137,7 +157,12 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
+  
+  // 🌟 NEW: Calculate safe totals
   const safeAmount = Number(invoice.amount || 0);
+  const amountPaid = Number(invoice.amount_paid || 0);
+  const balanceDue = safeAmount - amountPaid;
+  
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
   
   // Robust Pro Check
@@ -151,6 +176,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   
   const invoiceCurrency = invoice.currency || "NGN";
   const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
+
+  // Check if invoice is open for payment
+  const isPayable = invoice.status === 'pending' || invoice.status === 'partially_paid';
 
   const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
     <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -188,6 +216,20 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
           height: max-content; 
         }
+        
+        /* 🌟 NEW: Custom Payment Input Styling */
+        .custom-pay-input { 
+          width: 100%; 
+          padding: 16px; 
+          font-size: 18px; 
+          font-weight: 700; 
+          border: 2px solid #E2E8F0; 
+          border-radius: 8px; 
+          margin-bottom: 16px; 
+          background: #F8FAFC;
+        }
+        .custom-pay-input:focus { border-color: ${customColor}; outline: none; background: #FFFFFF; }
+
         @media (max-width: 768px) {
           .invoice-page-wrapper { padding: 24px 16px; }
           .print-card { padding: 24px; }
@@ -268,17 +310,18 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "6px", letterSpacing: "0.5px" }}>
                   {invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`}
                 </div>
+                {/* 🌟 NEW: Added partially_paid badge styling */}
                 <div style={{ 
                   display: "inline-block", 
-                  background: invoice.status === 'pending' ? "#FEF3C7" : invoice.status === 'cancelled' ? "#F1F5F9" : "#ECFDF5", 
-                  color: invoice.status === 'pending' ? "#D97706" : invoice.status === 'cancelled' ? "#64748B" : "#10B981", 
+                  background: invoice.status === 'partially_paid' ? "#E0F2FE" : invoice.status === 'pending' ? "#FEF3C7" : invoice.status === 'cancelled' ? "#F1F5F9" : "#ECFDF5", 
+                  color: invoice.status === 'partially_paid' ? "#0284C7" : invoice.status === 'pending' ? "#D97706" : invoice.status === 'cancelled' ? "#64748B" : "#10B981", 
                   padding: "6px 14px", 
                   borderRadius: "20px", 
                   fontSize: "12px", 
                   fontWeight: "800", 
                   textTransform: "uppercase" 
                 }}>
-                  {invoice.status || 'PENDING'}
+                  {invoice.status.replace('_', ' ') || 'PENDING'}
                 </div>
               </div>
             </div>
@@ -311,9 +354,24 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               ))}
             </div>
             
-            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
-              <div style={{ fontSize: "15px", fontWeight: "800", color: "#64748B", textTransform: "uppercase", letterSpacing: "1px" }}>Total Amount</div>
-              <div style={{ fontSize: "32px", fontWeight: "900", color: invoice.status === 'cancelled' ? "#64748B" : customColor, textAlign: "right", wordBreak: "break-word", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{currencySymbol}{safeAmount.toLocaleString()}</div>
+            {/* 🌟 NEW: Summary Box showing Total, Paid, and Balance Due */}
+            <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "15px", fontWeight: "600", color: "#475569" }}>
+                <span>Total Amount</span>
+                <span>{currencySymbol}{safeAmount.toLocaleString()}</span>
+              </div>
+              
+              {amountPaid > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "15px", fontWeight: "600", color: "#10B981" }}>
+                  <span>Amount Paid</span>
+                  <span>- {currencySymbol}{amountPaid.toLocaleString()}</span>
+                </div>
+              )}
+              
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #CBD5E1", fontSize: "20px", fontWeight: "900", color: invoice.status === 'cancelled' ? "#64748B" : customColor, textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>
+                <span>Balance Due</span>
+                <span>{currencySymbol}{balanceDue.toLocaleString()}</span>
+              </div>
             </div>
             
             <div className="no-print">
@@ -323,10 +381,27 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
               )}
 
-              {invoice.status === 'pending' && (
-                <button className="btn-hover" style={{ width: "100%", padding: "20px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "17px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
-                  Proceed to Secure Payment
-                </button>
+              {/* 🌟 NEW: Partial Payment Input Section */}
+              {isPayable && (
+                <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center", marginBottom: "16px" }}>
+                  <p style={{ margin: "0 0 16px 0", fontSize: "15px", color: "#475569", fontWeight: "600" }}>Enter the amount you wish to pay today:</p>
+                  
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <span style={{ position: "absolute", left: "16px", fontSize: "18px", fontWeight: "700", color: "#0F172A" }}>{currencySymbol}</span>
+                    <input 
+                      type="number" 
+                      className="custom-pay-input" 
+                      value={customPayAmount} 
+                      onChange={(e) => setCustomPayAmount(e.target.value)} 
+                      max={balanceDue}
+                      style={{ paddingLeft: "40px" }}
+                    />
+                  </div>
+
+                  <button className="btn-hover" style={{ width: "100%", padding: "20px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "17px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
+                    Securely Pay {currencySymbol}{Number(customPayAmount || 0).toLocaleString()}
+                  </button>
+                </div>
               )}
 
               {invoice.status === 'paid' && (
