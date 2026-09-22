@@ -7,6 +7,15 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// 🛡️ ZOHO / OUTLOOK / GMAIL FIX: Formats plain text newlines into explicit HTML <p> tags
+const formatParagraphs = (text) => {
+  if (!text) return '';
+  return text
+    .split(/\n\s*\n/)
+    .map(paragraph => `<p style="margin: 0 0 16px 0; font-size: 15px; color: #475569; line-height: 1.7;">${paragraph.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+};
+
 export default async function handler(req, res) {
   // CORS configuration
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -25,7 +34,7 @@ export default async function handler(req, res) {
 
     switch (type) {
       // 1. WELCOME EMAIL
-      case 'welcome':
+      case 'welcome': {
         if (!payload.userEmail) return res.status(400).json({ error: 'Email is required' });
         from = 'KudiSlip <hello@kudislip.com.ng>';
         to = payload.userEmail;
@@ -48,9 +57,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 2. INVOICE DISPATCH
-      case 'invoice':
+      case 'invoice': {
         if (!payload.clientEmail || !payload.invoiceLink || !payload.invoiceId) {
           return res.status(400).json({ error: 'Missing required fields for email delivery.' });
         }
@@ -77,9 +87,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 3. PRICE QUOTE DISPATCH (SENT TO CLIENT)
-      case 'quote':
+      case 'quote': {
         if (!payload.clientEmail || !payload.invoiceLink || !payload.invoiceId) {
           return res.status(400).json({ error: 'Missing required fields for quote delivery.' });
         }
@@ -107,9 +118,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 4. QUOTE RESPONSE ALERT (SENT TO MERCHANT WHEN CLIENT ACCEPTS/DECLINES)
-      case 'quote_response':
+      case 'quote_response': {
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
         const isApprovedQuote = payload.action === 'approved';
         from = 'KudiSlip Billing <invoices@kudislip.com.ng>';
@@ -149,11 +161,12 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 5. SECURE OTP / SECURITY CODE
       case 'otp':
       case 'security_otp':
-      case 'security_code':
+      case 'security_code': {
         const targetEmail = payload.email || payload.userEmail;
         if (!targetEmail) return res.status(400).json({ error: 'Recipient email is required.' });
 
@@ -192,9 +205,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 6. PAYMENT ALERT (SENT TO MERCHANT)
-      case 'payment_alert':
+      case 'payment_alert': {
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
         
         const isPartialAlert = payload.balanceDue && Number(payload.balanceDue.replace(/,/g, '')) > 0;
@@ -225,9 +239,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 7. OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
-      case 'client_receipt':
+      case 'client_receipt': {
         if (!payload.clientEmail) return res.status(400).json({ error: 'Client email is required' });
         
         const isPartialReceipt = payload.balanceDue && Number(payload.balanceDue.replace(/,/g, '')) > 0;
@@ -280,9 +295,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 8. RESET EMAIL
-      case 'reset_email':
+      case 'reset_email': {
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         
         const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
@@ -314,9 +330,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 9. PRO SUBSCRIPTION WARNING
-      case 'subscription_warning':
+      case 'subscription_warning': {
         if (!payload.email || !payload.daysLeft) return res.status(400).json({ error: 'Missing required fields' });
         from = 'KudiSlip Subscriptions <hello@kudislip.com.ng>';
         to = payload.email;
@@ -336,9 +353,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 10. KYC STATUS NOTIFICATION
-      case 'kyc_status':
+      case 'kyc_status': {
         if (!payload.email || !payload.status) return res.status(400).json({ error: 'Email and status required' });
         from = 'KudiSlip Verification <compliance@kudislip.com.ng>';
         to = payload.email;
@@ -369,9 +387,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 11. SYSTEM BROADCAST EMAIL
-      case 'broadcast':
+      case 'broadcast': {
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
         }
@@ -387,7 +406,7 @@ export default async function handler(req, res) {
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
             <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
-            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px;">${payload.message}</div>
+            <div style="margin-bottom: 24px;">${formatParagraphs(payload.message)}</div>
             <div style="text-align: center; margin: 32px 0;">
               <a href="https://kudislip.com.ng" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">Go to Dashboard</a>
             </div>
@@ -419,9 +438,10 @@ export default async function handler(req, res) {
         await Promise.all(sendPromises);
 
         return res.status(200).json({ success: true, message: `Broadcast successfully emailed to ${recipientList.length} users!` });
+      }
 
       // 12. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
-      case 'onboarding_followup':
+      case 'onboarding_followup': {
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         from = 'KudiSlip <hello@kudislip.com.ng>';
         to = payload.email;
@@ -474,9 +494,10 @@ export default async function handler(req, res) {
           </div>
         </div>`;
         break;
+      }
 
       // 13. DIRECT EMAIL CAMPAIGN
-      case 'campaign':
+      case 'campaign': {
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
         }
@@ -500,7 +521,7 @@ export default async function handler(req, res) {
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
             <h2 style="color: #0F172A; margin-top: 0; font-size: 20px; font-weight: 800;">${payload.subject}</h2>
-            <div style="font-size: 15px; color: #475569; line-height: 1.7; white-space: pre-wrap; margin-bottom: 16px;">${payload.message}</div>
+            <div style="margin-bottom: 16px;">${formatParagraphs(payload.message)}</div>
             ${ctaButtonHtml}
           </div>
           <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
@@ -528,6 +549,7 @@ export default async function handler(req, res) {
         }
 
         return res.status(200).json({ success: true, data: campaignData });
+      }
 
       default:
         return res.status(400).json({ error: `Invalid email type '${type}' specified.` });
