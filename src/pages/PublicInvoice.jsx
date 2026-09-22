@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, PAYSTACK_PUBLIC_KEY } from '../supabaseClient';
 import { AlertIcon } from '../components/Icons';
 
+// Helper hook to dynamically inject Paystack inline SDK
 const usePaystack = () => {
   useEffect(() => {
     if (!document.getElementById('paystack-inline-js')) {
@@ -24,11 +25,19 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
+  // Partial Payment State
   const [customPayAmount, setCustomPayAmount] = useState("");
+
+  // Review System State
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  // Quote Decline Feedback Modal State
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [submittingDecline, setSubmittingDecline] = useState(false);
 
   const starsArray = [1, 2, 3, 4, 5];
   const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£" };
@@ -41,6 +50,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       if (invData) {
         setInvoice(invData);
+        
+        // Default custom payment input to the remaining balance
         const balance = Number(invData.amount || 0) - Number(invData.amount_paid || 0);
         setCustomPayAmount(balance.toString());
 
@@ -52,7 +63,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     }
     fetchData();
 
-    // REAL-TIME WEBSOCKET LISTENER (Keeps client UI synced if merchant voids or edits quote)
+    // REAL-TIME WEBSOCKET LISTENER (Keeps client UI synced if merchant updates or voids quote)
     const channel = supabase.channel(`public_invoice_${invoiceId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invoices', filter: `id=eq.${invoiceId}` }, (payload) => {
         setInvoice(prev => ({ ...prev, ...payload.new }));
@@ -64,13 +75,13 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   const triggerPDFCompilation = () => { window.print(); };
 
-  // --- QUOTE LOGIC (WITH REAL-TIME MERCHANT ALERTS) ---
+  // --- QUOTE APPROVAL LOGIC ---
   const handleApproveQuote = async () => {
     try {
-      const { error } = await supabase.from('invoices').update({ status: 'pending' }).eq('id', invoice.id);
+      const { error } = await supabase.from('invoices').update({ status: 'pending', decline_reason: null }).eq('id', invoice.id);
       if (error) throw error;
       
-      setInvoice(prev => ({ ...prev, status: 'pending' }));
+      setInvoice(prev => ({ ...prev, status: 'pending', decline_reason: null }));
       showToast("Quote Approved", "You can now proceed to secure payment.", "success");
 
       const formattedNum = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
@@ -107,18 +118,28 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     }
   };
 
-  const handleDeclineQuote = async () => {
+  // --- QUOTE DECLINE LOGIC WITH FEEDBACK REASON ---
+  const handleConfirmDecline = async () => {
+    setSubmittingDecline(true);
     try {
-      const { error } = await supabase.from('invoices').update({ status: 'quote_declined' }).eq('id', invoice.id);
+      const finalReason = declineReason.trim() || "No specific reason provided";
+      
+      const { error } = await supabase.from('invoices').update({ 
+        status: 'quote_declined', 
+        decline_reason: finalReason 
+      }).eq('id', invoice.id);
+
       if (error) throw error;
 
-      setInvoice(prev => ({ ...prev, status: 'quote_declined' }));
-      showToast("Quote Declined", "The merchant has been notified.", "info");
+      setInvoice(prev => ({ ...prev, status: 'quote_declined', decline_reason: finalReason }));
+      setShowDeclineModal(false);
+      showToast("Quote Declined", "The merchant has been notified of your feedback.", "info");
 
       const formattedNum = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
       const sym = CURRENCY_SYMBOLS[invoice.currency || 'NGN'] || '₦';
       const formattedAmt = `${sym}${Number(invoice.amount).toLocaleString()}`;
 
+      // Send Email Alert to Merchant containing the client's reason
       if (vendor?.email) {
         fetch('/api/mailer', {
           method: 'POST',
@@ -130,7 +151,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             vendorName: vendor.business_name || "Merchant",
             clientName: client?.name || "Client",
             invoiceNumber: formattedNum,
-            amount: formattedAmt
+            amount: formattedAmt,
+            declineReason: finalReason
           })
         }).catch(e => console.error(e));
       }
@@ -138,15 +160,18 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
       if (vendor?.id) {
         await supabase.from('notifications').insert([{
           user_id: vendor.id,
-          message: `${client?.name || "Client"} declined quote ${formattedNum}`,
+          message: `Quote Declined: ${client?.name || "Client"} declined ${formattedNum} ("${finalReason}")`,
           is_read: false
         }]);
       }
     } catch (err) {
-      showToast("System Error", "Could not decline the quote at this time.", "error");
+      showToast("System Error", "Could not submit decline response.", "error");
+    } finally {
+      setSubmittingDecline(false);
     }
   };
 
+  // --- PAYSTACK PAYMENT LOGIC ---
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
@@ -346,6 +371,31 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
       <div className="invoice-page-wrapper">
         {isFreeTier && <div style={{ position: "fixed", top: "-50%", left: "-50%", right: "-50%", bottom: "-50%", backgroundImage: 'url("/logo.png")', backgroundRepeat: "repeat", backgroundSize: "200px", opacity: 0.03, pointerEvents: "none", zIndex: 1, transform: "rotate(-15deg)" }} />}
         
+        {/* DECLINE REASON MODAL */}
+        {showDeclineModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+            <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "16px", maxWidth: "440px", width: "100%", boxSizing: "border-box", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "20px", color: "#0F172A", fontWeight: "800" }}>Decline Price Quote</h3>
+              <p style={{ margin: "0 0 20px 0", fontSize: "14px", color: "#64748B", lineHeight: "1.5" }}>Please let the merchant know why this quote is being declined so they can make adjustments:</p>
+              
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
+                {["Price too high", "Scope changed", "Chose another vendor"].map(chip => (
+                  <button key={chip} type="button" onClick={() => setDeclineReason(chip)} style={{ padding: "6px 12px", background: declineReason === chip ? "#0F172A" : "#F1F5F9", color: declineReason === chip ? "#FFFFFF" : "#475569", border: "none", borderRadius: "20px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
+              <textarea value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} placeholder="Type custom reason or feedback..." style={{ width: "100%", height: "90px", padding: "12px", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "14px", boxSizing: "border-box", marginBottom: "20px", outline: "none", resize: "none" }} />
+              
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowDeclineModal(false)} style={{ flex: 1, padding: "14px", background: "#F1F5F9", color: "#475569", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer", fontSize: "14px" }}>Cancel</button>
+                <button onClick={handleConfirmDecline} disabled={submittingDecline} style={{ flex: 1, padding: "14px", background: "#EF4444", color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "800", cursor: "pointer", fontSize: "14px" }}>{submittingDecline ? "Submitting..." : "Confirm Decline"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="invoice-max-width">
           
           <div className="no-print" style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
@@ -467,17 +517,24 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   <h3 style={{ margin: "0 0 8px 0", fontSize: "20px", color: "#0F172A", fontWeight: "800" }}>Review Price Quote</h3>
                   <p style={{ margin: "0 0 24px 0", fontSize: "15px", color: "#475569", lineHeight: "1.6" }}>Please review the services and pricing outlined above. If everything is satisfactory, approve this quote to securely convert it into a payable invoice.</p>
                   <div style={{ display: "flex", gap: "16px" }}>
-                     <button onClick={handleDeclineQuote} className="btn-hover" style={{ flex: 1, padding: "16px", background: "#FFFFFF", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer" }}>Decline</button>
+                     <button onClick={() => setShowDeclineModal(true)} className="btn-hover" style={{ flex: 1, padding: "16px", background: "#FFFFFF", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer" }}>Decline</button>
                      <button onClick={handleApproveQuote} className="btn-hover" style={{ flex: 2, padding: "16px", background: "#10B981", color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}>Approve Quote</button>
                   </div>
                 </div>
               )}
 
-              {/* CANCELLED OR DECLINED STATUS */}
+              {/* CANCELLED OR DECLINED STATUS BANNER */}
               {(invoice.status === 'cancelled' || invoice.status === 'quote_declined') && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "24px", background: "#FEF2F2", borderRadius: "12px", border: "1px dashed #FECACA", color: "#EF4444", fontWeight: "700" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                  {invoice.status === 'quote_declined' ? 'This quote has been declined.' : 'This invoice has been cancelled by the merchant.'}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", padding: "24px", background: "#FEF2F2", borderRadius: "12px", border: "1px dashed #FECACA", color: "#EF4444", fontWeight: "700", textAlign: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    {invoice.status === 'quote_declined' ? 'This price quote was declined.' : 'This invoice was cancelled by the merchant.'}
+                  </div>
+                  {invoice.decline_reason && (
+                    <div style={{ fontSize: "13px", color: "#991B1B", marginTop: "4px", fontStyle: "italic" }}>
+                      Feedback sent: "{invoice.decline_reason}"
+                    </div>
+                  )}
                 </div>
               )}
 
