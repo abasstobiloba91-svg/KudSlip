@@ -24,6 +24,9 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
   const [sendingEmailId, setSendingEmailId] = useState(null);
   const [confirmModalData, setConfirmModalData] = useState(null);
 
+  // Revision & Editing State
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -85,6 +88,32 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     showToast("Rate Applied", `Converted to ₦${Math.round(calcData.result).toLocaleString()}`, "success");
   };
 
+  // PRE-FILL FORM FOR REVISION / EDITING
+  const handleEditQuote = (inv) => {
+    setEditingInvoiceId(inv.id);
+    setSelectedClient(inv.client_id || "");
+    setDueDate(inv.due_date || "");
+    
+    let parsed = [];
+    try { parsed = typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items; } catch(e) {}
+    setItems(parsed.length > 0 ? parsed : [{ description: "", quantity: 1, price: "" }]);
+    
+    setPassFees(inv.fee_passed_on || false);
+    setInvoiceType(inv.recurring_frequency || "one-time");
+    
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+    showToast("Editing Document", "Modify the fields below and click Update as Quote or Update as Invoice.", "info");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingInvoiceId(null);
+    setItems([{ description: "", quantity: 1, price: "" }]);
+    setSelectedClient("");
+    setDueDate("");
+    setInvoiceType("one-time");
+    setPassFees(false);
+  };
+
   const triggerManualPaymentConfirm = (invId) => {
     setConfirmModalData({
       title: "Mark as Paid",
@@ -144,23 +173,49 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       ? items.map(i => ({ ...i, description: `[${invoiceType.toUpperCase()}] ${i.description}` })) 
       : items;
     
-    const { data, error } = await supabase.from('invoices').insert([{ 
-      vendor_id: user.id, 
-      client_id: selectedClient, 
-      amount: calculateTotal(), 
-      items: finalItems, 
-      due_date: dueDate, 
-      currency: 'NGN',
-      fee_passed_on: passFees,
-      is_recurring: invoiceType !== "one-time", 
-      recurring_frequency: invoiceType !== "one-time" ? invoiceType : null,
-      status: asQuote ? 'quote' : 'pending'
-    }]).select().single();
+    let dbError;
+
+    if (editingInvoiceId) {
+      // UPDATE EXISTING RECORD & CLEAR DECLINE REASON
+      const { error } = await supabase.from('invoices').update({ 
+        client_id: selectedClient, 
+        amount: calculateTotal(), 
+        items: finalItems, 
+        due_date: dueDate, 
+        fee_passed_on: passFees,
+        is_recurring: invoiceType !== "one-time", 
+        recurring_frequency: invoiceType !== "one-time" ? invoiceType : null,
+        status: asQuote ? 'quote' : 'pending',
+        decline_reason: null
+      }).eq('id', editingInvoiceId);
+      dbError = error;
+    } else {
+      // CREATE NEW RECORD
+      const { error } = await supabase.from('invoices').insert([{ 
+        vendor_id: user.id, 
+        client_id: selectedClient, 
+        amount: calculateTotal(), 
+        items: finalItems, 
+        due_date: dueDate, 
+        currency: 'NGN',
+        fee_passed_on: passFees,
+        is_recurring: invoiceType !== "one-time", 
+        recurring_frequency: invoiceType !== "one-time" ? invoiceType : null,
+        status: asQuote ? 'quote' : 'pending'
+      }]);
+      dbError = error;
+    }
     
-    if (error) { showToast("Database Error", error.message, "error"); } 
+    if (dbError) { 
+      showToast("Database Error", dbError.message, "error"); 
+    } 
     else {
-      showToast(asQuote ? "Quote Created!" : "Invoice Generated!", asQuote ? "Your price quote is ready to send." : "A secure payment link has been created successfully.", "success");
-      setItems([{ description: "", quantity: 1, price: "" }]); setSelectedClient(""); setDueDate(""); setInvoiceType("one-time"); setPassFees(false);
+      showToast(
+        asQuote ? (editingInvoiceId ? "Quote Updated!" : "Quote Created!") : (editingInvoiceId ? "Invoice Updated!" : "Invoice Generated!"), 
+        asQuote ? "Your price quote is ready to send." : "A secure payment link has been created successfully.", 
+        "success"
+      );
+      handleCancelEdit();
       fetchRecentInvoices(); 
     }
     setLoading(false);
@@ -240,6 +295,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     <div style={{ maxWidth: "900px", position: "relative" }}>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       
+      {/* CONFIRMATION MODAL */}
       {confirmModalData && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", textAlign: "center" }}>
@@ -258,6 +314,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
         </div>
       )}
 
+      {/* MISSING LOGO WARNING MODAL */}
       {logoWarning.show && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(4px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", boxSizing: "border-box", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
@@ -278,6 +335,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       <div style={{ fontSize: "28px", fontWeight: "900", marginBottom: "8px" }}>CRM & Invoicing</div>
       <div style={{ color: "#64748B", marginBottom: "36px", fontSize: "15px" }}>Bill your clients and monitor your business health.</div>
 
+      {/* METRIC CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Billed</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px" }}>₦{totalBilled.toLocaleString()}</div></div>
         <div className="metric-card"><div style={{ fontSize: "12px", color: "#64748B", fontWeight: "700", textTransform: "uppercase" }}>Total Collected</div><div style={{ fontSize: "24px", fontWeight: "900", marginTop: "8px", color: "#10B981" }}>₦{absoluteTotalCollected.toLocaleString()}</div></div>
@@ -286,8 +344,19 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && <RevenueChart invoices={invoices} />}
 
-      <div style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: 12, padding: "32px", marginBottom: "40px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>Create New Document</h3>
+      {/* CREATE / EDIT DOCUMENT CARD */}
+      <div style={{ background: "#FFFFFF", border: editingInvoiceId ? "2px solid #3B82F6" : "1px solid #E2E8F0", borderRadius: 12, padding: "32px", marginBottom: "40px", transition: "border 0.3s ease" }}>
+        
+        {editingInvoiceId && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#EFF6FF", padding: "12px 16px", borderRadius: "8px", marginBottom: "24px", border: "1px solid #BFDBFE" }}>
+            <span style={{ fontSize: "14px", fontWeight: "800", color: "#1E40AF" }}>Mode: Revising Existing Document</span>
+            <button onClick={handleCancelEdit} style={{ background: "none", border: "none", color: "#EF4444", fontWeight: "800", cursor: "pointer", fontSize: "13px" }}>Discard Edits</button>
+          </div>
+        )}
+
+        <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "24px" }}>
+          {editingInvoiceId ? "Modify Document Details" : "Create New Document"}
+        </h3>
         
         {calcOpen ? (
           <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "20px", marginBottom: "32px" }}>
@@ -331,7 +400,10 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "32px" }}>
           <div>
             <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Billed To (Client)</label>
-            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}><option value="">-- Select Client --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+            <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)}>
+              <option value="">-- Select Client --</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           <div><label style={{ fontSize: "12px", fontWeight: "700", color: "#64748B", display: "block", marginBottom: "8px" }}>Due Date / Valid Until</label><input className="form-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
           
@@ -356,6 +428,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           </label>
         </div>
 
+        {/* LINE ITEMS */}
         <div style={{ marginBottom: "24px" }}>
           {items.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "8px", paddingLeft: "4px" }}>
@@ -400,7 +473,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                 textAlign: "center"
               }}
             >
-              {loading ? "Saving..." : "Save as Quote"}
+              {loading ? "Saving..." : editingInvoiceId ? "Update as Quote" : "Save as Quote"}
             </button>
             
             <button 
@@ -422,12 +495,13 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                 boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
               }}
             >
-              {loading ? "Generating..." : "Generate Invoice"}
+              {loading ? "Generating..." : editingInvoiceId ? "Update as Invoice" : "Generate Invoice"}
             </button>
           </div>
         </div>
       </div>
 
+      {/* RECENT DOCUMENTS LIST */}
       {invoices.length > 0 && (
         <div>
           {/* SEARCH & SORT HEADER */}
@@ -519,6 +593,13 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                   <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
+                {/* SHOW CLIENT DECLINE REASON IF PRESENT */}
+                {inv.decline_reason && (
+                  <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", padding: "10px 14px", borderRadius: "8px", fontSize: "13px", color: "#991B1B", fontWeight: "600" }}>
+                    <strong>Client Feedback:</strong> "{inv.decline_reason}"
+                  </div>
+                )}
+
                 {/* AMOUNT & ACTION BUTTONS */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px" }}>
                   <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", opacity: (inv.status === 'cancelled' || inv.status === 'quote_declined') ? 0.5 : 1 }}>
@@ -533,6 +614,17 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                     >
                       View Link
                     </button>
+
+                    {/* EDIT & REVISE BUTTON */}
+                    {(inv.status === 'quote' || inv.status === 'quote_declined' || inv.status === 'pending') && (
+                      <button 
+                        onClick={() => handleEditQuote(inv)} 
+                        className="btn-secondary btn-hover" 
+                        style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8", boxSizing: "border-box" }}
+                      >
+                        Edit & Revise
+                      </button>
+                    )}
                     
                     {(inv.status === 'pending' || inv.status === 'partially_paid') && (
                       <button 
