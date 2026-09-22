@@ -176,7 +176,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
     let dbError;
 
     if (editingInvoiceId) {
-      // UPDATE EXISTING RECORD & CLEAR DECLINE REASON
       const { error } = await supabase.from('invoices').update({ 
         client_id: selectedClient, 
         amount: calculateTotal(), 
@@ -190,7 +189,6 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       }).eq('id', editingInvoiceId);
       dbError = error;
     } else {
-      // CREATE NEW RECORD
       const { error } = await supabase.from('invoices').insert([{ 
         vendor_id: user.id, 
         client_id: selectedClient, 
@@ -435,16 +433,26 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
               <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Item Description</div>
               <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Qty</div>
               <div style={{ fontSize: "11px", fontWeight: "800", color: "#64748B", textTransform: "uppercase" }}>Unit Price</div>
-              <div style={{ width: "28px" }}></div>
+              <div style={{ width: "36px" }}></div>
             </div>
           )}
           
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px" }}>
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr auto", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
               <input className="form-input" placeholder="e.g. Web Design" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} />
               <input className="form-input" type="number" min="1" placeholder="1" value={item.quantity === '' ? '' : item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value === '' ? '' : Number(e.target.value))} />
               <input className="form-input" type="number" min="0" placeholder="e.g. 50000" value={item.price === '' ? '' : item.price} onChange={e => handleItemChange(idx, 'price', e.target.value === '' ? '' : Number(e.target.value))} />
-              <button onClick={() => handleRemoveItem(idx)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: "800", padding: "0 10px" }}>X</button>
+              <button 
+                onClick={() => handleRemoveItem(idx)} 
+                type="button"
+                style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "6px", cursor: "pointer", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                title="Remove Item"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
             </div>
           ))}
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
@@ -553,37 +561,42 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
             return (
               <div key={inv.id} className="card-hover" style={{ background: "#FFFFFF", border: `1px solid #E2E8F0`, borderRadius: "16px", padding: "24px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
                 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                  <div style={{ wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", marginBottom: "4px", display: "flex", alignItems: "center" }}>
-                      {inv.clients?.name}
-                      {inv.viewed_at && inv.status === 'pending' && (
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "900", padding: "4px 8px", borderRadius: "12px", background: "#F3E8FF", color: "#7E22CE", textTransform: "uppercase", letterSpacing: "0.5px", marginLeft: "8px", border: "1px solid #D8B4FE" }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Viewed
-                        </span>
-                      )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+                  <div style={{ minWidth: "180px", flex: 1 }}>
+                    <div style={{ fontWeight: "900", fontSize: "18px", color: "#0F172A", lineHeight: "1.2", marginBottom: "4px" }}>
+                      {inv.clients?.name || "Unnamed Client"}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4" }}>
+                    <div style={{ fontSize: "13px", color: "#64748B", lineHeight: "1.4", wordBreak: "break-all" }}>
                       <div>{inv.clients?.email}</div>
                       {inv.clients?.phone && <div>{inv.clients.phone}</div>}
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                    <span style={{ fontSize: "11px", fontWeight: "900", padding: "6px 12px", borderRadius: "20px", background: badgeBg, color: badgeColor, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {/* BADGES CONTAINER */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    {inv.viewed_at && inv.status === 'pending' && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "800", padding: "5px 10px", borderRadius: "20px", background: "#F3E8FF", color: "#7E22CE", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", border: "1px solid #D8B4FE" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Viewed
+                      </span>
+                    )}
+
+                    <span style={{ fontSize: "11px", fontWeight: "900", padding: "5px 10px", borderRadius: "20px", background: badgeBg, color: badgeColor, textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>
                       {inv.status.replace('_', ' ')}
                     </span>
-                    
+
                     {(inv.status === 'pending' || inv.status === 'quote') && (
                       <button 
                         onClick={() => triggerCancelConfirm(inv)}
                         className="btn-hover"
-                        style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}
+                        style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "20px", padding: "4px 10px", fontSize: "11px", fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer", whiteSpace: "nowrap" }}
                         title={`Cancel ${inv.status === 'quote' ? 'Quote' : 'Invoice'}`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
+                        Cancel
                       </button>
                     )}
                   </div>
@@ -593,36 +606,41 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                   <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
-                {/* SHOW CLIENT DECLINE REASON IF PRESENT */}
+                {/* EXECUTIVE CLIENT REJECTION REASON CARD */}
                 {inv.decline_reason && (
-                  <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", padding: "10px 14px", borderRadius: "8px", fontSize: "13px", color: "#991B1B", fontWeight: "600" }}>
-                    <strong>Client Feedback:</strong> "{inv.decline_reason}"
+                  <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", padding: "14px 16px", borderRadius: "10px", marginTop: "2px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#991B1B", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      Client Feedback
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#7F1D1D", fontWeight: "600", lineHeight: "1.4" }}>
+                      "{inv.decline_reason}"
+                    </div>
                   </div>
                 )}
 
-                {/* AMOUNT & ACTION BUTTONS */}
+                {/* AMOUNT & UNIFORM 2X2 BUTTON GRID */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px" }}>
                   <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", opacity: (inv.status === 'cancelled' || inv.status === 'quote_declined') ? 0.5 : 1 }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px", width: "100%" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px", width: "100%" }}>
                     <button 
                       className="btn-secondary btn-hover" 
-                      style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", boxSizing: "border-box" }} 
+                      style={{ padding: "12px 10px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", boxSizing: "border-box" }} 
                       onClick={() => window.open("/pay/" + inv.id, '_blank')}
                     >
                       View Link
                     </button>
 
-                    {/* EDIT & REVISE BUTTON */}
                     {(inv.status === 'quote' || inv.status === 'quote_declined' || inv.status === 'pending') && (
                       <button 
                         onClick={() => handleEditQuote(inv)} 
                         className="btn-secondary btn-hover" 
-                        style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8", boxSizing: "border-box" }}
+                        style={{ padding: "12px 10px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8", boxSizing: "border-box" }}
                       >
-                        Edit & Revise
+                        Edit / Revise
                       </button>
                     )}
                     
@@ -630,9 +648,10 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                       <button 
                         onClick={() => triggerManualPaymentConfirm(inv.id)}
                         className="btn-secondary btn-hover"
-                        style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569", boxSizing: "border-box" }}
+                        style={{ padding: "12px 10px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569", boxSizing: "border-box" }}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cash / Manual
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Cash / Manual
                       </button>
                     )}
 
@@ -642,23 +661,9 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                           onClick={() => handleSendEmail(inv)} 
                           disabled={sendingEmailId === inv.id}
                           className="btn-secondary btn-hover"
-                          style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1, boxSizing: "border-box" }}
+                          style={{ padding: "12px 10px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1, boxSizing: "border-box" }}
                         >
-                          {sendingEmailId === inv.id ? (
-                            <>
-                              <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
-                                <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
-                              </svg>
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
-                              </svg>
-                              {inv.status === 'quote' ? 'Email Quote' : 'Email Client'}
-                            </>
-                          )}
+                          {sendingEmailId === inv.id ? "Sending..." : (inv.status === 'quote' ? 'Email Quote' : 'Email Client')}
                         </button>
                         
                         <a 
@@ -666,7 +671,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="btn-primary btn-hover" 
-                          style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" }}
+                          style={{ padding: "12px 10px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" }}
                         >
                           WhatsApp
                         </a>
