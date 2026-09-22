@@ -61,6 +61,30 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   const triggerPDFCompilation = () => { window.print(); };
 
+  // --- QUOTE LOGIC ---
+  const handleApproveQuote = async () => {
+    try {
+      const { error } = await supabase.from('invoices').update({ status: 'pending' }).eq('id', invoice.id);
+      if (error) throw error;
+      setInvoice({ ...invoice, status: 'pending' });
+      showToast("Quote Approved", "You can now proceed to secure payment.", "success");
+    } catch (err) {
+      showToast("System Error", "Could not approve the quote at this time.", "error");
+    }
+  };
+
+  const handleDeclineQuote = async () => {
+    try {
+      const { error } = await supabase.from('invoices').update({ status: 'quote_declined' }).eq('id', invoice.id);
+      if (error) throw error;
+      setInvoice({ ...invoice, status: 'quote_declined' });
+      showToast("Quote Declined", "The merchant has been notified.", "info");
+    } catch (err) {
+      showToast("System Error", "Could not decline the quote at this time.", "error");
+    }
+  };
+  // -------------------
+
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
@@ -144,7 +168,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     showToast("Feedback Sent", "Thank you! Your review helps us keep the platform safe.", "success");
   };
 
-  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Invoice...</div>;
+  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Loading Secure Document...</div>;
   if (debugError) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "#FFF1F2" }}>
       <GlobalStyles/>
@@ -153,7 +177,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
       <a href="/" className="btn-primary btn-hover" style={{marginTop: "16px"}}>Go to Dashboard</a>
     </div>
   );
-  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Invoice not found.</div>;
+  if (!invoice) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><GlobalStyles/>Document not found.</div>;
 
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
@@ -179,6 +203,16 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
   // Check if invoice is open for payment
   const isPayable = invoice.status === 'pending' || invoice.status === 'partially_paid';
+
+  // Clean Status Badge Colors
+  let badgeBg = "#F1F5F9";
+  let badgeColor = "#64748B";
+  
+  if (invoice.status === 'pending') { badgeBg = "#FEF3C7"; badgeColor = "#D97706"; }
+  else if (invoice.status === 'paid') { badgeBg = "#ECFDF5"; badgeColor = "#10B981"; }
+  else if (invoice.status === 'partially_paid') { badgeBg = "#E0F2FE"; badgeColor = "#0284C7"; }
+  else if (invoice.status === 'quote') { badgeBg = "#F3E8FF"; badgeColor = "#9333EA"; }
+  else if (invoice.status === 'quote_declined') { badgeBg = "#FEF2F2"; badgeColor = "#EF4444"; }
 
   const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
     <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -312,8 +346,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
                 <div style={{ 
                   display: "inline-block", 
-                  background: invoice.status === 'partially_paid' ? "#E0F2FE" : invoice.status === 'pending' ? "#FEF3C7" : invoice.status === 'cancelled' ? "#F1F5F9" : "#ECFDF5", 
-                  color: invoice.status === 'partially_paid' ? "#0284C7" : invoice.status === 'pending' ? "#D97706" : invoice.status === 'cancelled' ? "#64748B" : "#10B981", 
+                  background: badgeBg, 
+                  color: badgeColor, 
                   padding: "6px 14px", 
                   borderRadius: "20px", 
                   fontSize: "12px", 
@@ -332,7 +366,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 <div style={{ fontSize: "15px", color: "#64748B", marginTop: "4px" }}>{client?.email || "No email"}</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>Due Date</div>
+                <div style={{ fontSize: "13px", color: "#64748B", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {invoice.status === 'quote' ? 'Quote Valid Until' : 'Due Date'}
+                </div>
                 <div style={{ fontWeight: "800", fontSize: "17px", color: "#0F172A", marginTop: "6px" }}>{safeDate}</div>
               </div>
             </div>
@@ -345,10 +381,10 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               </div>
               
               {safeItems.map((item, idx) => (
-                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px dashed #E2E8F0", opacity: invoice.status === 'cancelled' ? 0.6 : 1 }}>
-                  <div style={{ flex: 1, fontWeight: "600", fontSize: "16px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{item.description}</div>
+                <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px dashed #E2E8F0", opacity: (invoice.status === 'cancelled' || invoice.status === 'quote_declined') ? 0.6 : 1 }}>
+                  <div style={{ flex: 1, fontWeight: "600", fontSize: "16px", color: "#0F172A", wordBreak: "break-word", paddingRight: "16px", textDecoration: (invoice.status === 'cancelled' || invoice.status === 'quote_declined') ? "line-through" : "none" }}>{item.description}</div>
                   <div style={{ width: "80px", textAlign: "center", fontSize: "16px", color: "#64748B", fontWeight: "600" }}>{item.quantity}</div>
-                  <div style={{ width: "140px", textAlign: "right", fontWeight: "800", fontSize: "16px", color: "#0F172A", textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
+                  <div style={{ width: "140px", textAlign: "right", fontWeight: "800", fontSize: "16px", color: "#0F172A", textDecoration: (invoice.status === 'cancelled' || invoice.status === 'quote_declined') ? "line-through" : "none" }}>{currencySymbol}{Number(item.price || 0).toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -356,7 +392,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             {/* Summary Box showing Total, Paid, and Balance Due */}
             <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "15px", fontWeight: "600", color: "#475569" }}>
-                <span>Total Amount</span>
+                <span>{invoice.status === 'quote' ? 'Estimated Total' : 'Total Amount'}</span>
                 <span>{currencySymbol}{safeAmount.toLocaleString()}</span>
               </div>
               
@@ -367,21 +403,35 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
               )}
               
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #CBD5E1", fontSize: "20px", fontWeight: "900", color: invoice.status === 'cancelled' ? "#64748B" : customColor, textDecoration: invoice.status === 'cancelled' ? "line-through" : "none" }}>
-                <span>Balance Due</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed #CBD5E1", fontSize: "20px", fontWeight: "900", color: (invoice.status === 'cancelled' || invoice.status === 'quote_declined') ? "#64748B" : customColor, textDecoration: (invoice.status === 'cancelled' || invoice.status === 'quote_declined') ? "line-through" : "none" }}>
+                <span>{invoice.status === 'quote' ? 'Quote Total' : 'Balance Due'}</span>
                 <span>{currencySymbol}{balanceDue.toLocaleString()}</span>
               </div>
             </div>
             
             <div className="no-print">
-              {invoice.status === 'cancelled' && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "24px", background: "#F8FAFC", borderRadius: "12px", border: "1px dashed #94A3B8", color: "#475569", fontWeight: "700" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                  This invoice has been cancelled by the merchant and is no longer payable.
+              
+              {/* QUOTE ACTION BUTTONS */}
+              {invoice.status === 'quote' && (
+                <div style={{ background: "#FFFFFF", padding: "32px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center", marginBottom: "16px" }}>
+                  <h3 style={{ margin: "0 0 8px 0", fontSize: "20px", color: "#0F172A", fontWeight: "800" }}>Review Price Quote</h3>
+                  <p style={{ margin: "0 0 24px 0", fontSize: "15px", color: "#475569", lineHeight: "1.6" }}>Please review the services and pricing outlined above. If everything is satisfactory, approve this quote to securely convert it into a payable invoice.</p>
+                  <div style={{ display: "flex", gap: "16px" }}>
+                     <button onClick={handleDeclineQuote} className="btn-hover" style={{ flex: 1, padding: "16px", background: "#FFFFFF", color: "#EF4444", border: "1px solid #FECACA", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer" }}>Decline</button>
+                     <button onClick={handleApproveQuote} className="btn-hover" style={{ flex: 2, padding: "16px", background: "#10B981", color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}>Approve Quote</button>
+                  </div>
                 </div>
               )}
 
-              {/* Partial Payment Input Section */}
+              {/* CANCELLED OR DECLINED STATUS */}
+              {(invoice.status === 'cancelled' || invoice.status === 'quote_declined') && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "24px", background: "#FEF2F2", borderRadius: "12px", border: "1px dashed #FECACA", color: "#EF4444", fontWeight: "700" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  {invoice.status === 'quote_declined' ? 'This quote has been declined.' : 'This invoice has been cancelled by the merchant.'}
+                </div>
+              )}
+
+              {/* PAYMENT SECTION (Only visible if pending or partially paid) */}
               {isPayable && (
                 <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center", marginBottom: "16px" }}>
                   <p style={{ margin: "0 0 16px 0", fontSize: "15px", color: "#475569", fontWeight: "600" }}>Enter the amount you wish to pay today:</p>
@@ -404,6 +454,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
               )}
 
+              {/* SUCCESSFUL PAYMENT UI */}
               {invoice.status === 'paid' && (
                 <div style={{ textAlign: "center", padding: "24px", background: invoice.payment_method === 'manual' ? "#F8FAFC" : "#ECFDF5", borderRadius: "12px", border: invoice.payment_method === 'manual' ? "1px dashed #94A3B8" : "1px solid #A7F3D0" }}>
                   <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : "#10B981", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
