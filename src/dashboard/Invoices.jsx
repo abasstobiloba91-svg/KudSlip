@@ -177,12 +177,13 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       const amountFormatted = `${symbol}${Number(invoice.amount).toLocaleString()}`;
       const targetEmail = invoice.clients?.email || invoice.client?.email || invoice.client_email;
       const targetName = invoice.clients?.name || invoice.client?.name || invoice.client_name || "Client";
+      const isQuote = invoice.status === 'quote';
 
       const res = await fetch('/api/mailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'invoice', 
+          type: isQuote ? 'quote' : 'invoice', 
           clientEmail: targetEmail,
           clientName: targetName,
           invoiceAmount: amountFormatted,
@@ -195,10 +196,10 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send email");
 
-      showToast("Success", "Document emailed successfully!", "success");
+      showToast("Success", isQuote ? "Price quote emailed!" : "Invoice emailed!", "success");
     } catch (err) {
       console.error("Email error:", err);
-      showToast("Error", "No email added. Please try again.", "error");
+      showToast("Error", "Could not send email. Please try again.", "error");
     } finally {
       setSendingEmailId(null);
     }
@@ -344,7 +345,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           </div>
         </div>
 
-        {/* Pass Paystack Transaction Fees Row - Clean Responsive Alignment */}
+        {/* Pass Paystack Transaction Fees Row */}
         <div style={{ marginBottom: "24px" }}>
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: "14px", fontWeight: "600", color: "#0F172A", background: "#F8FAFC", padding: "14px 16px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -376,7 +377,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
           <button onClick={() => handleAddItem()} style={{ background: "transparent", color: "#000000", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px", padding: 0 }}>+ Add Line Item</button>
         </div>
 
-        {/* Action Buttons & Totals - Sleek Responsive Layout */}
+        {/* Action Buttons & Totals */}
         <div style={{ borderTop: `1px solid #E2E8F0`, paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A" }}>Total: ₦{calculateTotal().toLocaleString()}</div>
           
@@ -429,7 +430,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && (
         <div>
-          {/* SEARCH & SORT HEADER - Clean Grid Layout */}
+          {/* SEARCH & SORT HEADER */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Documents</h3>
@@ -518,7 +519,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                   <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
-                {/* AMOUNT & ACTION BUTTONS - Uniform Grid Layout */}
+                {/* AMOUNT & ACTION BUTTONS */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px" }}>
                   <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", opacity: (inv.status === 'cancelled' || inv.status === 'quote_declined') ? 0.5 : 1 }}>
                     {sym}{safeInvAmount.toLocaleString()}
