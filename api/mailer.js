@@ -78,7 +78,71 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 3. SECURE OTP / SECURITY CODE
+      // 3. PRICE QUOTE DISPATCH (SENT TO CLIENT)
+      case 'quote':
+        if (!payload.clientEmail || !payload.invoiceLink || !payload.invoiceId) {
+          return res.status(400).json({ error: 'Missing required fields for quote delivery.' });
+        }
+        from = 'KudiSlip Invoicing <invoices@kudislip.com.ng>';
+        to = payload.clientEmail;
+        subject = `Price Quote Notification: ${payload.vendorName || 'KudiSlip Merchant'}`;
+        tags = [{ name: 'invoiceId', value: payload.invoiceId.toString() }];
+        html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+          <div style="background-color: #000000; padding: 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 1px;">KudiSlip</h1>
+          </div>
+          <div style="padding: 32px 24px;">
+            <h2 style="color: #0F172A; margin-top: 0; font-size: 20px;">Price Quote Notification</h2>
+            <p style="color: #475569; font-size: 16px; line-height: 1.6;">Hello <strong>${payload.clientName || 'Valued Client'}</strong>,</p>
+            <p style="color: #475569; font-size: 16px; line-height: 1.6;">You have received a new price quote from <strong>${payload.vendorName || 'us'}</strong> for the estimated amount of <strong style="color: #0F172A; font-size: 18px;">${payload.invoiceAmount}</strong>.</p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.6;">Please click below to review the breakdown and accept or decline the quote.</p>
+            <div style="margin: 32px 0; text-align: center;">
+              <a href="${payload.invoiceLink}" style="background-color: #000000; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 800; display: inline-block; font-size: 16px;">Review & Accept Quote</a>
+            </div>
+          </div>
+          <div style="background-color: #F8FAFC; padding: 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="color: #64748B; font-size: 13px; margin: 0 0 12px 0;"><a href="https://instagram.com/kudislipp" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 600;">Follow us on Instagram</a></p>
+            <p style="color: #94A3B8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
+        </div>`;
+        break;
+
+      // 4. QUOTE RESPONSE ALERT (SENT TO MERCHANT WHEN CLIENT ACCEPTS/DECLINES)
+      case 'quote_response':
+        if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
+        const isApprovedQuote = payload.action === 'approved';
+        from = 'KudiSlip Billing <invoices@kudislip.com.ng>';
+        to = payload.vendorEmail;
+        subject = isApprovedQuote 
+          ? `Quote Approved: ${payload.invoiceNumber}` 
+          : `Quote Declined: ${payload.invoiceNumber}`;
+          
+        html = `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+          <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+            <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 70px; width: auto; max-width: 100%;" />
+          </div>
+          <div style="padding: 40px 30px;">
+            <h2 style="color: ${isApprovedQuote ? '#10b981' : '#ef4444'}; margin-top: 0;">${isApprovedQuote ? 'Quote Approved' : 'Quote Declined'}</h2>
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Dear ${payload.vendorName || 'Merchant'},</p>
+            <p style="color: #475569; line-height: 1.6; font-size: 16px;">Your client <strong>${payload.clientName || 'Client'}</strong> has <strong>${isApprovedQuote ? 'approved' : 'declined'}</strong> price quote <strong>${payload.invoiceNumber}</strong>.</p>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
+              <p style="margin: 0; color: #0f172a;"><strong>Quote Amount:</strong> ${payload.currency || '₦'}${payload.amount}</p>
+              <p style="margin: 8px 0 0 0; color: ${isApprovedQuote ? '#10b981' : '#ef4444'}; font-weight: 700;">Status: ${isApprovedQuote ? 'Converted to Payable Invoice' : 'Declined by Client'}</p>
+            </div>
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="https://kudislip.com.ng/dashboard/invoices" style="background-color: #000000; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">View in Dashboard</a>
+            </div>
+          </div>
+          <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 8px 0;">Follow us on Instagram <a href="https://instagram.com/kudislipp" style="color: #000000; font-weight: bold; text-decoration: none;">@kudislipp</a></p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} KudiSlip Technologies. All rights reserved.</p>
+          </div>
+        </div>`;
+        break;
+
+      // 5. SECURE OTP / SECURITY CODE
       case 'otp':
       case 'security_otp':
       case 'security_code':
@@ -121,7 +185,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 4. PAYMENT ALERT (SENT TO MERCHANT)
+      // 6. PAYMENT ALERT (SENT TO MERCHANT)
       case 'payment_alert':
         if (!payload.vendorEmail) return res.status(400).json({ error: 'Vendor email is required' });
         
@@ -154,7 +218,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 5. OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
+      // 7. OFFICIAL PAYMENT RECEIPT (SENT TO CLIENT)
       case 'client_receipt':
         if (!payload.clientEmail) return res.status(400).json({ error: 'Client email is required' });
         
@@ -209,7 +273,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 6. RESET EMAIL
+      // 8. RESET EMAIL
       case 'reset_email':
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         
@@ -243,7 +307,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 7. PRO SUBSCRIPTION WARNING
+      // 9. PRO SUBSCRIPTION WARNING
       case 'subscription_warning':
         if (!payload.email || !payload.daysLeft) return res.status(400).json({ error: 'Missing required fields' });
         from = 'KudiSlip Subscriptions <hello@kudislip.com.ng>';
@@ -265,25 +329,25 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 8. KYC STATUS NOTIFICATION
+      // 10. KYC STATUS NOTIFICATION
       case 'kyc_status':
         if (!payload.email || !payload.status) return res.status(400).json({ error: 'Email and status required' });
         from = 'KudiSlip Verification <compliance@kudislip.com.ng>';
         to = payload.email;
-        const isApproved = payload.status === 'approved';
-        subject = isApproved ? 'Your KudiSlip Account is Officially Verified!' : 'Update Regarding Your Business Verification';
+        const isApprovedKyc = payload.status === 'approved';
+        subject = isApprovedKyc ? 'Your KudiSlip Account is Officially Verified!' : 'Update Regarding Your Business Verification';
         html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
           <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
             <img src="https://kudislip.com.ng/logo.png" alt="KudiSlip" style="height: 60px; width: auto;" />
           </div>
           <div style="padding: 32px 24px; color: #0F172A;">
-            <h2 style="color: ${isApproved ? '#10B981' : '#EF4444'}; margin-top: 0; font-size: 20px; font-weight: 800;">
-              ${isApproved ? 'Business Verification Approved' : 'Verification Document Rejected'}
+            <h2 style="color: ${isApprovedKyc ? '#10B981' : '#EF4444'}; margin-top: 0; font-size: 20px; font-weight: 800;">
+              ${isApprovedKyc ? 'Business Verification Approved' : 'Verification Document Rejected'}
             </h2>
             <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hello <strong>${payload.businessName || 'Merchant'}</strong>,</p>
             <p style="font-size: 15px; color: #475569; line-height: 1.6;">
-              ${isApproved 
+              ${isApprovedKyc 
                 ? 'Great news! Your CAC business verification documents have been reviewed and approved by our compliance team. You now have full access to all verified merchant capabilities on KudiSlip.' 
                 : 'Our compliance team reviewed your submitted documents, but we were unable to approve your verification at this time. Please check your document upload and resubmit a valid copy.'}
             </p>
@@ -298,7 +362,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 9. SYSTEM BROADCAST EMAIL
+      // 11. SYSTEM BROADCAST EMAIL
       case 'broadcast':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipients, subject, and message are required.' });
@@ -348,7 +412,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, message: `Broadcast successfully emailed to ${recipientList.length} users!` });
 
-      // 10. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
+      // 12. ONBOARDING / INACTIVE VENDOR FOLLOW-UP
       case 'onboarding_followup':
         if (!payload.email) return res.status(400).json({ error: 'Email is required' });
         from = 'KudiSlip <hello@kudislip.com.ng>';
@@ -403,7 +467,7 @@ export default async function handler(req, res) {
         </div>`;
         break;
 
-      // 11. DIRECT EMAIL CAMPAIGN
+      // 13. DIRECT EMAIL CAMPAIGN
       case 'campaign':
         if (!payload.emails || !payload.subject || !payload.message) {
           return res.status(400).json({ error: 'Recipient, subject, and message are required.' });
