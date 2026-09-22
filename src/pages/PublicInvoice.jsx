@@ -25,7 +25,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
-  // 🌟 NEW: Partial Payment State
+  // Partial Payment State
   const [customPayAmount, setCustomPayAmount] = useState("");
 
   // Review System State
@@ -46,7 +46,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
       if (invData) {
         setInvoice(invData);
         
-        // 🌟 NEW: Set default payment input to the remaining balance
+        // Set default payment input to the remaining balance
         const balance = Number(invData.amount || 0) - Number(invData.amount_paid || 0);
         setCustomPayAmount(balance.toString());
 
@@ -67,7 +67,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     
     const invoiceCurrency = invoice?.currency || "NGN";
     
-    // 🌟 NEW: Calculate exactly what they are paying right now
+    // Calculate exactly what they are paying right now
     const balanceDue = Number(invoice?.amount || 0) - Number(invoice?.amount_paid || 0);
     const amountToPay = Number(customPayAmount);
     
@@ -99,10 +99,10 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         reference: `${formattedInvoiceNumber}_${Date.now()}`,
         metadata: {
           invoice_id: invoice.id,
-          intended_amount: amountToPay // 🌟 NEW: Send intended amount so webhook avoids logging fees as overpayment
+          intended_amount: amountToPay // Send intended amount so webhook avoids logging fees as overpayment
         },
         callback: function(response) {
-          // 🌟 NEW: Calculate new balance on the frontend
+          // Calculate new balance on the frontend
           const newAmountPaid = Number(invoice.amount_paid || 0) + amountToPay;
           const isFullyPaid = newAmountPaid >= Number(invoice.amount);
           const newStatus = isFullyPaid ? 'paid' : 'partially_paid';
@@ -158,7 +158,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
   
-  // 🌟 NEW: Calculate safe totals
+  // Calculate safe totals
   const safeAmount = Number(invoice.amount || 0);
   const amountPaid = Number(invoice.amount_paid || 0);
   const balanceDue = safeAmount - amountPaid;
@@ -172,7 +172,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const isFreeTier = !isPro;
 
   const customColor = vendor?.brand_color || "#000000";
-  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip cares 💙." : (vendor?.custom_thank_you || `Thank you for your payment! ${vendor?.business_name || 'Merchant'} cares.`);
+  const thankYouMessage = isFreeTier ? "Thank you for your payment! KudiSlip values your business." : (vendor?.custom_thank_you || `Thank you for your payment! ${vendor?.business_name || 'Merchant'} values your business.`);
   
   const invoiceCurrency = invoice.currency || "NGN";
   const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
@@ -217,7 +217,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           height: max-content; 
         }
         
-        /* 🌟 NEW: Custom Payment Input Styling */
+        /* Custom Payment Input Styling */
         .custom-pay-input { 
           width: 100%; 
           padding: 16px; 
@@ -310,7 +310,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 <div style={{ fontSize: "16px", fontWeight: "900", color: "#0F172A", marginBottom: "6px", letterSpacing: "0.5px" }}>
                   {invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`}
                 </div>
-                {/* 🌟 NEW: Added partially_paid badge styling */}
                 <div style={{ 
                   display: "inline-block", 
                   background: invoice.status === 'partially_paid' ? "#E0F2FE" : invoice.status === 'pending' ? "#FEF3C7" : invoice.status === 'cancelled' ? "#F1F5F9" : "#ECFDF5", 
@@ -354,7 +353,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               ))}
             </div>
             
-            {/* 🌟 NEW: Summary Box showing Total, Paid, and Balance Due */}
+            {/* Summary Box showing Total, Paid, and Balance Due */}
             <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "15px", fontWeight: "600", color: "#475569" }}>
                 <span>Total Amount</span>
@@ -376,12 +375,13 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             
             <div className="no-print">
               {invoice.status === 'cancelled' && (
-                <div style={{ textAlign: "center", padding: "24px", background: "#F8FAFC", borderRadius: "12px", border: "1px dashed #94A3B8", color: "#475569", fontWeight: "700" }}>
-                  🚫 This invoice has been cancelled by the merchant and is no longer payable.
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "24px", background: "#F8FAFC", borderRadius: "12px", border: "1px dashed #94A3B8", color: "#475569", fontWeight: "700" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                  This invoice has been cancelled by the merchant and is no longer payable.
                 </div>
               )}
 
-              {/* 🌟 NEW: Partial Payment Input Section */}
+              {/* Partial Payment Input Section */}
               {isPayable && (
                 <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center", marginBottom: "16px" }}>
                   <p style={{ margin: "0 0 16px 0", fontSize: "15px", color: "#475569", fontWeight: "600" }}>Enter the amount you wish to pay today:</p>
@@ -409,16 +409,18 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                   <div style={{ color: invoice.payment_method === 'manual' ? "#64748B" : "#10B981", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                      {invoice.payment_method === 'manual' ? "Marked as Paid (Manual)" : "Payment Complete"}
                   </div>
-                  <div style={{ fontSize: "16px", color: "#0F172A", fontWeight: "600", marginBottom: "12px" }}>{thankYouMessage}</div>
+                  <div style={{ fontSize: "16px", color: "#0F172A", fontWeight: "600", marginBottom: "16px" }}>{thankYouMessage}</div>
                   
                   {invoice.payment_method === 'manual' && (
-                    <div style={{ fontSize: "13px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "10px 14px", borderRadius: "6px", display: "inline-block", border: "1px solid #FECACA" }}>
-                      ⚠️ Logged via Cash/Direct Transfer. Not verified by KudiSlip.
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "10px 14px", borderRadius: "6px", border: "1px solid #FECACA", width: "fit-content", margin: "0 auto" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                      Logged via Cash/Direct Transfer. Not verified by KudiSlip.
                     </div>
                   )}
                   {invoice.payment_method === 'paystack' && (
-                    <div style={{ fontSize: "13px", color: "#10B981", fontWeight: "800" }}>
-                      🔒 Securely Verified by Paystack
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", color: "#10B981", fontWeight: "800" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      Securely Verified by Paystack
                     </div>
                   )}
                 </div>
