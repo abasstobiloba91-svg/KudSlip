@@ -429,11 +429,26 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
 
       {invoices.length > 0 && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Documents</h3>
-            <div style={{ display: "flex", gap: "12px", flex: 1, justifyContent: "flex-end" }}>
-              <input className="form-input" style={{ maxWidth: "250px", padding: "10px 16px" }} placeholder="Search name or item..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <select className="form-input" style={{ maxWidth: "160px", padding: "10px 16px" }} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+          {/* SEARCH & SORT HEADER - Clean Grid Layout */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: "800", margin: 0 }}>Recent Documents</h3>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", width: "100%" }}>
+              <input 
+                className="form-input" 
+                style={{ width: "100%", padding: "10px 14px", boxSizing: "border-box" }} 
+                placeholder="Search name or item..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+              />
+              <select 
+                className="form-input" 
+                style={{ width: "100%", padding: "10px 14px", boxSizing: "border-box" }} 
+                value={sortOrder} 
+                onChange={(e) => setSortOrder(e.target.value)}
+              >
                 <option value="date-desc">Newest First</option>
                 <option value="date-asc">Oldest First</option>
                 <option value="name-asc">Client A-Z</option>
@@ -503,19 +518,26 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                   <span style={{ color: "#64748B", fontWeight: "800", marginRight: "4px" }}>Items:</span> {itemSummary || "N/A"}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px", flexWrap: "wrap", gap: "16px" }}>
-                  <div style={{ fontSize: "24px", fontWeight: "900", color: "#0F172A", opacity: (inv.status === 'cancelled' || inv.status === 'quote_declined') ? 0.5 : 1 }}>
+                {/* AMOUNT & ACTION BUTTONS - Uniform Grid Layout */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px", borderTop: `1px dashed #E2E8F0`, paddingTop: "16px" }}>
+                  <div style={{ fontSize: "22px", fontWeight: "900", color: "#0F172A", opacity: (inv.status === 'cancelled' || inv.status === 'quote_declined') ? 0.5 : 1 }}>
                     {sym}{safeInvAmount.toLocaleString()}
                   </div>
                   
-                  <div style={{ display: "flex", gap: "8px", flex: "1 1 auto", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                    <button className="btn-secondary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "140px" }} onClick={() => window.open("/pay/" + inv.id, '_blank')}>View Link</button>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px", width: "100%" }}>
+                    <button 
+                      className="btn-secondary btn-hover" 
+                      style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", boxSizing: "border-box" }} 
+                      onClick={() => window.open("/pay/" + inv.id, '_blank')}
+                    >
+                      View Link
+                    </button>
                     
                     {(inv.status === 'pending' || inv.status === 'partially_paid') && (
                       <button 
                         onClick={() => triggerManualPaymentConfirm(inv.id)}
                         className="btn-secondary btn-hover"
-                        style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569" }}
+                        style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", background: "#F8FAFC", border: "1px solid #CBD5E1", color: "#475569", boxSizing: "border-box" }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cash / Manual
                       </button>
@@ -527,7 +549,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                           onClick={() => handleSendEmail(inv)} 
                           disabled={sendingEmailId === inv.id}
                           className="btn-secondary btn-hover"
-                          style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "150px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1 }}
+                          style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", gap: "6px", opacity: sendingEmailId === inv.id ? 0.7 : 1, boxSizing: "border-box" }}
                         >
                           {sendingEmailId === inv.id ? (
                             <>
@@ -546,7 +568,15 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
                           )}
                         </button>
                         
-                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hello! Here is your secure ${inv.status === 'quote' ? 'price quote' : 'invoice'} for${sym}${safeInvAmount.toLocaleString()} from${user.business_name || "us"}. You can review it here: https://${window.location.host}/pay/${inv.id}`)}`} target="_blank" rel="noopener noreferrer" className="btn-primary btn-hover" style={{ padding: "10px 16px", fontSize: "13px", flexGrow: 1, maxWidth: "160px", textAlign: "center" }}>WhatsApp</a>
+                        <a 
+                          href={`https://wa.me/?text=${encodeURIComponent(`Hello! Here is your secure ${inv.status === 'quote' ? 'price quote' : 'invoice'} for${sym}${safeInvAmount.toLocaleString()} from${user.business_name || "us"}. You can review it here: https://${window.location.host}/pay/${inv.id}`)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="btn-primary btn-hover" 
+                          style={{ padding: "12px 14px", fontSize: "13px", fontWeight: "800", width: "100%", whiteSpace: "nowrap", textAlign: "center", justifyContent: "center", display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" }}
+                        >
+                          WhatsApp
+                        </a>
                       </>
                     )}
                   </div>
