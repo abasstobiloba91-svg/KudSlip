@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase, PAYSTACK_PUBLIC_KEY } from '../supabaseClient';
 import { AlertIcon } from '../components/Icons';
 
-// Helper hook to dynamically inject Paystack inline SDK
 const usePaystack = () => {
   useEffect(() => {
     if (!document.getElementById('paystack-inline-js')) {
@@ -25,10 +24,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState(null);
 
-  // Partial Payment State
   const [customPayAmount, setCustomPayAmount] = useState("");
-
-  // Review System State
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -45,8 +41,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
 
       if (invData) {
         setInvoice(invData);
-        
-        // Set default payment input to the remaining balance
         const balance = Number(invData.amount || 0) - Number(invData.amount_paid || 0);
         setCustomPayAmount(balance.toString());
 
@@ -57,17 +51,57 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
       setLoading(false);
     }
     fetchData();
+
+    // REAL-TIME WEBSOCKET LISTENER (Keeps client UI synced if merchant voids or edits quote)
+    const channel = supabase.channel(`public_invoice_${invoiceId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'invoices', filter: `id=eq.${invoiceId}` }, (payload) => {
+        setInvoice(prev => ({ ...prev, ...payload.new }));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [invoiceId]);
 
   const triggerPDFCompilation = () => { window.print(); };
 
-  // --- QUOTE LOGIC ---
+  // --- QUOTE LOGIC (WITH REAL-TIME MERCHANT ALERTS) ---
   const handleApproveQuote = async () => {
     try {
       const { error } = await supabase.from('invoices').update({ status: 'pending' }).eq('id', invoice.id);
       if (error) throw error;
-      setInvoice({ ...invoice, status: 'pending' });
+      
+      setInvoice(prev => ({ ...prev, status: 'pending' }));
       showToast("Quote Approved", "You can now proceed to secure payment.", "success");
+
+      const formattedNum = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
+      const sym = CURRENCY_SYMBOLS[invoice.currency || 'NGN'] || '₦';
+      const formattedAmt = `${sym}${Number(invoice.amount).toLocaleString()}`;
+
+      // 1. Send Email Alert to Merchant
+      if (vendor?.email) {
+        fetch('/api/mailer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'quote_response',
+            action: 'approved',
+            vendorEmail: vendor.email,
+            vendorName: vendor.business_name || "Merchant",
+            clientName: client?.name || "Client",
+            invoiceNumber: formattedNum,
+            amount: formattedAmt
+          })
+        }).catch(e => console.error(e));
+      }
+
+      // 2. Insert Realtime Notification in Dashboard
+      if (vendor?.id) {
+        await supabase.from('notifications').insert([{
+          user_id: vendor.id,
+          message: `Great news! ${client?.name || "Client"} approved quote ${formattedNum} (${formattedAmt})`,
+          is_read: false
+        }]);
+      }
     } catch (err) {
       showToast("System Error", "Could not approve the quote at this time.", "error");
     }
@@ -77,21 +111,47 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     try {
       const { error } = await supabase.from('invoices').update({ status: 'quote_declined' }).eq('id', invoice.id);
       if (error) throw error;
-      setInvoice({ ...invoice, status: 'quote_declined' });
+
+      setInvoice(prev => ({ ...prev, status: 'quote_declined' }));
       showToast("Quote Declined", "The merchant has been notified.", "info");
+
+      const formattedNum = invoice.invoice_number || `KUD-INV-${invoice.id.slice(0, 6).toUpperCase()}`;
+      const sym = CURRENCY_SYMBOLS[invoice.currency || 'NGN'] || '₦';
+      const formattedAmt = `${sym}${Number(invoice.amount).toLocaleString()}`;
+
+      if (vendor?.email) {
+        fetch('/api/mailer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'quote_response',
+            action: 'declined',
+            vendorEmail: vendor.email,
+            vendorName: vendor.business_name || "Merchant",
+            clientName: client?.name || "Client",
+            invoiceNumber: formattedNum,
+            amount: formattedAmt
+          })
+        }).catch(e => console.error(e));
+      }
+
+      if (vendor?.id) {
+        await supabase.from('notifications').insert([{
+          user_id: vendor.id,
+          message: `${client?.name || "Client"} declined quote ${formattedNum}`,
+          is_read: false
+        }]);
+      }
     } catch (err) {
       showToast("System Error", "Could not decline the quote at this time.", "error");
     }
   };
-  // -------------------
 
   const handlePayment = () => {
     if (!PAYSTACK_PUBLIC_KEY) return showToast("Configuration Error", "VITE_PAYSTACK_PUBLIC_KEY is missing in the system.", "error");
     if (!window.PaystackPop) return showToast("Loading", "Payment engine is loading, please wait...", "info");
     
     const invoiceCurrency = invoice?.currency || "NGN";
-    
-    // Calculate exactly what they are paying right now
     const balanceDue = Number(invoice?.amount || 0) - Number(invoice?.amount_paid || 0);
     const amountToPay = Number(customPayAmount);
     
@@ -101,7 +161,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
     try {
       let finalAmount = amountToPay;
       
-      // Calculate Paystack fees based on the PARTIAL amount, not the total
       if (invoice?.fee_passed_on && invoiceCurrency === "NGN" && vendor?.paystack_subaccount_code) {
         if (amountToPay < 2500) {
           finalAmount = amountToPay / 0.985;
@@ -123,10 +182,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
         reference: `${formattedInvoiceNumber}_${Date.now()}`,
         metadata: {
           invoice_id: invoice.id,
-          intended_amount: amountToPay // Send intended amount so webhook avoids logging fees as overpayment
+          intended_amount: amountToPay
         },
         callback: function(response) {
-          // Calculate new balance on the frontend
           const newAmountPaid = Number(invoice.amount_paid || 0) + amountToPay;
           const isFullyPaid = newAmountPaid >= Number(invoice.amount);
           const newStatus = isFullyPaid ? 'paid' : 'partially_paid';
@@ -138,7 +196,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           });
         },
         onClose: function() {
-          showToast("Payment Incomplete", "The payment window was closed before completing the transaction. You can try again whenever you're ready.", "info");
+          showToast("Payment Incomplete", "The payment window was closed before completing the transaction.", "info");
         }
       };
 
@@ -182,14 +240,11 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   let safeItems = [];
   try { safeItems = Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || "[]"); } catch(e) { safeItems = []; }
   
-  // Calculate safe totals
   const safeAmount = Number(invoice.amount || 0);
   const amountPaid = Number(invoice.amount_paid || 0);
   const balanceDue = safeAmount - amountPaid;
-  
   const safeDate = new Date(invoice.due_date || Date.now()).toLocaleDateString();
   
-  // Robust Pro Check
   const isProTier = vendor?.subscription_tier === 'pro' || vendor?.subscription_tier === 'premium';
   const hasNotExpired = !vendor?.pro_expires_at || new Date(vendor.pro_expires_at) > new Date();
   const isPro = Boolean(isProTier && hasNotExpired);
@@ -201,10 +256,8 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   const invoiceCurrency = invoice.currency || "NGN";
   const currencySymbol = CURRENCY_SYMBOLS[invoiceCurrency] || "₦";
 
-  // Check if invoice is open for payment
   const isPayable = invoice.status === 'pending' || invoice.status === 'partially_paid';
 
-  // Clean Status Badge Colors
   let badgeBg = "#F1F5F9";
   let badgeColor = "#64748B";
   
@@ -212,7 +265,7 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
   else if (invoice.status === 'paid') { badgeBg = "#ECFDF5"; badgeColor = "#10B981"; }
   else if (invoice.status === 'partially_paid') { badgeBg = "#E0F2FE"; badgeColor = "#0284C7"; }
   else if (invoice.status === 'quote') { badgeBg = "#F3E8FF"; badgeColor = "#9333EA"; }
-  else if (invoice.status === 'quote_declined') { badgeBg = "#FEF2F2"; badgeColor = "#EF4444"; }
+  else if (invoice.status === 'quote_declined' || invoice.status === 'cancelled') { badgeBg = "#FEF2F2"; badgeColor = "#EF4444"; }
 
   const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
     <svg onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{ cursor: "pointer", color: filled ? "#F59E0B" : "#E2E8F0", transition: "color 0.2s" }} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -250,8 +303,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
           height: max-content; 
         }
-        
-        /* Custom Payment Input Styling */
         .custom-pay-input { 
           width: 100%; 
           padding: 16px; 
@@ -389,7 +440,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
               ))}
             </div>
             
-            {/* Summary Box showing Total, Paid, and Balance Due */}
             <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "28px", marginBottom: "32px", border: `1px solid #E2E8F0` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "15px", fontWeight: "600", color: "#475569" }}>
                 <span>{invoice.status === 'quote' ? 'Estimated Total' : 'Total Amount'}</span>
@@ -431,23 +481,14 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
               )}
 
-              {/* PAYMENT SECTION (Only visible if pending or partially paid) */}
+              {/* PAYMENT SECTION */}
               {isPayable && (
                 <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center", marginBottom: "16px" }}>
                   <p style={{ margin: "0 0 16px 0", fontSize: "15px", color: "#475569", fontWeight: "600" }}>Enter the amount you wish to pay today:</p>
-                  
                   <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                     <span style={{ position: "absolute", left: "16px", fontSize: "18px", fontWeight: "700", color: "#0F172A" }}>{currencySymbol}</span>
-                    <input 
-                      type="number" 
-                      className="custom-pay-input" 
-                      value={customPayAmount} 
-                      onChange={(e) => setCustomPayAmount(e.target.value)} 
-                      max={balanceDue}
-                      style={{ paddingLeft: "40px" }}
-                    />
+                    <input type="number" className="custom-pay-input" value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} max={balanceDue} style={{ paddingLeft: "40px" }} />
                   </div>
-
                   <button className="btn-hover" style={{ width: "100%", padding: "20px", background: customColor, color: "#FFF", border: "none", borderRadius: "12px", fontWeight: "800", fontSize: "17px", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }} onClick={handlePayment}>
                     Securely Pay {currencySymbol}{Number(customPayAmount || 0).toLocaleString()}
                   </button>
@@ -461,17 +502,9 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                      {invoice.payment_method === 'manual' ? "Marked as Paid (Manual)" : "Payment Complete"}
                   </div>
                   <div style={{ fontSize: "16px", color: "#0F172A", fontWeight: "600", marginBottom: "16px" }}>{thankYouMessage}</div>
-                  
                   {invoice.payment_method === 'manual' && (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", color: "#EF4444", fontWeight: "800", background: "#FEF2F2", padding: "10px 14px", borderRadius: "6px", border: "1px solid #FECACA", width: "fit-content", margin: "0 auto" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                       Logged via Cash/Direct Transfer. Not verified by KudiSlip.
-                    </div>
-                  )}
-                  {invoice.payment_method === 'paystack' && (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", color: "#10B981", fontWeight: "800" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                      Securely Verified by Paystack
                     </div>
                   )}
                 </div>
@@ -487,19 +520,11 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
             <div className="no-print card-hover" style={{ background: "#FFFFFF", borderRadius: "16px", border: `1px solid #E2E8F0`, padding: "36px", textAlign: "center", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
               <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>How was your experience?</h3>
               <p style={{ fontSize: "15px", color: "#64748B", marginBottom: "24px" }}>Your feedback helps us keep KudiSlip safe and professional.</p>
-              
               <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
                 {starsArray.map(star => (
-                  <StarIcon 
-                    key={star} 
-                    filled={star <= (hoverRating || rating)} 
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                  />
+                  <StarIcon key={star} filled={star <= (hoverRating || rating)} onClick={() => setRating(star)} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} />
                 ))}
               </div>
-              
               {rating > 0 && (
                 <div style={{ animation: "toastSlideIn 0.3s ease forwards" }}>
                   <textarea className="form-input" placeholder="Leave a comment (optional)..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={{ width: "100%", minHeight: "80px", marginBottom: "16px", resize: "vertical", fontSize: "15px" }} />
@@ -507,10 +532,6 @@ export default function PublicInvoice({ invoiceId, showToast, currentUser }) {
                 </div>
               )}
             </div>
-          )}
-
-          {invoice.status === 'paid' && currentUser?.id !== vendor?.id && (
-             <a href="/" className="btn-secondary btn-hover no-print" style={{ width: "100%", boxSizing: "border-box", padding: "18px", background: "#FFFFFF", textAlign: "center", borderRadius: "12px", display: "block", fontSize: "15px" }}>Return to KudiSlip Home</a>
           )}
 
         </div>
