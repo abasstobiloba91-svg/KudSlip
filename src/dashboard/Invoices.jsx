@@ -201,7 +201,7 @@ export default function KudiSlipInvoiceEngine({ user, showToast }) {
       showToast("Success", "Invoice emailed successfully!", "success");
     } catch (err) {
       console.error("Email error:", err);
-      showToast("Error", "Could not send email. Please try again.", "error");
+      showToast("Error", "No email added. Please try again.", "error");
     } finally {
       setSendingEmailId(null);
     }
